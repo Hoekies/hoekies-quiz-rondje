@@ -1,0 +1,51 @@
+Quiz {
+  id
+  title
+  description
+}
+
+Question {
+  id
+  quiz_id
+  round
+  order
+  type              // multiple_choice | true_false | image | audio
+  question_text
+  media_url
+  options           // JSON array
+  correct_answer
+  explanation
+  time_limit_seconds
+  base_points
+}
+
+Session {
+  id
+  quiz_id
+  code
+  status            // lobby | active | finished
+  current_question_id
+  state             // lobby | question_open | reveal | leaderboard
+  started_at
+}
+
+Player {
+  id
+  session_id
+  name
+  score
+  joined_at
+  last_seen_at
+}
+
+Answer {
+  id
+  session_id
+  player_id
+  question_id
+  answer
+  is_correct
+  response_time_ms
+  points_awarded
+  submitted_at
+}

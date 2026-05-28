@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { code, name } = body as { code: string; name: string };
+
+  if (!code || !name || name.trim().length === 0) {
+    return NextResponse.json(
+      { error: "Code en naam zijn verplicht" },
+      { status: 400 }
+    );
+  }
+
+  const sessionRef = adminDb.collection("sessions").doc(code.toUpperCase());
+  const sessionSnap = await sessionRef.get();
+
+  if (!sessionSnap.exists) {
+    return NextResponse.json({ error: "Sessie niet gevonden" }, { status: 404 });
+  }
+
+  const sessionData = sessionSnap.data() as { status: string; state: string };
+
+  if (sessionData.status !== "lobby") {
+    return NextResponse.json(
+      { error: "Deze sessie is al gestart of beëindigd" },
+      { status: 409 }
+    );
+  }
+
+  const playerRef = await sessionRef.collection("players").add({
+    name: name.trim(),
+    score: 0,
+    joined_at: FieldValue.serverTimestamp(),
+  });
+
+  return NextResponse.json({
+    player_id: playerRef.id,
+    session_id: code.toUpperCase(),
+  });
+}
