@@ -8,7 +8,6 @@ import {
   onSnapshot,
   query,
   where,
-  orderBy,
   getDocs,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -62,7 +61,7 @@ export default function HostControlPage() {
       if (!user) {
         router.push("/admin/login");
       } else {
-        tokenRef.current = await user.getIdToken();
+        tokenRef.current = await user.getIdToken(true);
       }
     });
     return unsub;
@@ -95,17 +94,15 @@ export default function HostControlPage() {
   useEffect(() => {
     if (!session?.quiz_id) return;
 
-    const q = query(
+    const unsub = onSnapshot(
       collection(db, "quizzes", session.quiz_id, "questions"),
-      orderBy("round", "asc"),
-      orderBy("order", "asc")
+      (snap) => {
+        const docs = snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) }))
+          .sort((a, b) => a.round !== b.round ? a.round - b.round : a.order - b.order);
+        setQuestions(docs);
+      }
     );
-
-    const unsub = onSnapshot(q, (snap) => {
-      setQuestions(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) }))
-      );
-    });
     return unsub;
   }, [session?.quiz_id]);
 
@@ -153,7 +150,7 @@ export default function HostControlPage() {
       router.push("/admin/login");
       return;
     }
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true);
 
     const res = await fetch(`/api/host/sessie/${code}`, {
       method: "PATCH",

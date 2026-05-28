@@ -19,7 +19,7 @@ export default function CreateSessionButton() {
       return;
     }
 
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true); // force refresh om custom claims op te halen
 
     const res = await fetch("/api/host/sessie", {
       method: "POST",

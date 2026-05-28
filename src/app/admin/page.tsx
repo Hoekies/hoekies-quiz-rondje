@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 interface SessionDoc {
@@ -97,6 +97,11 @@ export default function AdminDashboard() {
     }
 
     router.push(`/admin/sessie/${json.code}`);
+  }
+
+  async function handleDeleteSession(code: string) {
+    if (!confirm(`Sessie ${code} verwijderen?`)) return;
+    await deleteDoc(doc(db, "sessions", code));
   }
 
   async function handleSignOut() {
@@ -194,13 +199,22 @@ export default function AdminDashboard() {
                     {statusLabel[session.status] ?? session.status}
                   </span>
                 </div>
-                <div className="text-right">
-                  <span className="text-white/70 text-sm">
-                    {playerCounts[session.code] ?? 0} spelers
-                  </span>
-                  <div className="text-white/30 text-xs mt-0.5">
-                    {session.state}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-white/70 text-sm">
+                      {playerCounts[session.code] ?? 0} spelers
+                    </span>
+                    <div className="text-white/30 text-xs mt-0.5">
+                      {session.state}
+                    </div>
                   </div>
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleDeleteSession(session.code); }}
+                    className="text-red-400 hover:text-red-300 text-xl font-bold px-2 py-1 rounded transition-colors"
+                    title="Sessie verwijderen"
+                  >
+                    ✕
+                  </button>
                 </div>
               </a>
             ))

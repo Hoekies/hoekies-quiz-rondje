@@ -1,3 +1,4 @@
+﻿export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -8,8 +9,10 @@ async function verifyAdmin(req: NextRequest): Promise<boolean> {
   const token = authHeader.slice(7);
   try {
     const decoded = await adminAuth.verifyIdToken(token);
+    console.log("[auth] decoded claims:", JSON.stringify(decoded));
     return decoded.rol === "admin";
-  } catch {
+  } catch (err) {
+    console.error("[auth] verifyIdToken failed:", err);
     return false;
   }
 }
@@ -75,3 +78,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ code });
 }
+

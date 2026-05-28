@@ -1,3 +1,4 @@
+﻿export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -107,3 +108,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ is_correct: isCorrect, points_awarded: points });
 }
+

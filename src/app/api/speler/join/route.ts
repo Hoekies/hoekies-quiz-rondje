@@ -1,3 +1,4 @@
+﻿export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -40,3 +41,4 @@ export async function POST(req: NextRequest) {
     session_id: code.toUpperCase(),
   });
 }
+
