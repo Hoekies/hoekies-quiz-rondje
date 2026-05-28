@@ -274,13 +274,22 @@ export default function HostControlPage() {
               {session.state.replace(/_/g, " ")}
             </p>
           </div>
-          <a
-            href={`/presentatie/${code}`}
-            target="_blank"
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all"
-          >
-            Presentatie ↗
-          </a>
+          <div className="flex gap-2">
+            <a
+              href={`/qr/${code}`}
+              target="_blank"
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all"
+            >
+              QR ↗
+            </a>
+            <a
+              href={`/presentatie/${code}`}
+              target="_blank"
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all"
+            >
+              Presentatie ↗
+            </a>
+          </div>
         </div>
 
         {/* QR code in lobby */}
