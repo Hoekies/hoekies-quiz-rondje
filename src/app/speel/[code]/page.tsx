@@ -158,9 +158,9 @@ export default function SpeelPage() {
         if (selectedAnswer) {
           setStep("answered");
         } else {
-          setStep("question");
           setAnswerResult(null);
           setQuestionStart(Date.now());
+          setStep("question");
         }
         break;
       case "answer_reveal":
@@ -314,7 +314,7 @@ export default function SpeelPage() {
   }
 
   // ── QUESTION ─────────────────────────────────────────────────────────────
-  if (step === "question" && question) {
+  if (step === "question" && question && question.id === session?.current_question_id) {
     const options = question.options ?? [];
     return (
       <main
@@ -361,6 +361,15 @@ export default function SpeelPage() {
             </button>
           ))}
         </div>
+      </main>
+    );
+  }
+
+  // Vraag laadt nog (step=question maar verkeerd of geen id)
+  if (step === "question") {
+    return (
+      <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--game-gradient)" }}>
+        <p className="text-white/60 text-lg font-bold animate-pulse">Vraag laden…</p>
       </main>
     );
   }
