@@ -9,6 +9,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -98,6 +99,19 @@ export default function SpeelPage() {
   const [ranks, setRanks] = useState<PlayerRank[]>([]);
   const [countdown, setCountdown] = useState(10);
   const answersMapRef = useRef<Record<string, { answer: string; is_correct: boolean; points_awarded: number }>>({});
+  const [themeLogo, setThemeLogo] = useState<string | null>(null);
+  const [themeBg, setThemeBg] = useState<string | null>(null);
+
+  // Laad thema-instellingen
+  useEffect(() => {
+    getDoc(doc(db, "settings", "theme")).then((snap) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        if (d.logo_url) setThemeLogo(d.logo_url);
+        if (d.background_url) setThemeBg(d.background_url);
+      }
+    });
+  }, []);
 
   // Restore playerId from sessionStorage on first mount (iPhone refresh fix)
   useEffect(() => {
@@ -618,9 +632,14 @@ export default function SpeelPage() {
   if (step === "leaderboard") {
     const medals = ["leaderboard-row--gold", "leaderboard-row--silver", "leaderboard-row--bronze"];
     const emoji = ["🥇", "🥈", "🥉"];
+    const lbBgStyle = themeBg
+      ? { backgroundImage: `linear-gradient(rgba(6,14,26,0.72), rgba(6,14,26,0.80)), url(${themeBg})`, backgroundSize: "cover", backgroundPosition: "center" }
+      : {};
     return (
-      <div className="speler-shell">
+      <div className="speler-shell" style={lbBgStyle}>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(56px, 14vw, 80px)", height: "clamp(56px, 14vw, 80px)", objectFit: "contain" }} />
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
             {ranks.map((p, i) => (

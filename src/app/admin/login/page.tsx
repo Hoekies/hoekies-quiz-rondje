@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+
+interface ThemeSettings {
+  logo_url?: string;
+  background_url?: string;
+}
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState<ThemeSettings>({});
   const router = useRouter();
+
+  useEffect(() => {
+    getDoc(doc(db, "settings", "theme")).then((snap) => {
+      if (snap.exists()) setTheme(snap.data() as ThemeSettings);
+    });
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -25,11 +38,24 @@ export default function AdminLoginPage() {
     }
   }
 
+  const bgStyle = theme.background_url
+    ? {
+        backgroundImage: `linear-gradient(rgba(6,14,26,0.75), rgba(6,14,26,0.85)), url(${theme.background_url})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : { background: "var(--game-gradient)" };
+
   return (
-    <main className="h-dvh flex flex-col items-center justify-center px-5 overflow-hidden" style={{ background: "var(--game-gradient)" }}>
+    <main className="h-dvh flex flex-col items-center justify-center px-5 overflow-hidden" style={bgStyle}>
       <div style={{ width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", alignItems: "center", gap: "28px" }}>
 
-        <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxWidth: "280px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={theme.logo_url ?? "/logo-vierkant.png"}
+          alt="Hoekies Quiz Rondje"
+          style={{ width: "120px", height: "120px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }}
+        />
 
         <div className="glass-card" style={{ width: "100%", padding: "32px 28px" }}>
           <h1 style={{ color: "var(--ink)", fontWeight: 700, fontSize: "1.3rem", marginBottom: "20px", textAlign: "center" }}>
