@@ -21,8 +21,8 @@ export default function AdminLayout({ children, title }: Props) {
     { href: "/admin", label: "Dashboard", icon: "🎮" },
     { href: "/admin/quiz", label: "Vragen beheren", icon: "📝" },
     { href: "/admin/thema", label: "Thema", icon: "🎨" },
-    { href: "/admin/instellingen", label: "Instellingen", icon: "⚙️" },
-    { href: "/admin/handleiding", label: "Handleiding", icon: "📖" },
+    { href: "/admin/instellingen", label: "WhatsApp", icon: "💬" },
+    { href: "/admin/handleiding", label: "Hulp", icon: "📖" },
   ];
 
   return (

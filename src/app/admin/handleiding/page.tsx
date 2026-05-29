@@ -69,7 +69,7 @@ export default function HandleidingPage() {
   const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
 
   return (
-    <AdminLayout title="Handleiding">
+    <AdminLayout title="Hulp">
       <div style={{ display: "flex", flexDirection: "column", gap: "32px", maxWidth: "680px" }}>
 
         <p style={{ color: "var(--text)", fontSize: "1rem", lineHeight: 1.6 }}>

@@ -51,7 +51,7 @@ export default function InstellingenPage() {
   const F = { display: "flex", flexDirection: "column" as const, gap: "10px" };
 
   return (
-    <AdminLayout title="Instellingen">
+    <AdminLayout title="WhatsApp">
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "560px" }}>
         {success && <div style={{ color: "var(--green)", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "10px", padding: "10px 16px", fontSize: "0.9rem" }}>{success}</div>}
         {error && <div className="melding melding-fout" style={{ fontSize: "0.82rem", lineHeight: 1.5 }}>{error}</div>}
