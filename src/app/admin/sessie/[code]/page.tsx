@@ -14,7 +14,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import type { SessionState } from "@/types/database";
-import AdminLayout from "../AdminLayout";
+import AdminLayout from "../../AdminLayout";
 
 interface SessionDoc {
   quiz_id: string;
