@@ -72,7 +72,12 @@ export default function SpeelPage() {
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
 
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("quiz_player_id");
+    }
+    return null;
+  });
   const [session, setSession] = useState<SessionDoc | null>(null);
   const [questionsMap, setQuestionsMap] = useState<Record<string, QuestionDoc>>({});
   const [questionStart, setQuestionStart] = useState<number>(0);
@@ -86,14 +91,6 @@ export default function SpeelPage() {
   const [myScore, setMyScore] = useState(0);
   const [ranks, setRanks] = useState<PlayerRank[]>([]);
   const [countdown, setCountdown] = useState(10);
-
-  // Restore player_id from sessionStorage
-  useEffect(() => {
-    const stored = sessionStorage.getItem("quiz_player_id");
-    if (stored) {
-      setPlayerId(stored);
-    }
-  }, []);
 
 
   // Subscribe to session
