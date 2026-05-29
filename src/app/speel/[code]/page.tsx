@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import {
   doc,
@@ -89,33 +89,46 @@ export default function SpeelPage() {
   }, []);
 
 
-  // Subscribe to session
+  // Subscribe to session + vraag in één callback — geen React-cyclus vertraging
+  const questionSubRef = useRef<(() => void) | null>(null);
+  const lastQuestionIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
-      setSession(snap.data() as SessionDoc);
-    });
-    return unsub;
-  }, [code]);
+      const data = snap.data() as SessionDoc;
+      setSession(data);
 
-  // Subscribe to current question (parallel with session, no sequential round-trip)
-  useEffect(() => {
-    if (!session?.current_question_id || !session?.quiz_id) {
-      setQuestion(null);
-      return;
-    }
-    const unsub = onSnapshot(
-      doc(db, "quizzes", session.quiz_id, "questions", session.current_question_id),
-      (snap) => {
-        if (snap.exists()) {
-          setQuestion({ id: snap.id, ...(snap.data() as Omit<QuestionDoc, "id">) });
+      const qId = data.current_question_id;
+      const qzId = data.quiz_id;
+
+      if (qId !== lastQuestionIdRef.current) {
+        lastQuestionIdRef.current = qId;
+        questionSubRef.current?.();
+        questionSubRef.current = null;
+
+        if (qId && qzId) {
+          questionSubRef.current = onSnapshot(
+            doc(db, "quizzes", qzId, "questions", qId),
+            (qSnap) => {
+              if (qSnap.exists()) {
+                setQuestion({ id: qSnap.id, ...(qSnap.data() as Omit<QuestionDoc, "id">) });
+              } else {
+                setQuestion(null);
+              }
+            }
+          );
         } else {
           setQuestion(null);
         }
       }
-    );
-    return unsub;
-  }, [session?.current_question_id, session?.quiz_id]);
+    });
+
+    return () => {
+      unsub();
+      questionSubRef.current?.();
+    };
+  }, [code]);
 
   // Subscribe to players — keeps playerCount, ranks and myScore always fresh
   useEffect(() => {

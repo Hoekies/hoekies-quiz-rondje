@@ -189,14 +189,10 @@ export default function HostControlPage() {
     if (!session) return;
     switch (session.state) {
       case "lobby":
-        patchSession("ronde_intro", {
-          current_question_id: questionOrder[0] ?? null,
-          question_index: 0,
-        });
-        break;
       case "ronde_intro":
         patchSession("question_open", {
-          current_question_id: currentQuestion?.id ?? questionOrder[0] ?? null,
+          current_question_id: questionOrder[0] ?? null,
+          question_index: 0,
         });
         break;
       case "question_open":
@@ -236,7 +232,7 @@ export default function HostControlPage() {
 
   const actionLabel: Record<string, string> = {
     lobby: "🚀 Start quiz",
-    ronde_intro: "▶ Toon vraag",
+    ronde_intro: "🚀 Start quiz",
     question_open: "🔒 Sluit antwoorden",
     answer_reveal: "📊 Leaderboard",
     leaderboard: nextLabel,
