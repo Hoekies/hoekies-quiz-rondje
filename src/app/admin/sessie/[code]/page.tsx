@@ -61,7 +61,7 @@ export default function HostControlPage() {
       if (!user) {
         router.push("/admin/login");
       } else {
-        tokenRef.current = await user.getIdToken(true);
+        tokenRef.current = await user.getIdToken();
       }
     });
     return unsub;
@@ -150,7 +150,7 @@ export default function HostControlPage() {
       router.push("/admin/login");
       return;
     }
-    const token = await user.getIdToken(true);
+    const token = await user.getIdToken();
 
     const res = await fetch(`/api/host/sessie/${code}`, {
       method: "PATCH",
