@@ -8,10 +8,13 @@ export async function POST(req: NextRequest) {
   const { code, name } = body as { code: string; name: string };
 
   if (!code || !name || name.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Code en naam zijn verplicht" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Code en naam zijn verplicht" }, { status: 400 });
+  }
+  if (typeof code !== "string" || typeof name !== "string") {
+    return NextResponse.json({ error: "Ongeldige invoer" }, { status: 400 });
+  }
+  if (name.trim().length > 24) {
+    return NextResponse.json({ error: "Naam mag maximaal 24 tekens zijn" }, { status: 400 });
   }
 
   const sessionRef = adminDb.collection("sessions").doc(code.toUpperCase());

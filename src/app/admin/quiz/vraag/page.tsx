@@ -34,6 +34,7 @@ interface QuestionForm {
   img_opt_d: string;
   // video / audio / image / guess_the_song
   media_url: string;
+  guess_duration: 5 | 10;
   // match
   left_1: string;
   left_2: string;
@@ -68,6 +69,7 @@ const DEFAULT_FORM: QuestionForm = {
   img_opt_c: "",
   img_opt_d: "",
   media_url: "",
+  guess_duration: 5,
   left_1: "",
   left_2: "",
   left_3: "",
@@ -143,6 +145,7 @@ function VraagForm() {
           img_opt_c: imgOpts[2] ?? "",
           img_opt_d: imgOpts[3] ?? "",
           media_url: d.media_url ?? "",
+          guess_duration: (d.guess_duration === 10 ? 10 : 5) as 5 | 10,
           left_1: (d.left_items ?? [])[0] ?? "",
           left_2: (d.left_items ?? [])[1] ?? "",
           left_3: (d.left_items ?? [])[2] ?? "",
@@ -208,6 +211,7 @@ function VraagForm() {
     };
 
     if (form.type === "blur_reveal") payload.blur_steps = form.blur_steps;
+    if (form.type === "guess_the_song") payload.guess_duration = form.guess_duration;
     if (form.type === "estimate") {
       payload.estimate_min = form.estimate_min;
       payload.estimate_max = form.estimate_max;
@@ -281,6 +285,23 @@ function VraagForm() {
               </label>
               <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)}
                 placeholder="https://..." className="glass-input" />
+            </div>
+          )}
+
+          {/* Afspeelduur voor guess_the_song */}
+          {form.type === "guess_the_song" && (
+            <div style={F}>
+              <label style={L}>Afspeelduur</label>
+              <div style={{ display: "flex", gap: "12px" }}>
+                {([5, 10] as const).map((sec) => (
+                  <label key={sec} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                    <input type="radio" name="guess_duration" value={sec} checked={form.guess_duration === sec}
+                      onChange={() => set("guess_duration", sec)}
+                      style={{ accentColor: "var(--cyan)", width: "16px", height: "16px" }} />
+                    <span style={{ color: form.guess_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{sec} seconden</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 

@@ -51,6 +51,7 @@ export interface Question {
   image_options?: string[];
   left_items?: string[];
   right_items?: string[];
+  guess_duration?: 5 | 10;
 }
 
 export interface Session {

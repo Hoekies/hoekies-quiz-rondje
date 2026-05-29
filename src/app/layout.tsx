@@ -29,7 +29,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl" className={`${spaceGrotesk.variable} h-full`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <footer style={{
+          position: "fixed", bottom: "6px", left: 0, right: 0,
+          textAlign: "center", fontSize: "10px", color: "rgba(255,255,255,0.18)",
+          pointerEvents: "none", userSelect: "none", zIndex: 0,
+          letterSpacing: "0.06em",
+        }}>
+          Design Hoekies 2026
+        </footer>
+      </body>
     </html>
   );
 }

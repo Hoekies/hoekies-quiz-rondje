@@ -46,7 +46,8 @@ async function compressImage(file: File, maxSize: number, quality = 0.82): Promi
 export default function InstellingenPage() {
   const router = useRouter();
   const [theme, setTheme] = useState<ThemeSettings>({});
-  const [saving, setSaving] = useState<"logo" | "bg" | null>(null);
+  const [saving, setSaving] = useState<"logo" | "bg" | "wa" | null>(null);
+  const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -68,8 +69,12 @@ export default function InstellingenPage() {
 
   useEffect(() => {
     (async () => {
-      const snap = await getDoc(doc(db, "settings", "theme"));
-      if (snap.exists()) setTheme(snap.data() as ThemeSettings);
+      const [themeSnap, waSnap] = await Promise.all([
+        getDoc(doc(db, "settings", "theme")),
+        getDoc(doc(db, "settings", "whatsapp")),
+      ]);
+      if (themeSnap.exists()) setTheme(themeSnap.data() as ThemeSettings);
+      if (waSnap.exists() && waSnap.data().template) setWaTemplate(waSnap.data().template as string);
     })();
   }, []);
 
@@ -165,6 +170,19 @@ export default function InstellingenPage() {
       setTimeout(() => setSuccess(""), 3000);
     } catch (e) {
       setError("Upload mislukt: " + (e as Error).message);
+    }
+    setSaving(null);
+  }
+
+  async function saveWaTemplate() {
+    setSaving("wa");
+    setError("");
+    try {
+      await setDoc(doc(db, "settings", "whatsapp"), { template: waTemplate });
+      setSuccess("WhatsApp-tekst opgeslagen!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (e) {
+      setError("Fout: " + (e as Error).message);
     }
     setSaving(null);
   }
@@ -295,6 +313,26 @@ export default function InstellingenPage() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* WhatsApp tekst */}
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", marginBottom: "16px" }}>WhatsApp uitnodigingstekst</h2>
+          <div style={{ ...F, gap: "12px" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
+              Gebruik <code style={{ color: "var(--cyan)", background: "rgba(0,217,255,0.1)", padding: "1px 6px", borderRadius: "4px" }}>{"{code}"}</code> als plaatshouder voor de sessiecode en de link. De URL in het bericht zorgt voor een link-preview in WhatsApp.
+            </p>
+            <textarea
+              value={waTemplate}
+              onChange={(e) => setWaTemplate(e.target.value)}
+              rows={5}
+              className="glass-input form-textarea"
+              style={{ fontSize: "0.9rem", resize: "vertical" }}
+            />
+            <button onClick={saveWaTemplate} disabled={saving === "wa"} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>
+              {saving === "wa" ? "Opslaan..." : "Tekst opslaan"}
+            </button>
           </div>
         </div>
       </div>

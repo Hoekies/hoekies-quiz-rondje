@@ -18,6 +18,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ontbrekende velden" }, { status: 400 });
   }
 
+  // Validate input formats to prevent injection
+  if (typeof player_id !== "string" || typeof session_id !== "string" ||
+      typeof question_id !== "string" || typeof answer !== "string") {
+    return NextResponse.json({ error: "Ongeldige invoer" }, { status: 400 });
+  }
+  if (player_id.length > 128 || session_id.length > 20 || question_id.length > 128) {
+    return NextResponse.json({ error: "Ongeldige invoer" }, { status: 400 });
+  }
+
   // Check session state
   const sessionSnap = await adminDb.collection("sessions").doc(session_id).get();
   if (!sessionSnap.exists) {
@@ -27,6 +36,17 @@ export async function POST(req: NextRequest) {
 
   if (sessionData.state !== "question_open") {
     return NextResponse.json({ error: "Vraag staat niet open" }, { status: 409 });
+  }
+
+  // Verify player exists in this session (prevents submitting answers for other players)
+  const playerSnap = await adminDb
+    .collection("sessions")
+    .doc(session_id)
+    .collection("players")
+    .doc(player_id)
+    .get();
+  if (!playerSnap.exists) {
+    return NextResponse.json({ error: "Speler niet gevonden in deze sessie" }, { status: 403 });
   }
 
   // Check duplicate answer: answerId = "{playerId}_{questionId}"

@@ -74,6 +74,7 @@ interface QuestionDoc {
   image_options?: string[];
   left_items?: string[];
   right_items?: string[];
+  guess_duration?: 5 | 10;
 }
 
 export default function SpeelPage() {
@@ -338,7 +339,8 @@ export default function SpeelPage() {
     if (!audio) return;
     audio.currentTime = 0;
     audio.play().catch(() => {});
-    const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, 5000);
+    const durationMs = (question.guess_duration ?? 5) * 1000;
+    const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, durationMs);
     return () => { clearTimeout(t); audio.pause(); };
   }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -536,7 +538,7 @@ export default function SpeelPage() {
               <audio id="guess-audio" src={question.media_url} preload="auto" style={{ display: "none" }} />
               <div className="glass-card" style={{ padding: "12px 20px", textAlign: "center" }}>
                 {audioPlayed
-                  ? <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>🎵 5 seconden gespeeld — raad het lied!</p>
+                  ? <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>🎵 {question.guess_duration ?? 5} seconden gespeeld — raad het lied!</p>
                   : <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>🎵 Luister...</p>
                 }
               </div>
