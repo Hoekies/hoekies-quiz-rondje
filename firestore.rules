@@ -34,5 +34,11 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
     }
+
+    // Instellingen: iedereen leest (thema, logo), alleen admin schrijft
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
