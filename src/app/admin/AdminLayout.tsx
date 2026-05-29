@@ -29,7 +29,7 @@ export default function AdminLayout({ children, title }: Props) {
     <div className="admin-shell">
       {/* Mobile topbar */}
       <div className="admin-mobile-topbar">
-        <img src="/logo-vierkant.png" alt="logo" style={{ height: "36px", objectFit: "contain" }} />
+        <img src="/logo.png" alt="logo" style={{ height: "36px", objectFit: "contain" }} />
         <button className="admin-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">
           <span /><span /><span />
         </button>

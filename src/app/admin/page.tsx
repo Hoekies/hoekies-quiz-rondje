@@ -16,6 +16,8 @@ interface SessionDoc {
   is_active?: boolean;
 }
 
+interface PlayerDoc { id: string; name: string; score: number; }
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionDoc[]>([]);
@@ -25,10 +27,14 @@ export default function AdminDashboard() {
   const [createError, setCreateError] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState("");
   const [globalLoading, setGlobalLoading] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedMsg, setSeedMsg] = useState("");
+  const [leaderboard, setLeaderboard] = useState<PlayerDoc[]>([]);
+  const [lbCode, setLbCode] = useState<string | null>(null);
   const qrGenerated = useRef<Set<string>>(new Set());
+  const lbUnsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -50,9 +56,29 @@ export default function AdminDashboard() {
         counts[s.code] = ps.size;
       }));
       setPlayerCounts(counts);
+
+      // Subscribe leaderboard van actieve sessie
+      const active = docs.find((s) => s.is_active && s.status !== "finished");
+      if (active && active.code !== lbCode) {
+        lbUnsubRef.current?.();
+        setLbCode(active.code);
+        lbUnsubRef.current = onSnapshot(
+          collection(db, "sessions", active.code, "players"),
+          (psnap) => {
+            const ps: PlayerDoc[] = psnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PlayerDoc, "id">) }));
+            ps.sort((a, b) => b.score - a.score);
+            setLeaderboard(ps.slice(0, 5));
+          }
+        );
+      } else if (!active) {
+        lbUnsubRef.current?.();
+        lbUnsubRef.current = null;
+        setLbCode(null);
+        setLeaderboard([]);
+      }
     });
-    return unsub;
-  }, [authChecked]);
+    return () => { unsub(); lbUnsubRef.current?.(); };
+  }, [authChecked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     sessions.forEach(async (s) => {
@@ -66,8 +92,7 @@ export default function AdminDashboard() {
   }, [sessions]);
 
   async function handleCreateSession() {
-    setCreating(true);
-    setCreateError("");
+    setCreating(true); setCreateError("");
     const user = auth.currentUser;
     if (!user) { router.push("/admin/login"); return; }
     const token = await user.getIdToken();
@@ -77,7 +102,7 @@ export default function AdminDashboard() {
       body: JSON.stringify({ concept: true }),
     });
     const json = await res.json();
-    if (!res.ok) { setCreateError(json.error ?? "Er ging iets fout"); setCreating(false); return; }
+    if (!res.ok) { setCreateError(json.error ?? "Er ging iets fout"); }
     setCreating(false);
   }
 
@@ -87,6 +112,15 @@ export default function AdminDashboard() {
   }
 
   async function handleToggleActive(session: SessionDoc) {
+    setToggleError("");
+    // Als we activeren, controleer of er al een andere actieve sessie is
+    if (!session.is_active) {
+      const alreadyActive = sessions.find((s) => s.code !== session.code && s.is_active);
+      if (alreadyActive) {
+        setToggleError(`Sessie ${alreadyActive.code} is al actief. Zet die eerst inactief voordat je een andere activeert.`);
+        return;
+      }
+    }
     setToggling(session.code);
     await updateDoc(doc(db, "sessions", session.code), { is_active: !session.is_active });
     setToggling(null);
@@ -105,8 +139,7 @@ export default function AdminDashboard() {
     if (!confirm("Alle actieve sessies stoppen (eindscherm)?")) return;
     setGlobalLoading(true);
     const batch = writeBatch(db);
-    sessions
-      .filter((s) => s.status === "active")
+    sessions.filter((s) => s.status === "active")
       .forEach((s) => batch.update(doc(db, "sessions", s.code), { state: "endscreen", status: "finished" }));
     await batch.commit();
     setGlobalLoading(false);
@@ -115,8 +148,7 @@ export default function AdminDashboard() {
   async function handleSeedStandaard() {
     const user = auth.currentUser;
     if (!user) return;
-    setSeedLoading(true);
-    setSeedMsg("");
+    setSeedLoading(true); setSeedMsg("");
     const token = await user.getIdToken();
     const res = await fetch("/api/host/vragen/seed-standaard", {
       method: "POST",
@@ -129,22 +161,53 @@ export default function AdminDashboard() {
 
   const statusLabel: Record<string, string> = { lobby: "Wacht op spelers", active: "Bezig", finished: "Afgerond" };
   const statusColor: Record<string, string> = { lobby: "var(--cyan)", active: "var(--green)", finished: "var(--muted)" };
+  const medals = ["🥇", "🥈", "🥉", "4.", "5."];
 
   if (!authChecked) return null;
 
   const activeSessions = sessions.filter((s) => s.status === "active");
+  const activeSession = sessions.find((s) => s.is_active && s.status !== "finished");
 
   return (
     <AdminLayout title="Dashboard">
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "700px" }}>
 
-        {/* Acties bovenste rij */}
+        {/* Nieuwe sessie */}
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
             {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
           </button>
           {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
         </div>
+
+        {/* Leaderboard actieve sessie */}
+        {activeSession && leaderboard.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Live stand — {activeSession.code}
+              </p>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pulse 1.5s infinite" }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {leaderboard.map((p, i) => (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: i === 0 ? "rgba(255,217,59,0.08)" : "rgba(255,255,255,0.04)", borderRadius: "10px", border: `1px solid ${i === 0 ? "rgba(255,217,59,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                  <span style={{ fontSize: "1rem", width: "24px", textAlign: "center" }}>{medals[i]}</span>
+                  <span style={{ flex: 1, color: "#fff", fontWeight: 600, fontSize: "0.9rem" }}>{p.name}</span>
+                  <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "0.95rem" }}>{p.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Toggle fout melding */}
+        {toggleError && (
+          <div style={{ color: "var(--red)", background: "rgba(255,59,92,0.1)", border: "1px solid rgba(255,59,92,0.3)", borderRadius: "10px", padding: "10px 16px", fontSize: "0.85rem" }}>
+            ⚠ {toggleError}
+            <button onClick={() => setToggleError("")} style={{ marginLeft: "10px", background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
+          </div>
+        )}
 
         {/* Globale sessie-acties */}
         {sessions.length > 0 && (
@@ -174,12 +237,8 @@ export default function AdminDashboard() {
           ) : (
             sessions.map((session) => (
               <div key={session.code} className="card" style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                {/* Hoofd-rij */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "4px 0" }}>
-                  {/* Status-dot */}
                   <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[session.status] ?? "var(--muted)", flexShrink: 0 }} />
-
-                  {/* Code + status */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1.1rem", letterSpacing: "0.1em" }}>{session.code}</span>
                     <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "10px" }}>
@@ -189,51 +248,18 @@ export default function AdminDashboard() {
 
                   {/* Gekoppelde knoppengroep */}
                   <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
-                    {/* Segment 1: Actief toggle */}
-                    <button
-                      onClick={() => !toggling && handleToggleActive(session)}
-                      disabled={!!toggling}
-                      title={session.is_active ? "Zet inactief" : "Zet actief"}
-                      style={{
-                        display: "flex", alignItems: "center", gap: "6px",
-                        padding: "7px 12px",
-                        background: session.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)",
-                        border: "none", borderRight: "1px solid rgba(255,255,255,0.14)",
-                        color: session.is_active ? "var(--cyan)" : "var(--muted)",
-                        fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer",
-                        transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap",
-                      }}>
-                      {/* Mini toggle dot */}
+                    <button onClick={() => handleToggleActive(session)} disabled={!!toggling} title={session.is_active ? "Zet inactief" : "Zet actief"}
+                      style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: session.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: session.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
                       <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: session.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
                         <div style={{ position: "absolute", top: "2px", left: session.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
                       </div>
                       {session.is_active ? "Actief" : "Inactief"}
                     </button>
-
-                    {/* Segment 2: Beheren */}
-                    <a href={`/admin/sessie/${session.code}`}
-                      style={{
-                        display: "flex", alignItems: "center",
-                        padding: "7px 14px",
-                        background: "rgba(255,255,255,0.05)",
-                        borderRight: "1px solid rgba(255,255,255,0.14)",
-                        color: "var(--cyan)", fontSize: "0.78rem", fontWeight: 700,
-                        textDecoration: "none", whiteSpace: "nowrap",
-                      }}>
+                    <a href={`/admin/sessie/${session.code}`} style={{ display: "flex", alignItems: "center", padding: "7px 14px", background: "rgba(255,255,255,0.05)", borderRight: "1px solid rgba(255,255,255,0.14)", color: "var(--cyan)", fontSize: "0.78rem", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
                       Beheren →
                     </a>
-
-                    {/* Segment 3: Verwijderen */}
-                    <button
-                      onClick={() => handleDeleteSession(session.code)}
-                      title="Verwijderen"
-                      style={{
-                        display: "flex", alignItems: "center",
-                        padding: "7px 11px",
-                        background: "rgba(255,255,255,0.05)",
-                        border: "none", color: "var(--red)",
-                        fontSize: "0.9rem", cursor: "pointer", opacity: 0.7,
-                      }}>
+                    <button onClick={() => handleDeleteSession(session.code)} title="Verwijderen"
+                      style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
                       ✕
                     </button>
                   </div>
