@@ -27,6 +27,7 @@ interface SessionDoc {
   question_order?: string[];
   started_at: unknown;
   resume_at?: { seconds: number } | null;
+  force_end?: boolean;
 }
 
 interface QuestionDoc {
@@ -223,7 +224,7 @@ export default function HostControlPage() {
         patchSession("leaderboard");
         break;
       case "leaderboard":
-        if (isLastQuestion) {
+        if (isLastQuestion || session?.force_end) {
           patchSession("endscreen");
         } else if (nextQuestion?.is_double_points) {
           patchSession("finale", {
@@ -252,6 +253,11 @@ export default function HostControlPage() {
 
   function handlePause() {
     if (session?.state === "question_open") patchSession("paused");
+  }
+
+  async function handleToggleForceEnd() {
+    if (!session) return;
+    await updateDoc(doc(db, "sessions", code), { force_end: !session.force_end });
   }
 
   const nextLabel = isLastQuestion
@@ -363,6 +369,21 @@ export default function HostControlPage() {
         {session.state === "question_open" && (
           <button onClick={handlePause} disabled={actionLoading} className="btn btn-ghost" style={{ fontWeight: 700 }}>
             🍺 Pauzeer
+          </button>
+        )}
+
+        {/* Stop na deze vraag — beschikbaar tijdens actieve sessie, niet op eindscherm */}
+        {session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming" && (
+          <button
+            onClick={handleToggleForceEnd}
+            style={{
+              fontWeight: 700, fontSize: "0.9rem", padding: "10px 16px", borderRadius: "10px",
+              border: `2px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
+              background: session.force_end ? "rgba(255,107,53,0.15)" : "transparent",
+              color: session.force_end ? "#ff6b35" : "var(--muted)", cursor: "pointer",
+            }}
+          >
+            {session.force_end ? "✓ Stopt na deze vraag" : "Stop na deze vraag"}
           </button>
         )}
 

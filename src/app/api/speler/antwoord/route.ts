@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
   const isCorrect = answer === question.correct_answer;
   let points = 0;
 
+  let matchCorrect = false;
   if (question.type === "estimate") {
     const correct = parseFloat(question.correct_answer);
     const given = parseFloat(answer);
@@ -79,6 +80,19 @@ export async function POST(req: NextRequest) {
     const ratio = Math.max(0, 1 - deviation / (range / 2));
     points = Math.round(Math.floor(question.base_points / 10) * ratio);
     if (question.is_double_points) points *= 2;
+  } else if (question.type === "match") {
+    try {
+      const userMapping = JSON.parse(answer) as Record<string, number>;
+      const correctMapping = JSON.parse(question.correct_answer) as Record<string, number>;
+      matchCorrect = Object.keys(correctMapping).every(
+        (k) => String(userMapping[k]) === String(correctMapping[k])
+      );
+    } catch { matchCorrect = false; }
+    if (matchCorrect) {
+      const ratio = Math.max(0, 1 - response_time_ms / (question.time_limit_seconds * 1000));
+      points = Math.floor(question.base_points / 10) + Math.floor(50 * ratio);
+      if (question.is_double_points) points *= 2;
+    }
   } else if (isCorrect) {
     const ratio = Math.max(
       0,
@@ -91,7 +105,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Write answer doc
-  const isCorrectForRecord = question.type === "estimate" ? points > 0 : isCorrect;
+  const isCorrectForRecord = question.type === "estimate" ? points > 0 : question.type === "match" ? matchCorrect : isCorrect;
 
   await adminDb
     .collection("sessions")

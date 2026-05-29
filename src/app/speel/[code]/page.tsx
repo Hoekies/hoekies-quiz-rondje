@@ -72,6 +72,8 @@ interface QuestionDoc {
   estimate_max?: number;
   estimate_unit?: string;
   image_options?: string[];
+  left_items?: string[];
+  right_items?: string[];
 }
 
 export default function SpeelPage() {
@@ -93,6 +95,9 @@ export default function SpeelPage() {
   const [blurLevel, setBlurLevel] = useState(20);
   const [estimateValue, setEstimateValue] = useState(0);
   const [audioPlayed, setAudioPlayed] = useState(false);
+  const [matchSelections, setMatchSelections] = useState<Record<number, number>>({});
+  const [activeLeft, setActiveLeft] = useState<number | null>(null);
+  const [matchRightOrder, setMatchRightOrder] = useState<number[]>([]);
 
   const [playerCount, setPlayerCount] = useState(0);
   const [myScore, setMyScore] = useState(0);
@@ -328,6 +333,16 @@ export default function SpeelPage() {
     if (question?.type !== "estimate") return;
     const mid = Math.round(((question.estimate_min ?? 0) + (question.estimate_max ?? 100)) / 2);
     setEstimateValue(mid);
+  }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Match: reset selecties en shuffle rechter items bij nieuwe vraag
+  useEffect(() => {
+    setMatchSelections({});
+    setActiveLeft(null);
+    if (question?.right_items) {
+      const shuffled = [...question.right_items.keys()].sort(() => Math.random() - 0.5);
+      setMatchRightOrder(shuffled);
+    }
   }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guess the song: automatisch afspelen, stoppen na 5 seconden
@@ -570,6 +585,80 @@ export default function SpeelPage() {
               </button>
             </div>
           )}
+
+          {/* Match koppelen */}
+          {question.type === "match" && question.left_items && question.right_items && (() => {
+            const MATCH_COLORS = ["var(--cyan)", "var(--gold)", "#ff6bcd"];
+            const leftItems = question.left_items!;
+            const rightItems = question.right_items!;
+            const allMatched = leftItems.length > 0 && Object.keys(matchSelections).length === leftItems.length;
+            const orderedRight = matchRightOrder.length === rightItems.length ? matchRightOrder : [...rightItems.keys()];
+            return (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", padding: "0 4px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {leftItems.map((item, i) => {
+                      const color = MATCH_COLORS[i] ?? "#fff";
+                      const isActive = activeLeft === i;
+                      const isMatched = matchSelections[i] !== undefined;
+                      return (
+                        <button key={i}
+                          onClick={() => !selectedAnswer && setActiveLeft(isActive ? null : i)}
+                          style={{
+                            padding: "12px 10px", borderRadius: "10px",
+                            border: `2px solid ${isActive || isMatched ? color : "rgba(255,255,255,0.15)"}`,
+                            background: isActive ? `${color}22` : isMatched ? `${color}15` : "rgba(255,255,255,0.05)",
+                            color: "#fff", fontWeight: 700, fontSize: "clamp(0.85rem, 3vw, 1rem)",
+                            cursor: selectedAnswer ? "default" : "pointer", textAlign: "left",
+                            display: "flex", alignItems: "center", gap: "8px",
+                          }}>
+                          <span style={{ color, fontWeight: 900 }}>{["A","B","C"][i]}</span>
+                          {item}
+                          {isMatched && <span style={{ marginLeft: "auto", color, fontSize: "0.72rem" }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {orderedRight.map((ri) => {
+                      const matchedByEntry = Object.entries(matchSelections).find(([, v]) => v === ri);
+                      const color = matchedByEntry ? (MATCH_COLORS[Number(matchedByEntry[0])] ?? "#fff") : null;
+                      return (
+                        <button key={ri}
+                          onClick={() => {
+                            if (selectedAnswer || activeLeft === null) return;
+                            setMatchSelections((prev) => ({ ...prev, [activeLeft]: ri }));
+                            setActiveLeft(null);
+                          }}
+                          style={{
+                            padding: "12px 10px", borderRadius: "10px",
+                            border: `2px solid ${color ?? (activeLeft !== null ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)")}`,
+                            background: color ? `${color}15` : "rgba(255,255,255,0.05)",
+                            color: "#fff", fontWeight: 600, fontSize: "clamp(0.85rem, 3vw, 1rem)",
+                            cursor: selectedAnswer ? "default" : activeLeft !== null ? "pointer" : "default",
+                          }}>
+                          {rightItems[ri]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {allMatched && !selectedAnswer && (
+                  <button onClick={() => handleAnswer(JSON.stringify(matchSelections))} disabled={submitting} className="btn-game">
+                    Bevestigen
+                  </button>
+                )}
+                {!allMatched && activeLeft === null && !selectedAnswer && (
+                  <p style={{ color: "var(--muted)", fontSize: "0.8rem", textAlign: "center" }}>Tik een item links aan om te koppelen</p>
+                )}
+                {activeLeft !== null && !selectedAnswer && (
+                  <p style={{ color: MATCH_COLORS[activeLeft] ?? "var(--cyan)", fontSize: "0.8rem", textAlign: "center", fontWeight: 700 }}>
+                    Kies rechts het antwoord voor {["A","B","C"][activeLeft]}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     );
@@ -661,19 +750,58 @@ export default function SpeelPage() {
 
   // ── ENDSCREEN ────────────────────────────────────────────────────────────
   if (step === "endscreen") {
-    const messages = ["Top gespeeld! 🎉", "Wat een quiz! 🧠", "Tot de volgende keer! 🍻"];
-    const msg = messages[myScore % messages.length];
+    const winner = ranks[0] ?? null;
+    const myRank = ranks.findIndex((p) => p.id === playerId) + 1;
+    const isWinner = myRank === 1;
+    const medals = ["leaderboard-row--gold", "leaderboard-row--silver", "leaderboard-row--bronze"];
+    const emoji = ["🥇", "🥈", "🥉"];
+    const endBgStyle = themeBg
+      ? { backgroundImage: `linear-gradient(rgba(6,14,26,0.72), rgba(6,14,26,0.85)), url(${themeBg})`, backgroundSize: "cover", backgroundPosition: "center" }
+      : {};
     return (
-      <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
-          <p style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)" }}>🏆</p>
-          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.5rem, 7vw, 2rem)", textAlign: "center" }}>Quiz voorbij!</h2>
-          <div className="glass-card" style={{ padding: "24px 40px", textAlign: "center", borderColor: "var(--glass-border)" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Eindstand</p>
-            <p style={{ fontWeight: 900, fontSize: "3rem", color: "var(--cyan)", lineHeight: 1.1 }}>{myScore}</p>
-            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>punten</p>
+      <div className="speler-shell" style={endBgStyle}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(16px, 4vh, 28px) clamp(16px, 4vw, 20px)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(48px, 12vw, 70px)", height: "clamp(48px, 12vw, 70px)", objectFit: "contain" }} />
+
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.3rem, 6vw, 1.8rem)", textAlign: "center" }}>Quiz voorbij!</h2>
+
+          {/* Winnaar highlight */}
+          {winner && (
+            <div className="glass-card" style={{ width: "100%", padding: "16px 20px", textAlign: "center", borderColor: "var(--gold)", background: "rgba(255,217,59,0.08)" }}>
+              <p style={{ color: "var(--gold)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "6px" }}>Winnaar</p>
+              <p style={{ fontSize: "clamp(2rem, 10vw, 3rem)", lineHeight: 1 }}>🏆</p>
+              <p style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5vw, 1.6rem)", marginTop: "4px" }}>{winner.name}</p>
+              <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>{winner.score} punten</p>
+            </div>
+          )}
+
+          {/* Jij bent de winnaar */}
+          {isWinner && (
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>Jij hebt gewonnen! 🎉</p>
+            </div>
+          )}
+
+          {/* Top 3 */}
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+            {ranks.map((p, i) => (
+              <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}
+                style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
+                <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}{p.id === playerId ? " (jij)" : ""}</span>
+                <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
+              </div>
+            ))}
           </div>
-          <p style={{ color: "var(--text)", fontSize: "1.1rem", textAlign: "center" }}>{msg}</p>
+
+          {/* Jouw score als niet in top 3 */}
+          {(myRank === 0 || myRank > 3) && (
+            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score</p>
+              <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem" }}>{myScore} punten</p>
+            </div>
+          )}
         </div>
       </div>
     );

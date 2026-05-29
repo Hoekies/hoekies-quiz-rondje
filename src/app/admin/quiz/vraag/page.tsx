@@ -34,6 +34,16 @@ interface QuestionForm {
   img_opt_d: string;
   // video / audio / image / guess_the_song
   media_url: string;
+  // match
+  left_1: string;
+  left_2: string;
+  left_3: string;
+  right_1: string;
+  right_2: string;
+  right_3: string;
+  match_a: string; // welk right-index hoort bij left_1 (0/1/2)
+  match_b: string;
+  match_c: string;
 }
 
 const DEFAULT_FORM: QuestionForm = {
@@ -58,6 +68,15 @@ const DEFAULT_FORM: QuestionForm = {
   img_opt_c: "",
   img_opt_d: "",
   media_url: "",
+  left_1: "",
+  left_2: "",
+  left_3: "",
+  right_1: "",
+  right_2: "",
+  right_3: "",
+  match_a: "0",
+  match_b: "1",
+  match_c: "2",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -70,6 +89,7 @@ const TYPE_LABELS: Record<string, string> = {
   video: "Video als vraag",
   estimate: "Schatting (slider)",
   guess_the_song: "Raad het lied (5 sec)",
+  match: "Koppelen (A→1, B→2, C→3)",
 };
 
 function VraagForm() {
@@ -123,6 +143,15 @@ function VraagForm() {
           img_opt_c: imgOpts[2] ?? "",
           img_opt_d: imgOpts[3] ?? "",
           media_url: d.media_url ?? "",
+          left_1: (d.left_items ?? [])[0] ?? "",
+          left_2: (d.left_items ?? [])[1] ?? "",
+          left_3: (d.left_items ?? [])[2] ?? "",
+          right_1: (d.right_items ?? [])[0] ?? "",
+          right_2: (d.right_items ?? [])[1] ?? "",
+          right_3: (d.right_items ?? [])[2] ?? "",
+          match_a: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[0] ?? "0"); } catch { return "0"; } })(),
+          match_b: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[1] ?? "1"); } catch { return "1"; } })(),
+          match_c: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[2] ?? "2"); } catch { return "2"; } })(),
         });
       }
       setLoading(false);
@@ -189,6 +218,12 @@ function VraagForm() {
       payload.image_options = imageOptions;
       payload.options = null;
     }
+    if (form.type === "match") {
+      payload.left_items = [form.left_1, form.left_2, form.left_3].filter(Boolean);
+      payload.right_items = [form.right_1, form.right_2, form.right_3].filter(Boolean);
+      payload.correct_answer = JSON.stringify({ 0: Number(form.match_a), 1: Number(form.match_b), 2: Number(form.match_c) });
+      payload.options = null;
+    }
 
     const url = isEdit ? `/api/host/vragen/${questionId}` : "/api/host/vragen";
     const method = isEdit ? "PATCH" : "POST";
@@ -212,6 +247,7 @@ function VraagForm() {
 
   const isTrueFalse = form.type === "true_false";
   const hasTextOptions = ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
+  const isMatch = form.type === "match";
   const hasMedia = ["image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
   const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
   const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
@@ -302,6 +338,40 @@ function VraagForm() {
                 <input type="number" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-input" />
               </div>
             </>
+          )}
+
+          {/* Match koppelen */}
+          {form.type === "match" && (
+            <div style={F}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={F}>
+                  <label style={L}>Linker items (A / B / C)</label>
+                  {(["left_1", "left_2", "left_3"] as const).map((k, i) => (
+                    <input key={k} value={form[k]} onChange={(e) => set(k, e.target.value)}
+                      placeholder={`Item ${["A","B","C"][i]}`} required className="glass-input" />
+                  ))}
+                </div>
+                <div style={F}>
+                  <label style={L}>Rechter items (1 / 2 / 3)</label>
+                  {(["right_1", "right_2", "right_3"] as const).map((k, i) => (
+                    <input key={k} value={form[k]} onChange={(e) => set(k, e.target.value)}
+                      placeholder={`Item ${i + 1}`} required className="glass-input" />
+                  ))}
+                </div>
+              </div>
+              <label style={L}>Correcte koppelingen</label>
+              {(["match_a", "match_b", "match_c"] as const).map((k, i) => (
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ color: ["var(--cyan)", "var(--gold)", "#ff6bcd"][i], fontWeight: 700, width: "32px" }}>{["A","B","C"][i]}</span>
+                  <span style={{ color: "var(--muted)" }}>→</span>
+                  <select value={form[k]} onChange={(e) => set(k, e.target.value)} className="glass-input form-select" style={{ flex: 1 }}>
+                    {["right_1", "right_2", "right_3"].map((rk, ri) => (
+                      <option key={ri} value={ri}>{form[rk as keyof QuestionForm] || `Item ${ri + 1}`}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Tekst antwoordopties (niet voor estimate en image_answer) */}

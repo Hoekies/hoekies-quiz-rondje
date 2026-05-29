@@ -7,7 +7,8 @@ export type QuestionType =
   | "image_answer"
   | "video"
   | "estimate"
-  | "guess_the_song";
+  | "guess_the_song"
+  | "match";
 
 export type SessionStatus = "lobby" | "active" | "finished";
 export type SessionState =
@@ -47,6 +48,8 @@ export interface Question {
   estimate_max?: number;
   estimate_unit?: string;
   image_options?: string[];
+  left_items?: string[];
+  right_items?: string[];
 }
 
 export interface Session {
@@ -59,6 +62,7 @@ export interface Session {
   started_at: string | null;
   question_order?: string[];
   is_active?: boolean;
+  force_end?: boolean;
 }
 
 export interface Player {
