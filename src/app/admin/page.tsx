@@ -165,7 +165,7 @@ export default function AdminDashboard() {
 
       {/* Sessies */}
       <div className="w-full max-w-lg flex flex-col gap-3">
-        <h2 className="text-white/50 text-xs font-bold uppercase tracking-widest">Sessies</h2>
+        <h2 className="text-white/50 text-xs font-bold uppercase tracking-widest text-center">Sessies</h2>
 
         {sessions.length === 0 ? (
           <div
@@ -179,28 +179,21 @@ export default function AdminDashboard() {
             <a
               key={session.code}
               href={`/admin/sessie/${session.code}`}
-              className="flex items-center justify-between px-5 py-4 transition-colors hover:bg-white/10"
+              className="relative flex flex-col items-center gap-1 px-5 py-5 transition-colors hover:bg-white/10"
               style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
             >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xl font-black tracking-widest" style={{ color: "var(--cyan)" }}>
-                  {session.code}
-                </span>
-                <span className="text-white/50 text-sm">{statusLabel[session.status] ?? session.status}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <span className="text-white/70 text-sm">{playerCounts[session.code] ?? 0} spelers</span>
-                  <div className="text-white/30 text-xs mt-0.5">{session.state}</div>
-                </div>
-                <button
-                  onClick={(e) => { e.preventDefault(); handleDeleteSession(session.code); }}
-                  className="text-red-400/60 hover:text-red-400 text-lg px-2 py-1 transition-colors"
-                  title="Sessie verwijderen"
-                >
-                  ✕
-                </button>
-              </div>
+              <span className="text-2xl font-black tracking-widest" style={{ color: "var(--cyan)" }}>
+                {session.code}
+              </span>
+              <span className="text-white/50 text-sm">{statusLabel[session.status] ?? session.status}</span>
+              <span className="text-white/40 text-xs">{playerCounts[session.code] ?? 0} spelers · {session.state}</span>
+              <button
+                onClick={(e) => { e.preventDefault(); handleDeleteSession(session.code); }}
+                className="absolute top-3 right-3 text-red-400/50 hover:text-red-400 text-base px-1 transition-colors"
+                title="Sessie verwijderen"
+              >
+                ✕
+              </button>
             </a>
           ))
         )}
