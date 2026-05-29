@@ -187,25 +187,56 @@ export default function AdminDashboard() {
                     </span>
                   </div>
 
-                  {/* Toggle actief/inactief */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-                    <span style={{ color: session.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.75rem", fontWeight: 700, minWidth: "46px", textAlign: "right" }}>
+                  {/* Gekoppelde knoppengroep */}
+                  <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
+                    {/* Segment 1: Actief toggle */}
+                    <button
+                      onClick={() => !toggling && handleToggleActive(session)}
+                      disabled={!!toggling}
+                      title={session.is_active ? "Zet inactief" : "Zet actief"}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "6px",
+                        padding: "7px 12px",
+                        background: session.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)",
+                        border: "none", borderRight: "1px solid rgba(255,255,255,0.14)",
+                        color: session.is_active ? "var(--cyan)" : "var(--muted)",
+                        fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer",
+                        transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap",
+                      }}>
+                      {/* Mini toggle dot */}
+                      <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: session.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+                        <div style={{ position: "absolute", top: "2px", left: session.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+                      </div>
                       {session.is_active ? "Actief" : "Inactief"}
-                    </span>
-                    <div onClick={() => !toggling && handleToggleActive(session)}
-                      style={{ width: "40px", height: "22px", borderRadius: "11px", background: session.is_active ? "var(--cyan)" : "rgba(255,255,255,0.15)", position: "relative", cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s", flexShrink: 0, opacity: toggling === session.code ? 0.5 : 1 }}>
-                      <div style={{ position: "absolute", top: "3px", left: session.is_active ? "21px" : "3px", width: "16px", height: "16px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-                    </div>
-                  </div>
+                    </button>
 
-                  {/* Acties */}
-                  <a href={`/admin/sessie/${session.code}`}
-                    style={{ color: "var(--cyan)", fontSize: "0.82rem", fontWeight: 700, textDecoration: "none", flexShrink: 0, padding: "4px 8px", borderRadius: "6px", border: "1px solid rgba(0,217,255,0.3)", background: "rgba(0,217,255,0.05)" }}>
-                    Beheren →
-                  </a>
-                  <button onClick={() => handleDeleteSession(session.code)}
-                    style={{ color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontSize: "1rem", opacity: 0.5, padding: "4px", flexShrink: 0 }}
-                    title="Verwijderen">✕</button>
+                    {/* Segment 2: Beheren */}
+                    <a href={`/admin/sessie/${session.code}`}
+                      style={{
+                        display: "flex", alignItems: "center",
+                        padding: "7px 14px",
+                        background: "rgba(255,255,255,0.05)",
+                        borderRight: "1px solid rgba(255,255,255,0.14)",
+                        color: "var(--cyan)", fontSize: "0.78rem", fontWeight: 700,
+                        textDecoration: "none", whiteSpace: "nowrap",
+                      }}>
+                      Beheren →
+                    </a>
+
+                    {/* Segment 3: Verwijderen */}
+                    <button
+                      onClick={() => handleDeleteSession(session.code)}
+                      title="Verwijderen"
+                      style={{
+                        display: "flex", alignItems: "center",
+                        padding: "7px 11px",
+                        background: "rgba(255,255,255,0.05)",
+                        border: "none", color: "var(--red)",
+                        fontSize: "0.9rem", cursor: "pointer", opacity: 0.7,
+                      }}>
+                      ✕
+                    </button>
+                  </div>
                 </div>
 
                 {/* QR bij actieve sessie */}
