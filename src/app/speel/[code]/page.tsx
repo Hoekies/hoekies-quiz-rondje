@@ -6,7 +6,6 @@ import {
   doc,
   collection,
   onSnapshot,
-  getDoc,
   getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -88,25 +87,6 @@ export default function SpeelPage() {
     }
   }, []);
 
-  // Load question helper
-  const loadQuestion = useCallback(
-    async (sessionDoc: SessionDoc) => {
-      const qId = sessionDoc.current_question_id;
-      if (!qId || !sessionDoc.quiz_id) {
-        setQuestion(null);
-        return;
-      }
-      const qSnap = await getDoc(
-        doc(db, "quizzes", sessionDoc.quiz_id, "questions", qId)
-      );
-      if (qSnap.exists()) {
-        setQuestion({ id: qSnap.id, ...(qSnap.data() as Omit<QuestionDoc, "id">) });
-      } else {
-        setQuestion(null);
-      }
-    },
-    []
-  );
 
   // Load leaderboard
   const loadLeaderboard = useCallback(async (pId: string) => {
@@ -123,14 +103,31 @@ export default function SpeelPage() {
 
   // Subscribe to session
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "sessions", code), async (snap) => {
+    const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
-      const data = snap.data() as SessionDoc;
-      setSession(data);
-      await loadQuestion(data);
+      setSession(snap.data() as SessionDoc);
     });
     return unsub;
-  }, [code, loadQuestion]);
+  }, [code]);
+
+  // Subscribe to current question (parallel with session, no sequential round-trip)
+  useEffect(() => {
+    if (!session?.current_question_id || !session?.quiz_id) {
+      setQuestion(null);
+      return;
+    }
+    const unsub = onSnapshot(
+      doc(db, "quizzes", session.quiz_id, "questions", session.current_question_id),
+      (snap) => {
+        if (snap.exists()) {
+          setQuestion({ id: snap.id, ...(snap.data() as Omit<QuestionDoc, "id">) });
+        } else {
+          setQuestion(null);
+        }
+      }
+    );
+    return unsub;
+  }, [session?.current_question_id, session?.quiz_id]);
 
   // Subscribe to player count
   useEffect(() => {
@@ -177,7 +174,7 @@ export default function SpeelPage() {
         setStep("endscreen");
         break;
     }
-  }, [session?.state, playerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.state, session?.current_question_id, selectedAnswer, playerId, loadLeaderboard]);
 
   // Reset selected answer when question changes
   useEffect(() => {
