@@ -189,6 +189,8 @@ export default function HostControlPage() {
         });
         break;
       case "question_open":
+        patchSession("answer_reveal");
+        break;
       case "answer_reveal":
         patchSession("leaderboard");
         break;
@@ -224,7 +226,7 @@ export default function HostControlPage() {
   const actionLabel: Record<string, string> = {
     lobby: "🚀 Start quiz",
     ronde_intro: "▶ Toon vraag",
-    question_open: "📊 Sluit & leaderboard",
+    question_open: "🔒 Sluit antwoorden",
     answer_reveal: "📊 Leaderboard",
     leaderboard: nextLabel,
     finale: "Toon finale vraag",
