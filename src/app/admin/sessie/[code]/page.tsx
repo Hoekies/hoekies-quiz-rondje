@@ -337,7 +337,7 @@ export default function HostControlPage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-white/40 text-xs uppercase tracking-wider font-bold">
-                  Vraag {currentIndex + 1} / {questions.length}
+                  Vraag {currentIdx + 1} / {questionOrder.length}
                 </span>
                 <span
                   className="text-xs px-2 py-0.5 rounded-full font-semibold"
