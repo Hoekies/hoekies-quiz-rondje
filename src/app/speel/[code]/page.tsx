@@ -379,13 +379,13 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
-    const loadMs = Math.round(Date.now() - questionStart);
+    const openedMs = (session as any)?.question_opened_at?.seconds ? Math.round(Date.now() - (session.question_opened_at.seconds * 1000)) : 0;
     return (
       <div className="speler-shell">
         <header className="speler-header" style={{ justifyContent: "space-between" }}>
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
           <span style={{ color: "var(--cyan)", fontSize: "clamp(11px, 2vw, 14px)", fontWeight: "bold", fontFamily: "monospace" }}>
-            {loadMs}ms
+            {openedMs}ms
           </span>
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>

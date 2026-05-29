@@ -12,6 +12,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import type { SessionState } from "@/types/database";
 import AdminLayout from "../../AdminLayout";
@@ -212,6 +213,7 @@ export default function HostControlPage() {
         patchSession("question_open", {
           current_question_id: questionOrder[0] ?? null,
           question_index: 0,
+          question_opened_at: serverTimestamp(),
         });
         break;
       case "question_open":
@@ -232,12 +234,14 @@ export default function HostControlPage() {
           patchSession("question_open", {
             current_question_id: nextQuestionId ?? null,
             question_index: currentIdx + 1,
+            question_opened_at: serverTimestamp(),
           });
         }
         break;
       case "finale":
         patchSession("question_open", {
           current_question_id: currentQuestion?.id ?? null,
+          question_opened_at: serverTimestamp(),
         });
         break;
       case "paused":
