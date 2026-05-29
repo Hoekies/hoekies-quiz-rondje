@@ -381,4 +381,62 @@ h3 { font-size: 1rem;   font-weight: 600; color: var(--ink); }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+}
+
+/* ── Responsive player screens ── */
+/* Mobile phone (< 480px) */
+@media (max-width: 479px) {
+  .btn-game {
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+    padding: 14px 20px;
+  }
+  .answer-block {
+    font-size: clamp(0.95rem, 3.5vw, 1.05rem);
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .answer-block span:first-child {
+    width: 20px;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+  }
+  h2 {
+    font-size: clamp(1.1rem, 5vw, 1.4rem);
+  }
+  .speler-header {
+    padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+    gap: 8px;
+  }
+  .speler-header img {
+    height: 48px !important;
+  }
+  p {
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
+  }
+}
+
+/* Tablet / iPad (480px - 1024px) */
+@media (min-width: 480px) and (max-width: 1024px) {
+  .answer-block {
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    padding: 0 20px;
+  }
+  .speler-header img {
+    height: 56px !important;
+  }
+}
+
+/* Large screens (> 1024px) */
+@media (min-width: 1025px) {
+  .speler-content {
+    padding: 0 40px;
+  }
+  .btn-game {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .answer-block {
+    max-width: 600px;
+    margin: 0 auto;
+  }
 }

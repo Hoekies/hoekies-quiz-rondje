@@ -72,12 +72,7 @@ export default function SpeelPage() {
   const [joinError, setJoinError] = useState("");
   const [joining, setJoining] = useState(false);
 
-  const [playerId, setPlayerId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem("quiz_player_id");
-    }
-    return null;
-  });
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [session, setSession] = useState<SessionDoc | null>(null);
   const [questionsMap, setQuestionsMap] = useState<Record<string, QuestionDoc>>({});
   const [questionStart, setQuestionStart] = useState<number>(0);
@@ -92,13 +87,25 @@ export default function SpeelPage() {
   const [ranks, setRanks] = useState<PlayerRank[]>([]);
   const [countdown, setCountdown] = useState(10);
 
+  // Restore playerId from sessionStorage on first mount (iPhone refresh fix)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("quiz_player_id");
+      if (stored) {
+        console.log(`[TIMING] Restored playerId from sessionStorage: ${stored}`);
+        setPlayerId(stored);
+      }
+    }
+  }, []); // Only on mount
 
   // Subscribe to session
   useEffect(() => {
+    const sessionT0 = Date.now();
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as SessionDoc;
-      console.log(`[${Date.now() % 100000}] Session update:`, data.state);
+      const delta = Date.now() - sessionT0;
+      console.log(`[TIMING] Session update (${delta}ms from init):`, data.state, data.current_question_id);
       setSession(data);
     });
     return unsub;
@@ -163,6 +170,7 @@ export default function SpeelPage() {
   useEffect(() => {
     if (!session) return;
     if (!playerId) {
+      console.log(`[TIMING] No playerId, step → join (sessionStorage had: ${sessionStorage.getItem("quiz_player_id")})`);
       setStep("join");
       return;
     }
@@ -170,17 +178,18 @@ export default function SpeelPage() {
     switch (session.state) {
       case "lobby":
       case "ronde_intro":
-        console.log(`[${Date.now() % 100000}] Step → lobby`);
+        console.log(`[TIMING] Step → lobby`);
         setStep("lobby");
         break;
       case "question_open":
         if (selectedAnswer) {
-          console.log(`[${Date.now() % 100000}] Step → answered`);
+          console.log(`[TIMING] Step → answered (already answered)`);
           setStep("answered");
         } else {
           setAnswerResult(null);
-          setQuestionStart(Date.now());
-          console.log(`[${Date.now() % 100000}] Step → question`);
+          const t0 = Date.now();
+          setQuestionStart(t0);
+          console.log(`[TIMING] Step → question (t0=${t0}), current_question_id=${session.current_question_id}`);
           setStep("question");
         }
         break;
@@ -242,8 +251,11 @@ export default function SpeelPage() {
     : null;
 
   useEffect(() => {
-    if (question) console.log(`[${Date.now() % 100000}] Question loaded:`, question.question_text?.slice(0, 30));
-  }, [question?.id]);
+    if (question) {
+      const delta = Date.now() - questionStart;
+      console.log(`[TIMING] Question available (${delta}ms after question_open): "${question.question_text?.slice(0, 40)}..."`);
+    }
+  }, [question?.id, questionStart]);
 
   useEffect(() => {
     if (!question?.options) { setShuffledOptions([]); return; }
@@ -314,12 +326,12 @@ export default function SpeelPage() {
       <div className="speler-shell">
         <header className="speler-header">
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
-          <span style={{ color: "var(--cyan)", fontWeight: 700, letterSpacing: "0.12em" }}>{code}</span>
+          <span style={{ color: "var(--cyan)", fontWeight: 700, letterSpacing: "0.12em", fontSize: "clamp(1rem, 3vw, 1.2rem)" }}>{code}</span>
         </header>
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
           <div style={{ width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ textAlign: "center" }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Voer je naam in om mee te doen</p>
+              <p style={{ color: "var(--muted)", fontSize: "clamp(0.8rem, 2.5vw, 0.9rem)" }}>Voer je naam in om mee te doen</p>
             </div>
             <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <input
@@ -330,7 +342,7 @@ export default function SpeelPage() {
                 maxLength={24}
                 autoFocus
                 className="glass-input"
-                style={{ fontSize: "1.1rem", fontWeight: 600, textAlign: "center" }}
+                style={{ fontSize: "clamp(0.95rem, 4vw, 1.1rem)", fontWeight: 600, textAlign: "center" }}
               />
               {joinError && <p style={{ color: "var(--red)", fontSize: "0.85rem", textAlign: "center" }}>{joinError}</p>}
               <button type="submit" disabled={joining || !name.trim()} className="btn-game">
@@ -349,11 +361,11 @@ export default function SpeelPage() {
       <div className="speler-shell">
         <header className="speler-header">
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
-          <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{playerCount} speler{playerCount !== 1 ? "s" : ""}</span>
+          <span style={{ color: "var(--muted)", fontSize: "clamp(0.75rem, 2vw, 0.85rem)" }}>{playerCount} speler{playerCount !== 1 ? "s" : ""}</span>
         </header>
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "4rem" }}>⏳</p>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>Wachten op de host...</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)" }}>⏳</p>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.4rem)", textAlign: "center" }}>Wachten op de host...</h2>
           {name && (
             <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
               <p style={{ color: "var(--cyan)", fontWeight: 600 }}>👤 {name} — Je bent erin! 🎉</p>
@@ -372,13 +384,13 @@ export default function SpeelPage() {
       <div className="speler-shell">
         <header className="speler-header" style={{ justifyContent: "space-between" }}>
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
-          <span style={{ color: "var(--cyan)", fontSize: "14px", fontWeight: "bold", fontFamily: "monospace" }}>
+          <span style={{ color: "var(--cyan)", fontSize: "clamp(11px, 2vw, 14px)", fontWeight: "bold", fontFamily: "monospace" }}>
             {loadMs}ms
           </span>
         </header>
-        <div className="speler-content" style={{ padding: "12px", gap: "10px" }}>
-          <div className="glass-card" style={{ padding: "16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80px" }}>
-            <p style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem", textAlign: "center", lineHeight: 1.4 }}>
+        <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
+          <div className="glass-card" style={{ padding: "clamp(12px, 2.5vw, 16px)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(60px, 15vh, 100px)" }}>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(0.95rem, 3vw, 1.1rem)", textAlign: "center", lineHeight: 1.4 }}>
               {question.question_text}
             </p>
           </div>
@@ -424,9 +436,9 @@ export default function SpeelPage() {
   if (step === "answered") {
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "3.5rem" }}>⏳</p>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>Antwoord verzonden!</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(2.5rem, 12vw, 3.5rem)" }}>⏳</p>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.4rem)", textAlign: "center" }}>Antwoord verzonden!</h2>
           {selectedAnswer && (
             <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
               <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw keuze</p>
@@ -445,9 +457,9 @@ export default function SpeelPage() {
     const pts = answerResult?.points_awarded ?? 0;
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "5rem" }}>{correct ? "✅" : "❌"}</p>
-          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>{correct ? "Goed!" : "Helaas..."}</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(3rem, 14vw, 5rem)" }}>{correct ? "✅" : "❌"}</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.5rem, 7vw, 2rem)", textAlign: "center" }}>{correct ? "Goed!" : "Helaas..."}</h2>
           {correct && pts > 0 && (
             <div className="glass-card" style={{ padding: "16px 32px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.12)" }}>
               <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.8rem" }}>+{pts} punten</p>
@@ -468,8 +480,8 @@ export default function SpeelPage() {
     const emoji = ["🥇", "🥈", "🥉"];
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "32px 20px" }}>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.3rem" }}>Tussenstand</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
@@ -494,9 +506,9 @@ export default function SpeelPage() {
     const msg = messages[myScore % messages.length];
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "4rem" }}>🏆</p>
-          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>Quiz voorbij!</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)" }}>🏆</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.5rem, 7vw, 2rem)", textAlign: "center" }}>Quiz voorbij!</h2>
           <div className="glass-card" style={{ padding: "24px 40px", textAlign: "center", borderColor: "var(--glass-border)" }}>
             <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Eindstand</p>
             <p style={{ fontWeight: 900, fontSize: "3rem", color: "var(--cyan)", lineHeight: 1.1 }}>{myScore}</p>
@@ -512,9 +524,9 @@ export default function SpeelPage() {
   if (step === "paused") {
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "5rem", lineHeight: 1 }}>🍺</p>
-          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>Pauze!</h2>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(3rem, 14vw, 5rem)", lineHeight: 1 }}>🍺</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.5rem, 7vw, 2rem)", textAlign: "center" }}>Pauze!</h2>
           <div className="glass-card" style={{ padding: "16px 28px", textAlign: "center" }}>
             <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pak een drankje en wacht op de host...</p>
           </div>
@@ -528,9 +540,9 @@ export default function SpeelPage() {
     const pct = Math.min(100, (countdown / 10) * 100);
     return (
       <div className="speler-shell">
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "24px", padding: "32px 20px" }}>
-          <p style={{ fontSize: "4rem", lineHeight: 1 }}>🍺</p>
-          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "1.8rem", textAlign: "center" }}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "24px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)", lineHeight: 1 }}>🍺</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.3rem, 5vw, 1.8rem)", textAlign: "center" }}>
             Quiz gaat verder!
           </h2>
           <div style={{ width: "100%", maxWidth: "320px", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
