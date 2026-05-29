@@ -6,6 +6,9 @@ import {
   doc,
   collection,
   onSnapshot,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -97,7 +100,9 @@ export default function SpeelPage() {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
-      setSession(snap.data() as SessionDoc);
+      const data = snap.data() as SessionDoc;
+      console.log(`[${Date.now() % 100000}] Session update:`, data.state);
+      setSession(data);
     });
     return unsub;
   }, [code]);
@@ -139,6 +144,24 @@ export default function SpeelPage() {
     return unsub;
   }, [code, playerId]);
 
+  // Na refresh: antwoord ophalen uit Firestore als het al gegeven was
+  useEffect(() => {
+    if (!playerId || !session?.current_question_id || step !== "question") return;
+    (async () => {
+      const q = query(
+        collection(db, "sessions", code, "answers"),
+        where("player_id", "==", playerId),
+        where("question_id", "==", session.current_question_id)
+      );
+      const snap = await getDocs(q);
+      if (snap.docs.length > 0) {
+        const ans = snap.docs[0].data();
+        setSelectedAnswer(ans.answer ?? null);
+        setAnswerResult({ is_correct: ans.is_correct ?? false, points_awarded: ans.points_awarded ?? 0 });
+      }
+    })();
+  }, [playerId, session?.current_question_id, code]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Determine step from session state
   useEffect(() => {
     if (!session) return;
@@ -150,14 +173,17 @@ export default function SpeelPage() {
     switch (session.state) {
       case "lobby":
       case "ronde_intro":
+        console.log(`[${Date.now() % 100000}] Step → lobby`);
         setStep("lobby");
         break;
       case "question_open":
         if (selectedAnswer) {
+          console.log(`[${Date.now() % 100000}] Step → answered`);
           setStep("answered");
         } else {
           setAnswerResult(null);
           setQuestionStart(Date.now());
+          console.log(`[${Date.now() % 100000}] Step → question`);
           setStep("question");
         }
         break;
@@ -217,6 +243,10 @@ export default function SpeelPage() {
   const question = session?.current_question_id
     ? (questionsMap[session.current_question_id] ?? null)
     : null;
+
+  useEffect(() => {
+    if (question) console.log(`[${Date.now() % 100000}] Question loaded:`, question.question_text?.slice(0, 30));
+  }, [question?.id]);
 
   useEffect(() => {
     if (!question?.options) { setShuffledOptions([]); return; }
