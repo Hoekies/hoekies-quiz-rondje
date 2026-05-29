@@ -41,15 +41,14 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="flex justify-center">
           <img
-            src="/logo-breed.jpeg"
+            src="/logo.png"
             alt="Hoekies Quiz Rondje"
-            className="w-40 object-contain"
+            className="w-52 object-contain drop-shadow-lg"
           />
         </div>
 
         <div className="text-center">
           <h1 className="text-white text-2xl font-black">Host inloggen</h1>
-          <p className="text-white/50 text-sm mt-1">Hoekies Quiz Rondje</p>
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
