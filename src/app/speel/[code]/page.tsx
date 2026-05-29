@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   doc,
@@ -68,7 +68,7 @@ export default function SpeelPage() {
 
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [session, setSession] = useState<SessionDoc | null>(null);
-  const [question, setQuestion] = useState<QuestionDoc | null>(null);
+  const [questionsMap, setQuestionsMap] = useState<Record<string, QuestionDoc>>({});
   const [questionStart, setQuestionStart] = useState<number>(0);
 
   const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
@@ -89,46 +89,30 @@ export default function SpeelPage() {
   }, []);
 
 
-  // Subscribe to session + vraag in één callback — geen React-cyclus vertraging
-  const questionSubRef = useRef<(() => void) | null>(null);
-  const lastQuestionIdRef = useRef<string | null>(null);
-
+  // Subscribe to session
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
-      const data = snap.data() as SessionDoc;
-      setSession(data);
-
-      const qId = data.current_question_id;
-      const qzId = data.quiz_id;
-
-      if (qId !== lastQuestionIdRef.current) {
-        lastQuestionIdRef.current = qId;
-        questionSubRef.current?.();
-        questionSubRef.current = null;
-
-        if (qId && qzId) {
-          questionSubRef.current = onSnapshot(
-            doc(db, "quizzes", qzId, "questions", qId),
-            (qSnap) => {
-              if (qSnap.exists()) {
-                setQuestion({ id: qSnap.id, ...(qSnap.data() as Omit<QuestionDoc, "id">) });
-              } else {
-                setQuestion(null);
-              }
-            }
-          );
-        } else {
-          setQuestion(null);
-        }
-      }
+      setSession(snap.data() as SessionDoc);
     });
-
-    return () => {
-      unsub();
-      questionSubRef.current?.();
-    };
+    return unsub;
   }, [code]);
+
+  // Laad ALLE vragen zodra quiz_id bekend is — geen per-vraag laadscherm meer
+  useEffect(() => {
+    if (!session?.quiz_id) return;
+    const unsub = onSnapshot(
+      collection(db, "quizzes", session.quiz_id, "questions"),
+      (snap) => {
+        const map: Record<string, QuestionDoc> = {};
+        snap.docs.forEach((d) => {
+          map[d.id] = { id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) };
+        });
+        setQuestionsMap(map);
+      }
+    );
+    return unsub;
+  }, [session?.quiz_id]);
 
   // Subscribe to players — keeps playerCount, ranks and myScore always fresh
   useEffect(() => {
@@ -206,6 +190,11 @@ export default function SpeelPage() {
   }, [session?.reset_at?.seconds]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shuffle antwoorden eenmalig als nieuwe vraag laadt
+  // Huidige vraag direct uit de map — geen aparte subscription, altijd meteen beschikbaar
+  const question = session?.current_question_id
+    ? (questionsMap[session.current_question_id] ?? null)
+    : null;
+
   useEffect(() => {
     if (!question?.options) { setShuffledOptions([]); return; }
     const opts = [...question.options];
