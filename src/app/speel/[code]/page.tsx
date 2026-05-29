@@ -228,7 +228,7 @@ export default function SpeelPage() {
         setStep("endscreen");
         break;
     }
-  }, [session?.state, session?.current_question_id, playerId];
+  }, [session?.state, session?.current_question_id, playerId]);
 
   // Reset selected answer when question changes
   useEffect(() => {
