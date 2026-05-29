@@ -373,9 +373,12 @@ export default function SpeelPage() {
     const loadMs = Math.round(Date.now() - questionStart);
     return (
       <div className="speler-shell">
-        <div style={{ position: "absolute", top: "20px", right: "20px", fontSize: "10px", color: "var(--cyan)", fontFamily: "monospace", fontWeight: "bold" }}>
-          {loadMs}ms
-        </div>
+        <header className="speler-header" style={{ justifyContent: "space-between" }}>
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
+          <span style={{ color: "var(--cyan)", fontSize: "14px", fontWeight: "bold", fontFamily: "monospace" }}>
+            {loadMs}ms
+          </span>
+        </header>
         <div className="speler-content" style={{ padding: "12px", gap: "10px" }}>
           <div className="glass-card" style={{ padding: "16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80px" }}>
             <p style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem", textAlign: "center", lineHeight: 1.4 }}>
