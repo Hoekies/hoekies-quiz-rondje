@@ -50,6 +50,7 @@ interface SessionDoc {
   question_index: number;
   reset_at?: { seconds: number } | null;
   resume_at?: { seconds: number } | null;
+  question_opened_at?: { seconds: number } | null;
 }
 
 interface QuestionDoc {
@@ -379,7 +380,7 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
-    const openedMs = (session as any)?.question_opened_at?.seconds ? Math.round(Date.now() - (session.question_opened_at.seconds * 1000)) : 0;
+    const openedMs = session?.question_opened_at?.seconds ? Math.round(Date.now() - (session.question_opened_at.seconds * 1000)) : 0;
     return (
       <div className="speler-shell">
         <header className="speler-header" style={{ justifyContent: "space-between" }}>
