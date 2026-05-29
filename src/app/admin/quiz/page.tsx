@@ -150,7 +150,7 @@ export default function QuizBeheerPage() {
     const rows: ImportRow[] = lines.slice(1).map((line) => {
       const vals = parseCSVLine(line);
       return headers.reduce((obj, h, i) => {
-        (obj as Record<string, string>)[h.trim()] = (vals[i] ?? "").trim();
+        (obj as unknown as Record<string, string>)[h.trim()] = (vals[i] ?? "").trim();
         return obj;
       }, {} as ImportRow);
     });
