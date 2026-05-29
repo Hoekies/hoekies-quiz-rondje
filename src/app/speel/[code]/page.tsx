@@ -286,7 +286,7 @@ export default function SpeelPage() {
     return (
       <div className="speler-shell">
         <header className="speler-header">
-          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "32px", objectFit: "contain" }} />
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
           <span style={{ color: "var(--cyan)", fontWeight: 700, letterSpacing: "0.12em" }}>{code}</span>
         </header>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
@@ -321,7 +321,7 @@ export default function SpeelPage() {
     return (
       <div className="speler-shell">
         <header className="speler-header">
-          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "32px", objectFit: "contain" }} />
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
           <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{playerCount} speler{playerCount !== 1 ? "s" : ""}</span>
         </header>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
