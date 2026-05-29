@@ -144,9 +144,9 @@ export default function SpeelPage() {
     return unsub;
   }, [code, playerId]);
 
-  // Na refresh: antwoord ophalen uit Firestore als het al gegeven was
+  // Na refresh: antwoord ophalen uit Firestore VOORDAT step bepaald wordt
   useEffect(() => {
-    if (!playerId || !session?.current_question_id || step !== "question") return;
+    if (!playerId || !session?.current_question_id) return;
     (async () => {
       const q = query(
         collection(db, "sessions", code, "answers"),
