@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
 
         {/* Card */}
         <div
-          className="w-full rounded-2xl p-6 flex flex-col gap-5"
+          className="w-full rounded-2xl p-8 flex flex-col gap-5"
           style={{
             background: "rgba(255,255,255,0.10)",
             border: "1px solid rgba(255,255,255,0.18)",
