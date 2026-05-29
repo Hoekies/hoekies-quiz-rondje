@@ -87,6 +87,7 @@ export default function SpeelPage() {
   const [myScore, setMyScore] = useState(0);
   const [ranks, setRanks] = useState<PlayerRank[]>([]);
   const [countdown, setCountdown] = useState(10);
+  const answersMapRef = useRef<Record<string, { answer: string; is_correct: boolean; points_awarded: number }>>({});
 
   // Restore playerId from sessionStorage on first mount (iPhone refresh fix)
   useEffect(() => {
@@ -129,6 +130,30 @@ export default function SpeelPage() {
     return unsub;
   }, [session?.quiz_id]);
 
+  // Subscribe to all answers for this player (fast, parallel with session update)
+  useEffect(() => {
+    if (!playerId) return;
+    const unsub = onSnapshot(
+      query(
+        collection(db, "sessions", code, "answers"),
+        where("player_id", "==", playerId)
+      ),
+      (snap) => {
+        const map: Record<string, { answer: string; is_correct: boolean; points_awarded: number }> = {};
+        snap.docs.forEach((d) => {
+          const data = d.data();
+          map[data.question_id] = {
+            answer: data.answer,
+            is_correct: data.is_correct,
+            points_awarded: data.points_awarded,
+          };
+        });
+        answersMapRef.current = map;
+      }
+    );
+    return unsub;
+  }, [code, playerId]);
+
   // Subscribe to players — keeps playerCount, ranks and myScore always fresh
   useEffect(() => {
     const unsub = onSnapshot(
@@ -150,24 +175,6 @@ export default function SpeelPage() {
     return unsub;
   }, [code, playerId]);
 
-  // Na refresh: antwoord ophalen uit Firestore VOORDAT step bepaald wordt
-  useEffect(() => {
-    if (!playerId || !session?.current_question_id) return;
-    (async () => {
-      const q = query(
-        collection(db, "sessions", code, "answers"),
-        where("player_id", "==", playerId),
-        where("question_id", "==", session.current_question_id)
-      );
-      const snap = await getDocs(q);
-      if (snap.docs.length > 0) {
-        const ans = snap.docs[0].data();
-        setSelectedAnswer(ans.answer ?? null);
-        setAnswerResult({ is_correct: ans.is_correct ?? false, points_awarded: ans.points_awarded ?? 0 });
-      }
-    })();
-  }, [playerId, session?.current_question_id, code]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Determine step from session state
   useEffect(() => {
     if (!session) return;
@@ -184,15 +191,21 @@ export default function SpeelPage() {
         setStep("lobby");
         break;
       case "question_open":
-        if (selectedAnswer) {
+        const qid = session.current_question_id;
+        const hasAnswer = qid && answersMapRef.current[qid];
+        if (hasAnswer) {
+          const ans = answersMapRef.current[qid];
+          setSelectedAnswer(ans.answer ?? null);
+          setAnswerResult({ is_correct: ans.is_correct, points_awarded: ans.points_awarded });
           console.log(`[TIMING] Step → answered (already answered)`);
           setStep("answered");
         } else {
+          setSelectedAnswer(null);
           setAnswerResult(null);
           const t0 = Date.now();
           setQuestionStart(t0);
-          const qLoaded = session.current_question_id && questionsMap[session.current_question_id];
-          console.log(`[TIMING] Step → question. Q loaded=${!!qLoaded}, qid=${session.current_question_id?.slice(0,6)}`);
+          const qLoaded = qid && questionsMap[qid];
+          console.log(`[TIMING] Step → question. Q loaded=${!!qLoaded}, qid=${qid?.slice(0,6)}`);
           setStep("question");
         }
         break;
@@ -215,7 +228,7 @@ export default function SpeelPage() {
         setStep("endscreen");
         break;
     }
-  }, [session?.state, session?.current_question_id, selectedAnswer, playerId]);
+  }, [session?.state, session?.current_question_id, playerId];
 
   // Reset selected answer when question changes
   useEffect(() => {
