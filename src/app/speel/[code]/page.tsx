@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   doc,
   collection,
   onSnapshot,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -88,19 +87,6 @@ export default function SpeelPage() {
   }, []);
 
 
-  // Load leaderboard
-  const loadLeaderboard = useCallback(async (pId: string) => {
-    const snap = await getDocs(collection(db, "sessions", code, "players"));
-    const ps: PlayerRank[] = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<PlayerRank, "id">),
-    }));
-    ps.sort((a, b) => b.score - a.score);
-    setRanks(ps.slice(0, 3));
-    const me = ps.find((p) => p.id === pId);
-    if (me) setMyScore(me.score);
-  }, [code]);
-
   // Subscribe to session
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
@@ -129,14 +115,26 @@ export default function SpeelPage() {
     return unsub;
   }, [session?.current_question_id, session?.quiz_id]);
 
-  // Subscribe to player count
+  // Subscribe to players — keeps playerCount, ranks and myScore always fresh
   useEffect(() => {
     const unsub = onSnapshot(
       collection(db, "sessions", code, "players"),
-      (snap) => setPlayerCount(snap.size)
+      (snap) => {
+        setPlayerCount(snap.size);
+        const ps: PlayerRank[] = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<PlayerRank, "id">),
+        }));
+        ps.sort((a, b) => b.score - a.score);
+        setRanks(ps.slice(0, 3));
+        if (playerId) {
+          const me = ps.find((p) => p.id === playerId);
+          if (me) setMyScore(me.score);
+        }
+      }
     );
     return unsub;
-  }, [code]);
+  }, [code, playerId]);
 
   // Determine step from session state
   useEffect(() => {
@@ -164,7 +162,6 @@ export default function SpeelPage() {
         setStep("reveal");
         break;
       case "leaderboard":
-        if (playerId) loadLeaderboard(playerId);
         setStep("leaderboard");
         break;
       case "finale":
@@ -174,7 +171,7 @@ export default function SpeelPage() {
         setStep("endscreen");
         break;
     }
-  }, [session?.state, session?.current_question_id, selectedAnswer, playerId, loadLeaderboard]);
+  }, [session?.state, session?.current_question_id, selectedAnswer, playerId]);
 
   // Reset selected answer when question changes
   useEffect(() => {
