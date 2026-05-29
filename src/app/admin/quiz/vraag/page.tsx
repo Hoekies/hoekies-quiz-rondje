@@ -6,6 +6,7 @@ import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { Suspense } from "react";
+import AdminLayout from "../../AdminLayout";
 
 interface QuestionForm {
   question_text: string;
@@ -158,53 +159,25 @@ function VraagForm() {
     setSaving(false);
   }
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--game-gradient)" }}>
-        <p className="text-white/60">Laden...</p>
-      </main>
-    );
-  }
+  if (loading) return null;
 
   const isTrueFalse = form.type === "true_false";
-  const inputClass = "w-full rounded-xl px-4 py-3 text-white text-sm font-semibold border-2 focus:outline-none focus:border-cyan-400 bg-white/10 border-white/20 placeholder:text-white/30";
+  const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
+  const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
 
   return (
-    <main className="min-h-screen p-6" style={{ background: "var(--game-gradient)" }}>
-      <div className="max-w-xl mx-auto flex flex-col gap-5">
+    <AdminLayout title={isEdit ? "Vraag bewerken" : "Nieuwe vraag"}>
+      <div style={{ maxWidth: "560px" }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-white font-black text-2xl">
-            {isEdit ? "Vraag bewerken" : "Nieuwe vraag"}
-          </h1>
-          <a href="/admin/quiz" className="text-white/50 text-sm hover:text-white transition-colors">
-            ← Terug
-          </a>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
-          {/* Vraagtekst */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Vraag</label>
-            <textarea
-              value={form.question_text}
-              onChange={(e) => set("question_text", e.target.value)}
-              required
-              rows={3}
-              placeholder="Typ de vraag hier..."
-              className={inputClass}
-            />
+          <div style={F}>
+            <label style={L}>Vraag</label>
+            <textarea value={form.question_text} onChange={(e) => set("question_text", e.target.value)} required rows={3} placeholder="Typ de vraag hier..." className="glass-input form-textarea" />
           </div>
 
-          {/* Type */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Type</label>
-            <select
-              value={form.type}
-              onChange={(e) => set("type", e.target.value)}
-              className={inputClass}
-            >
+          <div style={F}>
+            <label style={L}>Type</label>
+            <select value={form.type} onChange={(e) => set("type", e.target.value)} className="glass-input form-select">
               <option value="multiple_choice">Multiple choice</option>
               <option value="true_false">Waar / Niet waar</option>
               <option value="image">Afbeelding</option>
@@ -212,118 +185,54 @@ function VraagForm() {
             </select>
           </div>
 
-          {/* Antwoordopties */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Antwoordopties</label>
-            <div className="grid grid-cols-2 gap-2">
+          <div style={F}>
+            <label style={L}>Antwoordopties</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => (
-                <input
-                  key={key}
-                  value={form[key]}
-                  onChange={(e) => set(key, e.target.value)}
-                  placeholder={`Optie ${["A", "B", "C", "D"][i]}`}
-                  disabled={isTrueFalse}
-                  required={i < 2}
-                  className={inputClass + (isTrueFalse ? " opacity-50 cursor-not-allowed" : "")}
-                />
+                <input key={key} value={form[key]} onChange={(e) => set(key, e.target.value)}
+                  placeholder={`Optie ${["A","B","C","D"][i]}`} disabled={isTrueFalse} required={i < 2}
+                  className="glass-input" style={isTrueFalse ? { opacity: 0.5 } : undefined} />
               ))}
             </div>
           </div>
 
-          {/* Correct antwoord */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Correct antwoord</label>
-            <select
-              value={form.correct_answer}
-              onChange={(e) => set("correct_answer", e.target.value)}
-              required
-              className={inputClass}
-            >
+          <div style={F}>
+            <label style={L}>Correct antwoord</label>
+            <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
               <option value="">— Kies het juiste antwoord —</option>
-              {activeOptions().map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
+              {activeOptions().map((opt) => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
 
-          {/* Instellingen */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Tijdslimiet (sec)</label>
-              <input
-                type="number"
-                min={5} max={120}
-                value={form.time_limit_seconds}
-                onChange={(e) => set("time_limit_seconds", Number(e.target.value))}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Punten</label>
-              <input
-                type="number"
-                min={0}
-                value={form.base_points}
-                onChange={(e) => set("base_points", Number(e.target.value))}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Ronde</label>
-              <input
-                type="number"
-                min={1}
-                value={form.round}
-                onChange={(e) => set("round", Number(e.target.value))}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">Volgorde</label>
-              <input
-                type="number"
-                min={0}
-                value={form.order}
-                onChange={(e) => set("order", Number(e.target.value))}
-                className={inputClass}
-              />
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            {([["Tijdslimiet (sec)", "time_limit_seconds", 5, 120], ["Punten", "base_points", 0, 9999], ["Ronde", "round", 1, 99], ["Volgorde", "order", 0, 999]] as const).map(([label, field, min, max]) => (
+              <div key={field} style={F}>
+                <label style={L}>{label}</label>
+                <input type="number" min={min} max={max} value={form[field] as number}
+                  onChange={(e) => set(field, Number(e.target.value))} className="glass-input form-input" />
+              </div>
+            ))}
           </div>
 
-          {/* Dubbele punten */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.is_double_points}
-              onChange={(e) => set("is_double_points", e.target.checked)}
-              className="w-5 h-5 rounded accent-cyan-400"
-            />
-            <span className="text-white/70 font-semibold text-sm">Dubbele punten (finale vraag)</span>
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+            <input type="checkbox" checked={form.is_double_points} onChange={(e) => set("is_double_points", e.target.checked)} style={{ width: "18px", height: "18px", accentColor: "var(--cyan)" }} />
+            <span style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Dubbele punten (finale vraag)</span>
           </label>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:opacity-60"
-            style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-          >
+          <button type="submit" disabled={saving} className="btn-game">
             {saving ? "Opslaan..." : isEdit ? "Wijzigingen opslaan" : "Vraag toevoegen"}
           </button>
         </form>
       </div>
-    </main>
+    </AdminLayout>
   );
 }
 
 export default function Page() {
   return (
-    <Suspense fallback={
-      <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--game-gradient)" }}>
-        <p className="text-white/60">Laden...</p>
-      </main>
-    }>
+    <Suspense fallback={null}>
       <VraagForm />
     </Suspense>
   );

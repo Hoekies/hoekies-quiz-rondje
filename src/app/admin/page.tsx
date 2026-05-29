@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, onSnapshot, query, orderBy, limit, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import AdminLayout from "./AdminLayout";
 
 interface SessionDoc {
   code: string;
@@ -20,7 +21,6 @@ export default function AdminDashboard() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -67,137 +67,72 @@ export default function AdminDashboard() {
     await deleteDoc(doc(db, "sessions", code));
   }
 
-  async function handleSignOut() {
-    await signOut(auth);
-    router.push("/admin/login");
-  }
-
   const statusLabel: Record<string, string> = {
     lobby: "Wacht op spelers",
     active: "Bezig",
     finished: "Afgerond",
   };
+  const statusColor: Record<string, string> = {
+    lobby: "var(--cyan)",
+    active: "var(--green)",
+    finished: "var(--muted)",
+  };
 
-  if (!authChecked) {
-    return (
-      <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--game-gradient)" }}>
-        <p className="text-white/60">Laden...</p>
-      </main>
-    );
-  }
+  if (!authChecked) return null;
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-10 gap-8" style={{ background: "var(--game-gradient)" }}>
+    <AdminLayout title="Dashboard">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "640px" }}>
 
-      {/* Hamburger menu overlay */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 flex" onClick={() => setMenuOpen(false)}>
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50" />
-          {/* Menu panel */}
-          <nav
-            className="relative ml-auto h-full w-64 flex flex-col gap-1 p-6 z-50"
-            style={{ background: "var(--game-gradient)", borderLeft: "1px solid rgba(255,255,255,0.15)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-white font-black text-lg">Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="text-white/50 hover:text-white text-2xl leading-none">✕</button>
-            </div>
-            <a
-              href="/admin/quiz"
-              className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 transition-colors font-semibold"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>📝</span> Vragen beheren
-            </a>
-            <a
-              href="/admin"
-              className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 transition-colors font-semibold"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>🎮</span> Dashboard
-            </a>
-            <div className="mt-auto">
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 text-red-400/80 hover:text-red-400 hover:bg-white/10 transition-colors font-semibold"
-              >
-                <span>→</span> Uitloggen
-              </button>
-            </div>
-          </nav>
+        {/* Nieuwe sessie */}
+        <div>
+          <button onClick={handleCreateSession} disabled={creating} className="btn-game">
+            {creating ? "Aanmaken..." : "🚀 Nieuwe sessie starten"}
+          </button>
+          {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", marginTop: "8px" }}>{createError}</p>}
         </div>
-      )}
 
-      {/* Topbar */}
-      <div className="w-full max-w-lg flex items-center justify-end">
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="flex flex-col gap-1.5 p-2 text-white/60 hover:text-white transition-colors"
-          aria-label="Menu"
-        >
-          <span className="block w-6 h-0.5 bg-current" />
-          <span className="block w-6 h-0.5 bg-current" />
-          <span className="block w-6 h-0.5 bg-current" />
-        </button>
-      </div>
+        {/* Sessies */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Sessies
+          </p>
 
-      {/* Logo */}
-      <img
-        src="/logo-vierkant.png"
-        alt="Hoekies Quiz Rondje"
-        className="w-36 object-contain drop-shadow-xl"
-      />
-
-      {/* Acties */}
-      <div className="w-full max-w-lg flex flex-col gap-3">
-        <button
-          onClick={handleCreateSession}
-          disabled={creating}
-          className="w-full py-5 font-black text-white text-xl transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-        >
-          {creating ? "Aanmaken..." : "Nieuwe sessie starten"}
-        </button>
-        {createError && <p className="text-red-400 text-sm text-center">{createError}</p>}
-      </div>
-
-      {/* Sessies */}
-      <div className="w-full max-w-lg flex flex-col gap-3">
-        <h2 className="text-white/50 text-xs font-bold uppercase tracking-widest text-center">Sessies</h2>
-
-        {sessions.length === 0 ? (
-          <div
-            className="p-6 text-center text-white/40"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
-          >
-            Nog geen sessies. Maak een nieuwe aan!
-          </div>
-        ) : (
-          sessions.map((session) => (
-            <a
-              key={session.code}
-              href={`/admin/sessie/${session.code}`}
-              className="relative flex flex-col items-center gap-1 px-5 py-5 transition-colors hover:bg-white/10"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
-            >
-              <span className="text-2xl font-black tracking-widest" style={{ color: "var(--cyan)" }}>
-                {session.code}
-              </span>
-              <span className="text-white/50 text-sm">{statusLabel[session.status] ?? session.status}</span>
-              <span className="text-white/40 text-xs">{playerCounts[session.code] ?? 0} spelers · {session.state}</span>
-              <button
-                onClick={(e) => { e.preventDefault(); handleDeleteSession(session.code); }}
-                className="absolute top-3 right-3 text-red-400/50 hover:text-red-400 text-base px-1 transition-colors"
-                title="Sessie verwijderen"
+          {sessions.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", color: "var(--muted)", padding: "32px" }}>
+              Nog geen sessies. Maak een nieuwe aan!
+            </div>
+          ) : (
+            sessions.map((session) => (
+              <a
+                key={session.code}
+                href={`/admin/sessie/${session.code}`}
+                className="card"
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", transition: "background 0.15s" }}
               >
-                ✕
-              </button>
-            </a>
-          ))
-        )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.12em" }}>
+                    {session.code}
+                  </span>
+                  <span style={{ color: statusColor[session.status] ?? "var(--muted)", fontSize: "0.82rem", fontWeight: 600 }}>
+                    {statusLabel[session.status] ?? session.status}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  <span style={{ color: "var(--text)", fontSize: "0.85rem" }}>
+                    {playerCounts[session.code] ?? 0} spelers
+                  </span>
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleDeleteSession(session.code); }}
+                    style={{ color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontSize: "1rem", opacity: 0.6, padding: "4px 8px" }}
+                    title="Verwijderen"
+                  >✕</button>
+                </div>
+              </a>
+            ))
+          )}
+        </div>
       </div>
-    </main>
+    </AdminLayout>
   );
 }

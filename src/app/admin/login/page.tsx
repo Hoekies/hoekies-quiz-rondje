@@ -16,7 +16,6 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin");
@@ -27,33 +26,19 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: "var(--game-gradient)" }}
-    >
-      <div className="w-full max-w-sm flex flex-col items-center gap-6">
+    <main className="h-dvh flex flex-col items-center justify-center px-5 overflow-hidden" style={{ background: "var(--game-gradient)" }}>
+      <div style={{ width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", alignItems: "center", gap: "28px" }}>
 
-        {/* Logo — even breed als de card */}
-        <img
-          src="/logo.png"
-          alt="Hoekies Quiz Rondje"
-          className="w-full object-contain drop-shadow-lg"
-        />
+        <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxWidth: "280px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }} />
 
-        {/* Card */}
-        <div
-          className="w-full rounded-2xl flex flex-col gap-6"
-          style={{
-            background: "rgba(255,255,255,0.10)",
-            border: "1px solid rgba(255,255,255,0.18)",
-            padding: "2rem 2.5rem",
-          }}
-        >
-          <h1 className="text-white text-xl font-black text-center">Host inloggen</h1>
+        <div className="glass-card" style={{ width: "100%", padding: "32px 28px" }}>
+          <h1 style={{ color: "var(--ink)", fontWeight: 700, fontSize: "1.3rem", marginBottom: "20px", textAlign: "center" }}>
+            Host inloggen
+          </h1>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 E-mailadres
               </label>
               <input
@@ -62,13 +47,12 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                className="w-full rounded-xl px-4 py-3 text-gray-800 font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                style={{ background: "#fff" }}
+                className="glass-input"
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Wachtwoord
               </label>
               <input
@@ -77,21 +61,17 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
-                className="w-full rounded-xl px-4 py-3 text-gray-800 font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                style={{ background: "#fff" }}
+                className="glass-input"
               />
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm text-center">{error}</p>
+              <div className="melding melding-fout" style={{ fontSize: "0.85rem" }}>
+                ⚠ {error}
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-black text-white text-base transition-all active:scale-95 disabled:opacity-60 mt-2"
-              style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-            >
+            <button type="submit" disabled={loading} className="btn-game" style={{ marginTop: "4px" }}>
               {loading ? "Inloggen..." : "Inloggen"}
             </button>
           </form>

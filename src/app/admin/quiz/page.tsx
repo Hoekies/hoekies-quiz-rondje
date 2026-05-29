@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
+import AdminLayout from "../AdminLayout";
 
 interface QuestionDoc {
   id: string;
@@ -191,105 +192,55 @@ export default function QuizBeheerPage() {
     );
   }
 
-  const handleSignOut = async () => { await signOut(auth); router.push("/admin/login"); };
-
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-10 gap-8" style={{ background: "var(--game-gradient)" }}>
+    <AdminLayout title={`Vragen beheren (${questions.length})`}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "800px" }}>
 
-      {/* Hamburger menu overlay */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 flex" onClick={() => setMenuOpen(false)}>
-          <div className="absolute inset-0 bg-black/50" />
-          <nav
-            className="relative ml-auto h-full w-64 flex flex-col gap-1 p-6 z-50"
-            style={{ background: "var(--game-gradient)", borderLeft: "1px solid rgba(255,255,255,0.15)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-white font-black text-lg">Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="text-white/50 hover:text-white text-2xl leading-none">✕</button>
-            </div>
-            <a href="/admin/quiz" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 transition-colors font-semibold" onClick={() => setMenuOpen(false)}>
-              <span>📝</span> Vragen beheren
-            </a>
-            <a href="/admin" className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 transition-colors font-semibold" onClick={() => setMenuOpen(false)}>
-              <span>🎮</span> Dashboard
-            </a>
-            <div className="mt-auto">
-              <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 text-red-400/80 hover:text-red-400 hover:bg-white/10 transition-colors font-semibold">
-                <span>→</span> Uitloggen
-              </button>
-            </div>
-          </nav>
+        {/* Acties */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} className="btn btn-cyan">
+            + Nieuwe vraag
+          </Link>
+          <button onClick={handleExport} disabled={!questions.length} className="btn btn-ghost">
+            Exporteren (CSV)
+          </button>
+          <label className="btn btn-ghost" style={{ cursor: "pointer" }}>
+            Importeren (CSV)
+            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleImport} />
+          </label>
         </div>
-      )}
 
-      {/* Topbar */}
-      <div className="w-full max-w-2xl flex items-center justify-end">
-        <button onClick={() => setMenuOpen(true)} className="flex flex-col gap-1.5 p-2 text-white/60 hover:text-white transition-colors" aria-label="Menu">
-          <span className="block w-6 h-0.5 bg-current" />
-          <span className="block w-6 h-0.5 bg-current" />
-          <span className="block w-6 h-0.5 bg-current" />
-        </button>
-      </div>
+        {importStatus && <p style={{ color: "var(--green)", fontSize: "0.85rem" }}>{importStatus}</p>}
+        {actionError && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{actionError}</p>}
 
-      {/* Logo */}
-      <img src="/logo-vierkant.png" alt="Hoekies Quiz Rondje" className="w-36 object-contain drop-shadow-xl" />
-
-      {/* Titel */}
-      <div className="w-full max-w-2xl text-center">
-        <h1 className="text-white font-black text-2xl">Vragen beheren</h1>
-        <p className="text-white/40 text-sm mt-1">{questions.length} vragen</p>
-      </div>
-
-      {/* Acties */}
-      <div className="w-full max-w-2xl flex flex-wrap justify-center gap-3">
-        <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} className="px-5 py-2.5 font-bold text-white text-sm transition-all active:scale-95" style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}>
-          + Nieuwe vraag
-        </Link>
-        <button onClick={handleExport} disabled={!questions.length} className="px-5 py-2.5 font-bold text-white/80 text-sm border border-white/20 hover:border-white/40 transition-all disabled:opacity-40">
-          Exporteren (CSV)
-        </button>
-        <label className="px-5 py-2.5 font-bold text-white/80 text-sm border border-white/20 hover:border-white/40 transition-all cursor-pointer">
-          Importeren (CSV)
-          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-        </label>
-      </div>
-
-      {importStatus && <p className="text-green-400 text-sm text-center">{importStatus}</p>}
-      {actionError && <p className="text-red-400 text-sm text-center">{actionError}</p>}
-
-      {/* Vragenlijst */}
-      <div className="w-full max-w-2xl flex flex-col gap-2">
+        {/* Vragenlijst */}
         {questions.length === 0 ? (
-          <div className="p-8 text-center text-white/40" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}>
+          <div className="card" style={{ textAlign: "center", color: "var(--muted)", padding: "40px" }}>
             Nog geen vragen. Voeg er een toe of importeer een CSV.
           </div>
         ) : (
-          questions.map((q) => (
-            <div key={q.id} className="p-4 flex items-start gap-3" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-white/30 text-xs">R{q.round} #{q.order}</span>
-                  <span className="text-xs px-2 py-0.5 font-semibold" style={{ background: "rgba(6,182,212,0.2)", color: "var(--cyan)" }}>{q.type}</span>
-                  {q.is_double_points && <span className="text-xs px-2 py-0.5 font-semibold bg-orange-500/20 text-orange-400">2x</span>}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {questions.map((q) => (
+              <div key={q.id} className="card speler-rij" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{ color: "var(--muted)", fontSize: "0.72rem" }}>R{q.round} #{q.order}</span>
+                    <span className="status-pil status-pil--blauw">{q.type}</span>
+                    {q.is_double_points && <span className="status-pil" style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c" }}>2×</span>}
+                  </div>
+                  <p style={{ color: "var(--ink)", fontWeight: 600, fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.question_text}</p>
+                  <p style={{ color: "var(--green)", fontSize: "0.8rem" }}>✓ {q.correct_answer}</p>
                 </div>
-                <p className="text-white font-semibold text-sm leading-snug truncate">{q.question_text}</p>
-                <p className="text-green-400 text-xs">✓ {q.correct_answer}</p>
+                <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                  <Link href={`/admin/quiz/vraag?quiz_id=${quizId}&id=${q.id}`} className="btn btn-ghost" style={{ fontSize: "0.8rem", padding: "6px 12px" }}>Bewerken</Link>
+                  <button onClick={() => handleDelete(q.id)} className="btn btn-danger" style={{ fontSize: "0.8rem", padding: "6px 12px" }}>Verwijder</button>
+                </div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Link href={`/admin/quiz/vraag?quiz_id=${quizId}&id=${q.id}`} className="text-xs px-3 py-1.5 font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-all">
-                  Bewerken
-                </Link>
-                <button onClick={() => handleDelete(q.id)} className="text-xs px-3 py-1.5 font-semibold text-red-400/60 hover:text-red-400 border border-red-400/20 hover:border-red-400/40 transition-all">
-                  Verwijder
-                </button>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
-    </main>
+    </AdminLayout>
   );
 }
 

@@ -14,6 +14,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import type { SessionState } from "@/types/database";
+import AdminLayout from "../AdminLayout";
 
 interface SessionDoc {
   quiz_id: string;
@@ -240,175 +241,93 @@ export default function HostControlPage() {
     endscreen: "Quiz afgerond",
   };
 
-  if (loading) {
-    return (
-      <main
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <p className="text-white/60">Laden...</p>
-      </main>
-    );
-  }
+  if (loading) return null;
+  if (!session) return <AdminLayout title="Sessie"><p style={{ color: "var(--muted)" }}>Sessie niet gevonden.</p></AdminLayout>;
 
-  if (!session) {
-    return (
-      <main
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <p className="text-white/60">Sessie niet gevonden.</p>
-      </main>
-    );
-  }
+  const S = { display: "flex", flexDirection: "column" as const, gap: "20px", maxWidth: "720px" };
 
   return (
-    <main
-      className="min-h-screen flex flex-col items-center justify-center p-6"
-      style={{ background: "var(--game-gradient)" }}
-    >
-      <div className="w-full max-w-2xl flex flex-col gap-5">
+    <AdminLayout title={`Sessie ${code}`}>
+      <div style={S}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-white font-black text-2xl tracking-tight">
-              Sessie <span style={{ color: "var(--cyan)" }}>{code}</span>
-            </h1>
-            <p className="text-white/40 text-sm mt-0.5 capitalize">
-              {session.state.replace(/_/g, " ")}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <a
-              href={`/qr/${code}`}
-              target="_blank"
-              className="text-xs px-3 py-2 rounded-lg font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-all"
-            >
-              QR ↗
-            </a>
-            <a
-              href={`/presentatie/${code}`}
-              target="_blank"
-              className="text-xs px-3 py-2 rounded-lg font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-all"
-            >
-              Presentatie ↗
-            </a>
-          </div>
+        {/* Links + status */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <span className="status-pil status-pil--blauw" style={{ fontSize: "0.75rem" }}>
+            {session.state.replace(/_/g, " ")}
+          </span>
+          <a href={`/qr/${code}`} target="_blank" className="btn btn-ghost" style={{ fontSize: "0.8rem", padding: "6px 14px" }}>QR ↗</a>
+          <a href={`/presentatie/${code}`} target="_blank" className="btn btn-ghost" style={{ fontSize: "0.8rem", padding: "6px 14px" }}>Presentatie ↗</a>
         </div>
 
-        {/* QR code in lobby */}
+        {/* QR lobby */}
         {session.state === "lobby" && qrDataUrl && (
-          <div
-            className="rounded-2xl p-6 flex flex-col items-center gap-3"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}
-          >
-            <p className="text-white/70 text-sm font-semibold">Scan om mee te doen</p>
+          <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "24px" }}>
+            <p style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Scan om mee te doen</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt="QR code" width={180} height={180} className="rounded-xl" />
-            <p className="text-white/40 text-xs">
+            <img src={qrDataUrl} alt="QR code" width={180} height={180} style={{ borderRadius: "10px" }} />
+            <p style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
               {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
             </p>
           </div>
         )}
 
-        {/* Vraag + spelers naast elkaar op brede schermen */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          {/* Huidige vraag */}
+        {/* Vraag + spelers */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
           {currentQuestion && (
-            <div
-              className="rounded-2xl p-5 flex flex-col gap-3"
-              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-white/40 text-xs uppercase tracking-wider font-bold">
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Vraag {currentIdx + 1} / {questionOrder.length}
                 </span>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                  style={{ background: "rgba(6,182,212,0.2)", color: "var(--cyan)" }}
-                >
-                  {currentQuestion.type}
-                </span>
+                <span className="status-pil status-pil--blauw">{currentQuestion.type}</span>
               </div>
-              <p className="text-white font-bold text-base leading-snug">
-                {currentQuestion.question_text}
-              </p>
-              <p className="text-green-400 text-sm font-bold">
-                ✓ {currentQuestion.correct_answer}
-              </p>
+              <p style={{ color: "var(--ink)", fontWeight: 600, lineHeight: 1.4 }}>{currentQuestion.question_text}</p>
+              <p style={{ color: "var(--green)", fontWeight: 700, fontSize: "0.9rem" }}>✓ {currentQuestion.correct_answer}</p>
               {session.state === "question_open" && (
-                <div
-                  className="flex items-center gap-2 mt-1 px-3 py-2 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
-                >
-                  <span className="text-white/50 text-sm">Antwoorden</span>
-                  <span className="text-white font-black text-lg ml-auto">{answerCount}</span>
-                  <span className="text-white/40 text-sm">/ {players.length}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.06)", padding: "10px 14px", borderRadius: "8px", marginTop: "4px" }}>
+                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Antwoorden</span>
+                  <span style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.2rem", marginLeft: "auto" }}>{answerCount}</span>
+                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>/ {players.length}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Spelers */}
-          <div
-            className="rounded-2xl p-5 flex flex-col gap-2"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
-          >
-            <p className="text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
               Spelers ({players.length})
             </p>
             {players.length === 0 ? (
-              <p className="text-white/30 text-sm">Nog geen spelers...</p>
-            ) : (
-              <>
-                {players.slice(0, 10).map((p, i) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm">
-                    <span className="text-white/30 w-5 text-xs">{i + 1}</span>
-                    <span className="text-white/80 flex-1">{p.name}</span>
-                    <span className="font-bold" style={{ color: "var(--cyan)" }}>{p.score}</span>
-                  </div>
-                ))}
-                {players.length > 10 && (
-                  <p className="text-white/30 text-xs mt-1">+{players.length - 10} meer</p>
-                )}
-              </>
-            )}
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Nog geen spelers...</p>
+            ) : players.slice(0, 10).map((p, i) => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem" }}>
+                <span style={{ color: "var(--muted)", width: "18px", fontSize: "0.75rem" }}>{i + 1}</span>
+                <span style={{ color: "var(--text)", flex: 1 }}>{p.name}</span>
+                <span style={{ color: "var(--cyan)", fontWeight: 700 }}>{p.score}</span>
+              </div>
+            ))}
+            {players.length > 10 && <p style={{ color: "var(--muted)", fontSize: "0.75rem" }}>+{players.length - 10} meer</p>}
           </div>
         </div>
 
-        {/* Error */}
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
 
-        {/* Actieknop */}
+        {/* Actie */}
         {session.state !== "endscreen" ? (
-          <button
-            onClick={handleAction}
-            disabled={actionLoading}
-            className="w-full py-5 rounded-2xl font-black text-white text-2xl transition-all active:scale-95 disabled:opacity-60"
-            style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-          >
+          <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem" }}>
             {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
           </button>
         ) : (
-          <div className="text-center py-6">
-            <p className="text-white text-2xl font-black">Quiz afgerond! 🏆</p>
-            <a href="/admin" className="text-white/50 text-sm mt-2 block hover:text-white/80">
-              Terug naar dashboard
-            </a>
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
+            <a href="/admin" style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "8px", display: "block" }}>Terug naar dashboard</a>
           </div>
         )}
 
-        {/* Reset knop */}
-        <button
-          onClick={handleReset}
-          disabled={actionLoading}
-          className="w-full py-3 rounded-2xl font-bold text-white/60 text-sm transition-all active:scale-95 disabled:opacity-40 hover:text-white border border-white/20 hover:border-red-400/50 hover:text-red-400"
-        >
+        <button onClick={handleReset} disabled={actionLoading} className="btn btn-danger" style={{ opacity: 0.7 }}>
           Sessie resetten (scores op 0)
         </button>
       </div>
-    </main>
+    </AdminLayout>
   );
 }
