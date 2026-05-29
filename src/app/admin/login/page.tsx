@@ -31,27 +31,28 @@ export default function AdminLoginPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ background: "var(--game-gradient)" }}
     >
-      <div className="w-full max-w-xs flex flex-col items-center gap-8">
+      <div className="w-full max-w-sm flex flex-col items-center gap-6">
 
-        {/* Logo */}
+        {/* Logo — even breed als de card */}
         <img
           src="/logo.png"
           alt="Hoekies Quiz Rondje"
-          className="w-56 object-contain drop-shadow-lg"
+          className="w-full object-contain drop-shadow-lg"
         />
 
         {/* Card */}
         <div
-          className="w-full rounded-2xl p-8 flex flex-col gap-5"
+          className="w-full rounded-2xl flex flex-col gap-6"
           style={{
             background: "rgba(255,255,255,0.10)",
             border: "1px solid rgba(255,255,255,0.18)",
+            padding: "2rem 2.5rem",
           }}
         >
           <h1 className="text-white text-xl font-black text-center">Host inloggen</h1>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
                 E-mailadres
               </label>
@@ -66,7 +67,7 @@ export default function AdminLoginPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
                 Wachtwoord
               </label>
@@ -88,7 +89,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-black text-white text-base transition-all active:scale-95 disabled:opacity-60 mt-1"
+              className="w-full py-3 rounded-xl font-black text-white text-base transition-all active:scale-95 disabled:opacity-60 mt-2"
               style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
             >
               {loading ? "Inloggen..." : "Inloggen"}
