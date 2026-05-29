@@ -8,7 +8,6 @@ import {
   onSnapshot,
   query,
   where,
-  getDocs,
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -25,6 +24,7 @@ type Step =
   | "join"
   | "inactive"
   | "lobby"
+  | "laatste_vraag"
   | "question"
   | "answered"
   | "reveal"
@@ -122,22 +122,15 @@ export default function SpeelPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("quiz_player_id");
-      if (stored) {
-        console.log(`[TIMING] Restored playerId from sessionStorage: ${stored}`);
-        setPlayerId(stored);
-      }
+      if (stored) setPlayerId(stored);
     }
-  }, []); // Only on mount
+  }, []);
 
   // Subscribe to session
-  const sessionT0Ref = useRef(Date.now());
   useEffect(() => {
-    sessionT0Ref.current = Date.now();
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as SessionDoc;
-      const delta = Date.now() - sessionT0Ref.current;
-      console.log(`[TIMING] Session onSnapshot: ${delta}ms (state=${data.state}, qid=${data.current_question_id?.slice(0,6)})`);
       setSession(data);
     });
     return unsub;
@@ -212,7 +205,6 @@ export default function SpeelPage() {
       return;
     }
     if (!playerId) {
-      console.log(`[TIMING] No playerId, step → join (sessionStorage had: ${sessionStorage.getItem("quiz_player_id")})`);
       setStep("join");
       return;
     }
@@ -220,7 +212,6 @@ export default function SpeelPage() {
     switch (session.state) {
       case "lobby":
       case "ronde_intro":
-        console.log(`[TIMING] Step → lobby`);
         setStep("lobby");
         break;
       case "question_open":
@@ -230,15 +221,12 @@ export default function SpeelPage() {
           const ans = answersMapRef.current[qid];
           setSelectedAnswer(ans.answer ?? null);
           setAnswerResult({ is_correct: ans.is_correct, points_awarded: ans.points_awarded });
-          console.log(`[TIMING] Step → answered (already answered)`);
           setStep("answered");
         } else {
           setSelectedAnswer(null);
           setAnswerResult(null);
           const t0 = Date.now();
           setQuestionStart(t0);
-          const qLoaded = qid && questionsMap[qid];
-          console.log(`[TIMING] Step → question. Q loaded=${!!qLoaded}, qid=${qid?.slice(0,6)}`);
           setStep("question");
         }
         break;
@@ -247,6 +235,9 @@ export default function SpeelPage() {
         break;
       case "leaderboard":
         setStep("leaderboard");
+        break;
+      case "laatste_vraag":
+        setStep("laatste_vraag");
         break;
       case "finale":
         setStep("lobby");
@@ -299,12 +290,6 @@ export default function SpeelPage() {
     ? (questionsMap[session.current_question_id] ?? null)
     : null;
 
-  useEffect(() => {
-    if (question) {
-      const delta = Date.now() - questionStart;
-      console.log(`[TIMING] Question available (${delta}ms after question_open): "${question.question_text?.slice(0, 40)}..."`);
-    }
-  }, [question?.id, questionStart]);
 
   useEffect(() => {
     if (!question?.options) { setShuffledOptions([]); return; }
@@ -461,6 +446,31 @@ export default function SpeelPage() {
     );
   }
 
+  // ── LAATSTE VRAAG ────────────────────────────────────────────────────────
+  if (step === "laatste_vraag") {
+    const myRankNow = ranks.findIndex((p) => p.id === playerId) + 1;
+    return (
+      <div className="speler-shell" style={themeBg ? { backgroundImage: `linear-gradient(rgba(6,14,26,0.65), rgba(6,14,26,0.75)), url(${themeBg})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(3rem, 14vw, 5rem)", lineHeight: 1 }}>🏁</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.4rem, 6vw, 2rem)", textAlign: "center", lineHeight: 1.2 }}>Dit is de laatste vraag!</h2>
+          <p style={{ color: "var(--cyan)", fontWeight: 700, fontSize: "clamp(1rem, 4vw, 1.3rem)", textAlign: "center" }}>
+            Geef alles wat je hebt 💪
+          </p>
+          {myRankNow > 0 && (
+            <div className="glass-card" style={{ padding: "14px 24px", textAlign: "center" }}>
+              {myRankNow === 1 && <p style={{ color: "var(--gold)", fontWeight: 700 }}>Jij staat op #1 — verdedig je positie! 🥇</p>}
+              {myRankNow === 2 && <p style={{ color: "#9ca3af", fontWeight: 700 }}>Jij staat op #2 — nog één kans om #1 te pakken! 🥈</p>}
+              {myRankNow === 3 && <p style={{ color: "#b45309", fontWeight: 700 }}>Jij staat op #3 — alles of niets! 🥉</p>}
+              {myRankNow > 3 && <p style={{ color: "var(--text)", fontWeight: 700 }}>Jij staat op #{myRankNow} — misschien kun je nog stijgen! ⬆️</p>}
+            </div>
+          )}
+          <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Wacht op de host om te starten...</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── LOBBY ────────────────────────────────────────────────────────────────
   if (step === "lobby") {
     return (
@@ -485,14 +495,11 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
-    const openedMs = session?.question_opened_at?.seconds ? Math.round(Date.now() - (session.question_opened_at.seconds * 1000)) : 0;
     return (
       <div className="speler-shell">
-        <header className="speler-header" style={{ justifyContent: "space-between" }}>
+        <header className="speler-header">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
-          <span style={{ color: "var(--cyan)", fontSize: "clamp(11px, 2vw, 14px)", fontWeight: "bold", fontFamily: "monospace" }}>
-            {openedMs}ms
-          </span>
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
           <div className="glass-card" style={{ padding: "clamp(12px, 2.5vw, 16px)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(60px, 15vh, 100px)" }}>

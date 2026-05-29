@@ -9,10 +9,8 @@ async function verifyAdmin(req: NextRequest): Promise<boolean> {
   const token = authHeader.slice(7);
   try {
     const decoded = await adminAuth.verifyIdToken(token);
-    console.log("[auth] decoded claims:", JSON.stringify(decoded));
     return decoded.rol === "admin";
-  } catch (err) {
-    console.error("[auth] verifyIdToken failed:", err);
+  } catch {
     return false;
   }
 }

@@ -8,11 +8,10 @@ import {
   onSnapshot,
   query,
   where,
-  getDocs,
   updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import type { SessionState } from "@/types/database";
 import AdminLayout from "../../AdminLayout";
@@ -231,6 +230,12 @@ export default function HostControlPage() {
             current_question_id: nextQuestion.id,
             question_index: currentIdx + 1,
           });
+        } else if (currentIdx + 1 === questionOrder.length - 1 && !session?.force_end) {
+          // Volgende vraag is de laatste → motivatiescherm eerst
+          patchSession("laatste_vraag", {
+            current_question_id: nextQuestionId ?? null,
+            question_index: currentIdx + 1,
+          });
         } else {
           patchSession("question_open", {
             current_question_id: nextQuestionId ?? null,
@@ -238,6 +243,12 @@ export default function HostControlPage() {
             question_opened_at: serverTimestamp(),
           });
         }
+        break;
+      case "laatste_vraag":
+        patchSession("question_open", {
+          current_question_id: session.current_question_id,
+          question_opened_at: serverTimestamp(),
+        });
         break;
       case "finale":
         patchSession("question_open", {
@@ -273,6 +284,7 @@ export default function HostControlPage() {
     answer_reveal: "📊 Leaderboard",
     leaderboard: nextLabel,
     finale: "Toon finale vraag",
+    laatste_vraag: "🏁 Start laatste vraag",
     paused: "▶ Hervat quiz",
     resuming: "⏱ Aftellen...",
     endscreen: "Quiz afgerond",
