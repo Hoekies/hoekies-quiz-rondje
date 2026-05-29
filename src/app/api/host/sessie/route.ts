@@ -65,6 +65,18 @@ export async function POST(req: NextRequest) {
     resolvedQuizId = quizzesSnap.docs[0].id;
   }
 
+  // Shuffle question IDs (Fisher-Yates)
+  const questionsSnap = await adminDb
+    .collection("quizzes")
+    .doc(resolvedQuizId)
+    .collection("questions")
+    .get();
+  const questionIds = questionsSnap.docs.map((d) => d.id);
+  for (let i = questionIds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questionIds[i], questionIds[j]] = [questionIds[j], questionIds[i]];
+  }
+
   await adminDb.collection("sessions").doc(code).set({
     quiz_id: resolvedQuizId,
     code,
@@ -72,6 +84,7 @@ export async function POST(req: NextRequest) {
     state: "lobby",
     current_question_id: null,
     question_index: 0,
+    question_order: questionIds,
     started_at: null,
     created_at: FieldValue.serverTimestamp(),
   });

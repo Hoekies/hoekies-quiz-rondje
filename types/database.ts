@@ -40,6 +40,7 @@ export interface Session {
   current_question_id: string | null;
   state: SessionState;
   started_at: string | null;
+  question_order?: string[];
 }
 
 export interface Player {

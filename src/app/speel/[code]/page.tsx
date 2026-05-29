@@ -73,6 +73,7 @@ export default function SpeelPage() {
   const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
 
   const [playerCount, setPlayerCount] = useState(0);
   const [myScore, setMyScore] = useState(0);
@@ -177,6 +178,17 @@ export default function SpeelPage() {
   useEffect(() => {
     setSelectedAnswer(null);
   }, [session?.current_question_id]);
+
+  // Shuffle antwoorden eenmalig als nieuwe vraag laadt
+  useEffect(() => {
+    if (!question?.options) { setShuffledOptions([]); return; }
+    const opts = [...question.options];
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    setShuffledOptions(opts);
+  }, [question?.id]);
 
   // Join handler
   async function handleJoin(e: React.FormEvent) {
@@ -309,7 +321,7 @@ export default function SpeelPage() {
 
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
-    const options = question.options ?? [];
+    const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
     return (
       <main
         className="h-dvh flex flex-col p-4 gap-3 overflow-hidden"

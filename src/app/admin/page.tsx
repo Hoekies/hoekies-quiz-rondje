@@ -146,7 +146,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* New session button */}
+        {/* Acties */}
         <div className="flex flex-col gap-2">
           <button
             onClick={handleCreateSession}
@@ -156,6 +156,12 @@ export default function AdminDashboard() {
           >
             {creating ? "Aanmaken..." : "Nieuwe sessie starten"}
           </button>
+          <a
+            href="/admin/quiz"
+            className="w-full py-3 rounded-xl font-bold text-white/70 text-sm text-center border border-white/20 hover:border-white/40 hover:text-white transition-all"
+          >
+            Vragen beheren
+          </a>
           {createError && (
             <p className="text-red-400 text-sm text-center">{createError}</p>
           )}

@@ -21,6 +21,7 @@ interface SessionDoc {
   state: SessionState;
   current_question_id: string | null;
   question_index: number;
+  question_order?: string[];
   started_at: unknown;
 }
 
@@ -168,24 +169,44 @@ export default function HostControlPage() {
   const currentQuestion = questions.find(
     (q) => q.id === session?.current_question_id
   );
-  const currentIndex = currentQuestion ? questions.indexOf(currentQuestion) : -1;
-  const nextQuestion = questions[currentIndex + 1] ?? null;
-  const isLastQuestion =
-    currentIndex === questions.length - 1 && questions.length > 0;
+  // Gebruik question_order voor willekeurige volgorde; val terug op gesorteerde lijst
+  const questionOrder: string[] =
+    session?.question_order && session.question_order.length > 0
+      ? session.question_order
+      : questions.map((q) => q.id);
+  const currentIdx = questionOrder.indexOf(session?.current_question_id ?? "");
+  const nextQuestionId = questionOrder[currentIdx + 1];
+  const nextQuestion = questions.find((q) => q.id === nextQuestionId) ?? null;
+  const isLastQuestion = currentIdx >= 0 && currentIdx === questionOrder.length - 1;
+
+  async function handleReset() {
+    if (!window.confirm("Sessie volledig resetten? Alle scores worden op 0 gezet en antwoorden gewist.")) return;
+    setActionLoading(true);
+    setError("");
+    const user = auth.currentUser;
+    if (!user) { router.push("/admin/login"); return; }
+    const token = await user.getIdToken();
+    const res = await fetch(`/api/host/sessie/${code}/reset`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    if (!res.ok) setError(json.error ?? "Fout bij resetten");
+    setActionLoading(false);
+  }
 
   function handleAction() {
     if (!session) return;
     switch (session.state) {
       case "lobby":
         patchSession("ronde_intro", {
-          current_question_id: questions[0]?.id ?? null,
+          current_question_id: questionOrder[0] ?? null,
           question_index: 0,
         });
         break;
       case "ronde_intro":
         patchSession("question_open", {
-          current_question_id:
-            currentQuestion?.id ?? questions[0]?.id ?? null,
+          current_question_id: currentQuestion?.id ?? questionOrder[0] ?? null,
         });
         break;
       case "question_open":
@@ -200,12 +221,12 @@ export default function HostControlPage() {
         } else if (nextQuestion?.is_double_points) {
           patchSession("finale", {
             current_question_id: nextQuestion.id,
-            question_index: currentIndex + 1,
+            question_index: currentIdx + 1,
           });
         } else {
           patchSession("question_open", {
-            current_question_id: nextQuestion?.id ?? null,
-            question_index: currentIndex + 1,
+            current_question_id: nextQuestionId ?? null,
+            question_index: currentIdx + 1,
           });
         }
         break;
@@ -392,6 +413,15 @@ export default function HostControlPage() {
             </a>
           </div>
         )}
+
+        {/* Reset knop */}
+        <button
+          onClick={handleReset}
+          disabled={actionLoading}
+          className="w-full py-3 rounded-2xl font-bold text-white/60 text-sm transition-all active:scale-95 disabled:opacity-40 hover:text-white border border-white/20 hover:border-red-400/50 hover:text-red-400"
+        >
+          Sessie resetten (scores op 0)
+        </button>
       </div>
     </main>
   );
