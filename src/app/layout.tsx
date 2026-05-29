@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const nunito = Nunito({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font",
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0D3A5C",
+  themeColor: "#060e1a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl" className={`${nunito.variable} h-full`}>
+    <html lang="nl" className={`${spaceGrotesk.variable} h-full`}>
       <body className="min-h-full">{children}</body>
     </html>
   );

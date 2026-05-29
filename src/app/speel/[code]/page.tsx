@@ -272,76 +272,56 @@ export default function SpeelPage() {
   // ── JOIN ─────────────────────────────────────────────────────────────────
   if (step === "join") {
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <div className="w-full max-w-sm flex flex-col gap-6">
-          <div className="text-center">
-            <h1 className="text-white font-black text-2xl">Sessie {code}</h1>
-            <p className="text-white/50 text-sm mt-1">
-              Voer je naam in om mee te doen
-            </p>
+      <div className="speler-shell">
+        <header className="speler-header">
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "32px", objectFit: "contain" }} />
+          <span style={{ color: "var(--cyan)", fontWeight: 700, letterSpacing: "0.12em" }}>{code}</span>
+        </header>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+          <div style={{ width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Voer je naam in om mee te doen</p>
+            </div>
+            <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jouw naam"
+                maxLength={24}
+                autoFocus
+                className="glass-input"
+                style={{ fontSize: "1.1rem", fontWeight: 600, textAlign: "center" }}
+              />
+              {joinError && <p style={{ color: "var(--red)", fontSize: "0.85rem", textAlign: "center" }}>{joinError}</p>}
+              <button type="submit" disabled={joining || !name.trim()} className="btn-game">
+                {joining ? "Deelnemen..." : "Meedoen 🎮"}
+              </button>
+            </form>
           </div>
-          <form onSubmit={handleJoin} className="flex flex-col gap-4">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Jouw naam"
-              maxLength={24}
-              autoFocus
-              className="w-full rounded-xl px-5 py-4 text-white text-xl font-bold border-2 focus:outline-none"
-              style={{
-                background: "rgba(255,255,255,0.10)",
-                borderColor: "rgba(255,255,255,0.20)",
-              }}
-            />
-            {joinError && (
-              <p className="text-red-400 text-sm text-center">{joinError}</p>
-            )}
-            <button
-              type="submit"
-              disabled={joining || !name.trim()}
-              className="w-full py-4 rounded-xl font-black text-white text-lg active:scale-95 disabled:opacity-60 transition-all"
-              style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-            >
-              {joining ? "Deelnemen..." : "Meedoen 🎮"}
-            </button>
-          </form>
         </div>
-      </main>
+      </div>
     );
   }
 
   // ── LOBBY ────────────────────────────────────────────────────────────────
   if (step === "lobby") {
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <div className="text-center flex flex-col gap-3">
-          <p className="text-6xl">⏳</p>
-          <h2 className="text-white font-black text-2xl">
-            Wachten op de host...
-          </h2>
-          <p className="text-white/50">
-            {playerCount} speler{playerCount !== 1 ? "s" : ""} in de lobby
-          </p>
+      <div className="speler-shell">
+        <header className="speler-header">
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "32px", objectFit: "contain" }} />
+          <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{playerCount} speler{playerCount !== 1 ? "s" : ""}</span>
+        </header>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "4rem" }}>⏳</p>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>Wachten op de host...</h2>
+          {name && (
+            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
+              <p style={{ color: "var(--cyan)", fontWeight: 600 }}>👤 {name} — Je bent erin! 🎉</p>
+            </div>
+          )}
         </div>
-        {name && (
-          <div
-            className="px-6 py-3 rounded-full font-bold text-white"
-            style={{
-              background: "rgba(6,182,212,0.25)",
-              border: "1px solid rgba(6,182,212,0.4)",
-            }}
-          >
-            👤 {name} — Je bent erin! 🎉
-          </div>
-        )}
-      </main>
+      </div>
     );
   }
 
@@ -349,84 +329,67 @@ export default function SpeelPage() {
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
     return (
-      <main
-        className="h-dvh flex flex-col p-4 gap-3 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <div
-          className="rounded-xl p-4 shrink-0 flex items-center justify-center"
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            minHeight: "72px",
-          }}
-        >
-          <p className="text-white font-black text-xl text-center leading-snug">
-            {question.question_text}
-          </p>
+      <div className="speler-shell">
+        <div className="speler-content" style={{ padding: "12px", gap: "10px" }}>
+          <div className="glass-card" style={{ padding: "16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80px" }}>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem", textAlign: "center", lineHeight: 1.4 }}>
+              {question.question_text}
+            </p>
+          </div>
+
+          {question.type === "image" && question.media_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px" }} />
+          )}
+          {question.type === "audio" && question.media_url && (
+            <audio controls src={question.media_url} style={{ width: "100%", flexShrink: 0 }} />
+          )}
+
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
+            {options.map((opt: string, i: number) => (
+              <button
+                key={i}
+                onClick={() => handleAnswer(opt)}
+                disabled={!!selectedAnswer}
+                className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}
+              >
+                <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{LABEL[i]}</span>
+                <span>{opt}</span>
+              </button>
+            ))}
+          </div>
         </div>
-
-        {question.type === "image" && question.media_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={question.media_url}
-            alt="Afbeelding"
-            className="w-full rounded-xl shrink-0 object-contain"
-            style={{ maxHeight: "30%" }}
-          />
-        )}
-
-        {question.type === "audio" && question.media_url && (
-          <audio controls src={question.media_url} className="w-full shrink-0" />
-        )}
-
-        <div className="flex-1 flex flex-col gap-2 min-h-0">
-          {options.map((opt: string, i: number) => (
-            <button
-              key={i}
-              onClick={() => handleAnswer(opt)}
-              disabled={!!selectedAnswer}
-              className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}
-            >
-              <span className="text-xl font-black opacity-60 w-6">
-                {LABEL[i]}
-              </span>
-              <span>{opt}</span>
-            </button>
-          ))}
-        </div>
-      </main>
+      </div>
     );
   }
 
-  // Vraag laadt nog (step=question maar verkeerd of geen id)
+  // Vraag laadt nog
   if (step === "question") {
     return (
-      <main className="h-dvh flex items-center justify-center overflow-hidden" style={{ background: "var(--game-gradient)" }}>
-        <p className="text-white/60 text-lg font-bold animate-pulse">Vraag laden…</p>
-      </main>
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "var(--muted)", fontWeight: 600 }} className="animate-pulse">Vraag laden…</p>
+        </div>
+      </div>
     );
   }
 
   // ── ANSWERED ─────────────────────────────────────────────────────────────
   if (step === "answered") {
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center gap-4 px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <p className="text-5xl">⏳</p>
-        <h2 className="text-white font-black text-2xl text-center">
-          Antwoord verzonden! ⏳
-        </h2>
-        {selectedAnswer && (
-          <p className="text-white/60 text-lg">
-            Jouw keuze:{" "}
-            <strong className="text-white">{selectedAnswer}</strong>
-          </p>
-        )}
-        <p className="text-white/40 text-sm">Wachten op de host...</p>
-      </main>
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "3.5rem" }}>⏳</p>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>Antwoord verzonden!</h2>
+          {selectedAnswer && (
+            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw keuze</p>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem", marginTop: "4px" }}>{selectedAnswer}</p>
+            </div>
+          )}
+          <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Wachten op de host...</p>
+        </div>
+      </div>
     );
   }
 
@@ -434,124 +397,77 @@ export default function SpeelPage() {
   if (step === "reveal") {
     const correct = answerResult?.is_correct;
     const pts = answerResult?.points_awarded ?? 0;
-
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <p className="text-8xl">{correct ? "✅" : "❌"}</p>
-        <h2 className="text-white font-black text-3xl text-center">
-          {correct ? "Goed!" : "Helaas..."}
-        </h2>
-        {correct && pts > 0 && (
-          <div
-            className="px-6 py-3 rounded-xl text-center"
-            style={{
-              background: "rgba(26,152,80,0.25)",
-              border: "1px solid rgba(26,152,80,0.5)",
-            }}
-          >
-            <p className="text-green-400 font-black text-2xl">+{pts} punten</p>
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "5rem" }}>{correct ? "✅" : "❌"}</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>{correct ? "Goed!" : "Helaas..."}</h2>
+          {correct && pts > 0 && (
+            <div className="glass-card" style={{ padding: "16px 32px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.12)" }}>
+              <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.8rem" }}>+{pts} punten</p>
+            </div>
+          )}
+          <div style={{ textAlign: "center" }}>
+            {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{selectedAnswer}</span></p>}
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Totaal: <strong style={{ color: "var(--cyan)" }}>{myScore} punten</strong></p>
           </div>
-        )}
-        {selectedAnswer && (
-          <p className="text-white/50 text-sm">
-            Jouw antwoord:{" "}
-            <span className="text-white/80">{selectedAnswer}</span>
-          </p>
-        )}
-        <p className="text-white/40 text-sm mt-2">
-          Totaal:{" "}
-          <strong className="text-white/70">{myScore} punten</strong>
-        </p>
-      </main>
+        </div>
+      </div>
     );
   }
 
   // ── LEADERBOARD ──────────────────────────────────────────────────────────
   if (step === "leaderboard") {
-    const medals = [
-      "leaderboard-row--gold",
-      "leaderboard-row--silver",
-      "leaderboard-row--bronze",
-    ];
+    const medals = ["leaderboard-row--gold", "leaderboard-row--silver", "leaderboard-row--bronze"];
     const emoji = ["🥇", "🥈", "🥉"];
-
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <h2 className="text-white font-black text-2xl">Tussenstand</h2>
-        <div className="w-full flex flex-col gap-3">
-          {ranks.map((p, i) => (
-            <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
-              <span className="text-xl w-6 text-center">{emoji[i]}</span>
-              <span className="font-black flex-1">{p.name}</span>
-              <span className="font-black" style={{ color: "var(--cyan)" }}>
-                {p.score}
-              </span>
-            </div>
-          ))}
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "32px 20px" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1.3rem" }}>Tussenstand</h2>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {ranks.map((p, i) => (
+              <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
+                <span style={{ fontSize: "1.2rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}</span>
+                <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
+              </div>
+            ))}
+          </div>
+          <div className="glass-card" style={{ padding: "16px 28px", textAlign: "center" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score</p>
+            <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.6rem" }}>{myScore} punten</p>
+          </div>
         </div>
-        <div
-          className="px-6 py-3 rounded-xl text-center"
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          <p className="text-white/60 text-sm">Jouw score</p>
-          <p className="text-white font-black text-2xl">{myScore} punten</p>
-        </div>
-      </main>
+      </div>
     );
   }
 
   // ── ENDSCREEN ────────────────────────────────────────────────────────────
   if (step === "endscreen") {
-    const messages = [
-      "Top gespeeld! 🎉",
-      "Wat een quiz! 🧠",
-      "Tot de volgende keer! 🍻",
-    ];
+    const messages = ["Top gespeeld! 🎉", "Wat een quiz! 🧠", "Tot de volgende keer! 🍻"];
     const msg = messages[myScore % messages.length];
-
     return (
-      <main
-        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
-        style={{ background: "var(--game-gradient)" }}
-      >
-        <p className="text-6xl">🏆</p>
-        <h2 className="text-white font-black text-3xl text-center">
-          Quiz voorbij!
-        </h2>
-        <div
-          className="px-8 py-5 rounded-2xl text-center"
-          style={{
-            background: "rgba(6,182,212,0.15)",
-            border: "1px solid rgba(6,182,212,0.35)",
-          }}
-        >
-          <p className="text-white/60 text-sm">Eindstand</p>
-          <p className="font-black text-4xl" style={{ color: "var(--cyan)" }}>
-            {myScore}
-          </p>
-          <p className="text-white/50 text-sm">punten</p>
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "4rem" }}>🏆</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>Quiz voorbij!</h2>
+          <div className="glass-card" style={{ padding: "24px 40px", textAlign: "center", borderColor: "var(--glass-border)" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Eindstand</p>
+            <p style={{ fontWeight: 900, fontSize: "3rem", color: "var(--cyan)", lineHeight: 1.1 }}>{myScore}</p>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>punten</p>
+          </div>
+          <p style={{ color: "var(--text)", fontSize: "1.1rem", textAlign: "center" }}>{msg}</p>
         </div>
-        <p className="text-white/60 text-lg text-center">{msg}</p>
-      </main>
+      </div>
     );
   }
 
   // Fallback
   return (
-    <main
-      className="h-dvh flex items-center justify-center overflow-hidden"
-      style={{ background: "var(--game-gradient)" }}
-    >
-      <p className="text-white/50">Laden...</p>
-    </main>
+    <div className="speler-shell">
+      <div className="speler-content" style={{ alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "var(--muted)" }}>Laden...</p>
+      </div>
+    </div>
   );
 }

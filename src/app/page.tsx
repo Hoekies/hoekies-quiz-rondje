@@ -23,22 +23,15 @@ export default function LandingPage() {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-between px-4 py-12"
+      className="h-dvh flex flex-col items-center justify-between px-5 py-10 overflow-hidden"
       style={{ background: "var(--game-gradient)" }}
     >
-      {/* Spacer top */}
       <div />
 
-      <div className="w-full max-w-sm flex flex-col items-center gap-10">
-        {/* Logo */}
-        <img
-          src="/logo.png"
-          alt="Hoekies Quiz Rondje"
-          className="w-72 object-contain drop-shadow-xl"
-        />
+      <div style={{ width: "100%", maxWidth: "340px", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}>
+        <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "260px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }} />
 
-        {/* Formulier */}
-        <form onSubmit={handleJoin} className="w-full flex flex-col gap-4">
+        <form onSubmit={handleJoin} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
           <input
             type="text"
             value={code}
@@ -47,38 +40,17 @@ export default function LandingPage() {
             maxLength={6}
             autoFocus
             autoComplete="off"
-            className="w-full rounded-2xl px-5 py-5 text-center text-3xl font-black tracking-widest uppercase border-2 focus:outline-none transition-colors"
-            style={{
-              background: "rgba(255,255,255,0.10)",
-              color: "var(--cyan)",
-              caretColor: "var(--cyan)",
-              borderColor: "rgba(255,255,255,0.20)",
-            }}
+            className="glass-input"
+            style={{ textAlign: "center", fontSize: "1.8rem", fontWeight: 900, letterSpacing: "0.2em", color: "var(--cyan)", caretColor: "var(--cyan)" }}
           />
-
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-5 rounded-2xl text-xl font-black text-white transition-all active:scale-95 disabled:opacity-60"
-            style={{
-              background: "var(--cyan)",
-              boxShadow: "var(--crt-glow)",
-            }}
-          >
+          {error && <p style={{ color: "var(--red)", fontSize: "0.85rem", textAlign: "center" }}>{error}</p>}
+          <button type="submit" disabled={loading} className="btn-game" style={{ fontSize: "1.15rem" }}>
             {loading ? "Laden..." : "Meedoen 🎮"}
           </button>
         </form>
       </div>
 
-      {/* Host link onderaan */}
-      <a
-        href="/admin/login"
-        className="text-white/30 text-sm hover:text-white/60 transition-colors"
-      >
+      <a href="/admin/login" style={{ color: "var(--muted)", fontSize: "0.85rem", textDecoration: "none" }}>
         Host inloggen →
       </a>
     </main>
