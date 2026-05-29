@@ -41,7 +41,6 @@ body {
   color: #fff;
   text-align: left;
   width: 100%;
-  min-height: 64px;
   display: flex;
   align-items: center;
   gap: 12px;

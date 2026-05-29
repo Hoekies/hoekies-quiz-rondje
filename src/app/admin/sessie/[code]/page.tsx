@@ -257,20 +257,18 @@ export default function HostControlPage() {
 
   return (
     <main
-      className="min-h-screen p-4"
+      className="min-h-screen flex flex-col items-center justify-center p-6"
       style={{ background: "var(--game-gradient)" }}
     >
-      <div className="max-w-xl mx-auto flex flex-col gap-4">
+      <div className="w-full max-w-2xl flex flex-col gap-5">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white font-black text-xl">
-              Sessie{" "}
-              <span style={{ color: "var(--cyan)" }} className="tracking-widest">
-                {code}
-              </span>
+            <h1 className="text-white font-black text-2xl tracking-tight">
+              Sessie <span style={{ color: "var(--cyan)" }}>{code}</span>
             </h1>
-            <p className="text-white/50 text-sm capitalize">
+            <p className="text-white/40 text-sm mt-0.5 capitalize">
               {session.state.replace(/_/g, " ")}
             </p>
           </div>
@@ -278,14 +276,14 @@ export default function HostControlPage() {
             <a
               href={`/qr/${code}`}
               target="_blank"
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all"
+              className="text-xs px-3 py-2 rounded-lg font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-all"
             >
               QR ↗
             </a>
             <a
               href={`/presentatie/${code}`}
               target="_blank"
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all"
+              className="text-xs px-3 py-2 rounded-lg font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 transition-all"
             >
               Presentatie ↗
             </a>
@@ -295,116 +293,101 @@ export default function HostControlPage() {
         {/* QR code in lobby */}
         {session.state === "lobby" && qrDataUrl && (
           <div
-            className="rounded-xl p-4 flex flex-col items-center gap-3"
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}
+            className="rounded-2xl p-6 flex flex-col items-center gap-3"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}
           >
-            <p className="text-white/70 text-sm font-semibold">
-              Scan om mee te doen
-            </p>
+            <p className="text-white/70 text-sm font-semibold">Scan om mee te doen</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrDataUrl}
-              alt="QR code"
-              width={160}
-              height={160}
-              className="rounded-lg"
-            />
-            <p className="text-white/50 text-xs">
-              {typeof window !== "undefined"
-                ? `${window.location.origin}/speel/${code}`
-                : ""}
+            <img src={qrDataUrl} alt="QR code" width={180} height={180} className="rounded-xl" />
+            <p className="text-white/40 text-xs">
+              {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
             </p>
           </div>
         )}
 
-        {/* Current question info */}
-        {currentQuestion && (
-          <div
-            className="rounded-xl p-4 flex flex-col gap-2"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.10)",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-white/50 text-xs uppercase tracking-wider">
-                Vraag {currentIndex + 1} / {questions.length}
-              </span>
-              <span className="text-white/50 text-xs">{currentQuestion.type}</span>
-            </div>
-            <p className="text-white font-semibold text-sm leading-snug">
-              {currentQuestion.question_text}
-            </p>
-            <p className="text-green-400 text-xs font-bold">
-              Correct: {currentQuestion.correct_answer}
-            </p>
-            {session.state === "question_open" && (
-              <p className="text-white/60 text-sm mt-1">
-                Antwoorden:{" "}
-                <strong className="text-white">{answerCount}</strong> /{" "}
-                {players.length}
+        {/* Vraag + spelers naast elkaar op brede schermen */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Huidige vraag */}
+          {currentQuestion && (
+            <div
+              className="rounded-2xl p-5 flex flex-col gap-3"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white/40 text-xs uppercase tracking-wider font-bold">
+                  Vraag {currentIndex + 1} / {questions.length}
+                </span>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                  style={{ background: "rgba(6,182,212,0.2)", color: "var(--cyan)" }}
+                >
+                  {currentQuestion.type}
+                </span>
+              </div>
+              <p className="text-white font-bold text-base leading-snug">
+                {currentQuestion.question_text}
               </p>
-            )}
-          </div>
-        )}
-
-        {/* Players */}
-        <div
-          className="rounded-xl p-4"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.10)",
-          }}
-        >
-          <p className="text-white/50 text-xs uppercase tracking-wider mb-2">
-            Spelers ({players.length})
-          </p>
-          {players.length === 0 ? (
-            <p className="text-white/30 text-sm">Nog geen spelers...</p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {players.slice(0, 8).map((p) => (
-                <div key={p.id} className="flex justify-between text-sm">
-                  <span className="text-white/80">{p.name}</span>
-                  <span className="text-white/50">{p.score} pts</span>
+              <p className="text-green-400 text-sm font-bold">
+                ✓ {currentQuestion.correct_answer}
+              </p>
+              {session.state === "question_open" && (
+                <div
+                  className="flex items-center gap-2 mt-1 px-3 py-2 rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                >
+                  <span className="text-white/50 text-sm">Antwoorden</span>
+                  <span className="text-white font-black text-lg ml-auto">{answerCount}</span>
+                  <span className="text-white/40 text-sm">/ {players.length}</span>
                 </div>
-              ))}
-              {players.length > 8 && (
-                <p className="text-white/30 text-xs">
-                  +{players.length - 8} meer
-                </p>
               )}
             </div>
           )}
+
+          {/* Spelers */}
+          <div
+            className="rounded-2xl p-5 flex flex-col gap-2"
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+          >
+            <p className="text-white/40 text-xs uppercase tracking-wider font-bold mb-1">
+              Spelers ({players.length})
+            </p>
+            {players.length === 0 ? (
+              <p className="text-white/30 text-sm">Nog geen spelers...</p>
+            ) : (
+              <>
+                {players.slice(0, 10).map((p, i) => (
+                  <div key={p.id} className="flex items-center justify-between text-sm">
+                    <span className="text-white/30 w-5 text-xs">{i + 1}</span>
+                    <span className="text-white/80 flex-1">{p.name}</span>
+                    <span className="font-bold" style={{ color: "var(--cyan)" }}>{p.score}</span>
+                  </div>
+                ))}
+                {players.length > 10 && (
+                  <p className="text-white/30 text-xs mt-1">+{players.length - 10} meer</p>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Error */}
-        {error && (
-          <p className="text-red-400 text-sm text-center">{error}</p>
-        )}
+        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-        {/* Action button */}
-        {session.state !== "endscreen" && (
+        {/* Actieknop */}
+        {session.state !== "endscreen" ? (
           <button
             onClick={handleAction}
             disabled={actionLoading}
-            className="w-full py-5 rounded-xl font-black text-white text-xl transition-all active:scale-95 disabled:opacity-60"
+            className="w-full py-5 rounded-2xl font-black text-white text-2xl transition-all active:scale-95 disabled:opacity-60"
             style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
           >
             {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
           </button>
-        )}
-
-        {session.state === "endscreen" && (
+        ) : (
           <div className="text-center py-6">
             <p className="text-white text-2xl font-black">Quiz afgerond! 🏆</p>
-            <a
-              href="/admin"
-              className="text-white/50 text-sm mt-2 block hover:text-white/80"
-            >
+            <a href="/admin" className="text-white/50 text-sm mt-2 block hover:text-white/80">
               Terug naar dashboard
             </a>
           </div>

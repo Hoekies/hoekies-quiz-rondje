@@ -312,14 +312,15 @@ export default function SpeelPage() {
     const options = question.options ?? [];
     return (
       <main
-        className="min-h-screen flex flex-col p-4 gap-4"
+        className="h-dvh flex flex-col p-4 gap-3 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <div
-          className="rounded-xl p-4 flex-1 flex items-center justify-center"
+          className="rounded-xl p-4 shrink-0 flex items-center justify-center"
           style={{
             background: "rgba(255,255,255,0.07)",
             border: "1px solid rgba(255,255,255,0.12)",
+            minHeight: "72px",
           }}
         >
           <p className="text-white font-black text-xl text-center leading-snug">
@@ -332,21 +333,22 @@ export default function SpeelPage() {
           <img
             src={question.media_url}
             alt="Afbeelding"
-            className="w-full rounded-xl max-h-48 object-contain"
+            className="w-full rounded-xl shrink-0 object-contain"
+            style={{ maxHeight: "30%" }}
           />
         )}
 
         {question.type === "audio" && question.media_url && (
-          <audio controls src={question.media_url} className="w-full" />
+          <audio controls src={question.media_url} className="w-full shrink-0" />
         )}
 
-        <div className="grid grid-cols-1 gap-3">
+        <div className="flex-1 flex flex-col gap-2 min-h-0">
           {options.map((opt: string, i: number) => (
             <button
               key={i}
               onClick={() => handleAnswer(opt)}
               disabled={!!selectedAnswer}
-              className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
+              className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}
             >
               <span className="text-xl font-black opacity-60 w-6">
                 {LABEL[i]}
