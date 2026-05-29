@@ -331,7 +331,7 @@ export default function SpeelPage() {
     const json = await res.json();
     if (res.ok) {
       setAnswerResult(json as AnswerResult);
-      setMyScore((s) => s + (json.points_awarded ?? 0));
+      // Score updates via subscription (players collection), not here
     }
     setSubmitting(false);
   }
