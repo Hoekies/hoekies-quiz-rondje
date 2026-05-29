@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import {
   doc,
@@ -100,13 +100,14 @@ export default function SpeelPage() {
   }, []); // Only on mount
 
   // Subscribe to session
+  const sessionT0Ref = useRef(Date.now());
   useEffect(() => {
-    const sessionT0 = Date.now();
+    sessionT0Ref.current = Date.now();
     const unsub = onSnapshot(doc(db, "sessions", code), (snap) => {
       if (!snap.exists()) return;
       const data = snap.data() as SessionDoc;
-      const delta = Date.now() - sessionT0;
-      console.log(`[TIMING] Session update (${delta}ms from init):`, data.state, data.current_question_id);
+      const delta = Date.now() - sessionT0Ref.current;
+      console.log(`[TIMING] Session onSnapshot: ${delta}ms (state=${data.state}, qid=${data.current_question_id?.slice(0,6)})`);
       setSession(data);
     });
     return unsub;
@@ -190,7 +191,8 @@ export default function SpeelPage() {
           setAnswerResult(null);
           const t0 = Date.now();
           setQuestionStart(t0);
-          console.log(`[TIMING] Step → question (t0=${t0}), current_question_id=${session.current_question_id}`);
+          const qLoaded = session.current_question_id && questionsMap[session.current_question_id];
+          console.log(`[TIMING] Step → question. Q loaded=${!!qLoaded}, qid=${session.current_question_id?.slice(0,6)}`);
           setStep("question");
         }
         break;
