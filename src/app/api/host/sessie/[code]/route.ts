@@ -19,20 +19,22 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
-  const isAdmin = await verifyAdmin(req);
+  const [isAdmin, { code }, body] = await Promise.all([
+    verifyAdmin(req),
+    params,
+    req.json(),
+  ]);
+
   if (!isAdmin) {
     return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
   }
 
-  const { code } = await params;
-  const body = await req.json();
   const { state, current_question_id, question_index } = body as {
     state: SessionState;
     current_question_id?: string | null;
     question_index?: number;
   };
 
-  // Derive status from state
   let status: string;
   if (state === "lobby") status = "lobby";
   else if (state === "endscreen") status = "finished";
@@ -47,13 +49,15 @@ export async function PATCH(
     updatePayload.question_index = question_index;
   }
 
-  const ref = adminDb.collection("sessions").doc(code);
-  const snap = await ref.get();
-  if (!snap.exists) {
-    return NextResponse.json({ error: "Sessie niet gevonden" }, { status: 404 });
+  try {
+    await adminDb.collection("sessions").doc(code).update(updatePayload);
+  } catch (err: unknown) {
+    const code5 = (err as { code?: number }).code === 5;
+    if (code5) {
+      return NextResponse.json({ error: "Sessie niet gevonden" }, { status: 404 });
+    }
+    throw err;
   }
-
-  await ref.update(updatePayload);
 
   return NextResponse.json({ ok: true });
 }
