@@ -28,6 +28,12 @@ interface ImportRow {
   is_double_points: string | boolean;
   round: string | number;
   order: string | number;
+  media_url?: string;
+  blur_steps?: string | number;
+  estimate_min?: string | number;
+  estimate_max?: string | number;
+  estimate_unit?: string;
+  image_options?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -54,7 +60,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const validTypes = ["multiple_choice", "true_false", "image", "audio"];
+    const validTypes = ["multiple_choice", "true_false", "image", "audio", "blur_reveal", "image_answer", "video", "estimate", "guess_the_song"];
     const type = row.type?.trim() || "multiple_choice";
     if (!validTypes.includes(type)) {
       errors.push(`Rij ${i + 2}: ongeldig type "${type}"`);
@@ -65,13 +71,17 @@ export async function POST(req: NextRequest) {
       .map((o) => (o ?? "").trim())
       .filter(Boolean);
 
+    const imageOptions = row.image_options
+      ? String(row.image_options).split("|").map((s) => s.trim()).filter(Boolean)
+      : undefined;
+
     const ref = adminDb.collection("quizzes").doc(quiz_id).collection("questions").doc();
-    batch.set(ref, {
+    const docData: Record<string, unknown> = {
       question_text: row.question_text.trim(),
       type,
       options: options.length > 0 ? options : null,
       correct_answer: row.correct_answer.trim(),
-      media_url: null,
+      media_url: row.media_url?.trim() || null,
       explanation: null,
       time_limit_seconds: Number(row.time_limit_seconds) || 20,
       base_points: Number(row.base_points) || 1000,
@@ -79,7 +89,13 @@ export async function POST(req: NextRequest) {
       round: Number(row.round) || 1,
       order: Number(row.order) || 0,
       created_at: FieldValue.serverTimestamp(),
-    });
+    };
+    if (row.blur_steps) docData.blur_steps = Number(row.blur_steps);
+    if (row.estimate_min !== undefined && row.estimate_min !== "") docData.estimate_min = Number(row.estimate_min);
+    if (row.estimate_max !== undefined && row.estimate_max !== "") docData.estimate_max = Number(row.estimate_max);
+    if (row.estimate_unit) docData.estimate_unit = String(row.estimate_unit);
+    if (imageOptions?.length) docData.image_options = imageOptions;
+    batch.set(ref, docData);
     opCount++;
     created++;
 

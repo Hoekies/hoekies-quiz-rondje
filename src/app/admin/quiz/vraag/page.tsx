@@ -21,6 +21,19 @@ interface QuestionForm {
   is_double_points: boolean;
   round: number;
   order: number;
+  // blur_reveal
+  blur_steps: number;
+  // estimate
+  estimate_min: number;
+  estimate_max: number;
+  estimate_unit: string;
+  // image_answer (4 image URLs)
+  img_opt_a: string;
+  img_opt_b: string;
+  img_opt_c: string;
+  img_opt_d: string;
+  // video / audio / image / guess_the_song
+  media_url: string;
 }
 
 const DEFAULT_FORM: QuestionForm = {
@@ -36,6 +49,27 @@ const DEFAULT_FORM: QuestionForm = {
   is_double_points: false,
   round: 1,
   order: 0,
+  blur_steps: 5,
+  estimate_min: 0,
+  estimate_max: 100,
+  estimate_unit: "",
+  img_opt_a: "",
+  img_opt_b: "",
+  img_opt_c: "",
+  img_opt_d: "",
+  media_url: "",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  multiple_choice: "Multiple choice",
+  true_false: "Waar / Niet waar",
+  image: "Afbeelding als vraag",
+  audio: "Audio als vraag",
+  blur_reveal: "Vervagend beeld",
+  image_answer: "Afbeelding als antwoord",
+  video: "Video als vraag",
+  estimate: "Schatting (slider)",
+  guess_the_song: "Raad het lied (5 sec)",
 };
 
 function VraagForm() {
@@ -51,7 +85,6 @@ function VraagForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Auth guard
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) router.push("/admin/login");
@@ -60,7 +93,6 @@ function VraagForm() {
     return unsub;
   }, [router]);
 
-  // Bestaande vraag laden bij bewerken
   useEffect(() => {
     if (!isEdit || !quizId) return;
     (async () => {
@@ -68,6 +100,7 @@ function VraagForm() {
       if (snap.exists()) {
         const d = snap.data();
         const opts: string[] = d.options ?? [];
+        const imgOpts: string[] = d.image_options ?? [];
         setForm({
           question_text: d.question_text ?? "",
           type: d.type ?? "multiple_choice",
@@ -81,13 +114,21 @@ function VraagForm() {
           is_double_points: d.is_double_points ?? false,
           round: d.round ?? 1,
           order: d.order ?? 0,
+          blur_steps: d.blur_steps ?? 5,
+          estimate_min: d.estimate_min ?? 0,
+          estimate_max: d.estimate_max ?? 100,
+          estimate_unit: d.estimate_unit ?? "",
+          img_opt_a: imgOpts[0] ?? "",
+          img_opt_b: imgOpts[1] ?? "",
+          img_opt_c: imgOpts[2] ?? "",
+          img_opt_d: imgOpts[3] ?? "",
+          media_url: d.media_url ?? "",
         });
       }
       setLoading(false);
     })();
   }, [isEdit, quizId, questionId]);
 
-  // Auto-order voor nieuwe vraag
   useEffect(() => {
     if (isEdit || !quizId) return;
     (async () => {
@@ -96,16 +137,9 @@ function VraagForm() {
     })();
   }, [isEdit, quizId]);
 
-  // Bij true/false: opties automatisch instellen
   useEffect(() => {
     if (form.type === "true_false") {
-      setForm((f) => ({
-        ...f,
-        option_a: "Waar",
-        option_b: "Niet waar",
-        option_c: "",
-        option_d: "",
-      }));
+      setForm((f) => ({ ...f, option_a: "Waar", option_b: "Niet waar", option_c: "", option_d: "" }));
     }
   }, [form.type]);
 
@@ -128,18 +162,33 @@ function VraagForm() {
     const token = await user.getIdToken();
 
     const options = activeOptions();
-    const payload = {
+    const imageOptions = [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean);
+
+    const payload: Record<string, unknown> = {
       quiz_id: quizId,
       question_text: form.question_text.trim(),
       type: form.type,
-      options: options.length > 0 ? options : null,
+      options: ["multiple_choice", "true_false", "image", "audio", "video", "guess_the_song", "blur_reveal"].includes(form.type) && options.length > 0 ? options : null,
       correct_answer: form.correct_answer,
       time_limit_seconds: form.time_limit_seconds,
       base_points: form.base_points,
       is_double_points: form.is_double_points,
       round: form.round,
       order: form.order,
+      media_url: form.media_url || null,
     };
+
+    if (form.type === "blur_reveal") payload.blur_steps = form.blur_steps;
+    if (form.type === "estimate") {
+      payload.estimate_min = form.estimate_min;
+      payload.estimate_max = form.estimate_max;
+      payload.estimate_unit = form.estimate_unit;
+      payload.options = null;
+    }
+    if (form.type === "image_answer") {
+      payload.image_options = imageOptions;
+      payload.options = null;
+    }
 
     const url = isEdit ? `/api/host/vragen/${questionId}` : "/api/host/vragen";
     const method = isEdit ? "PATCH" : "POST";
@@ -162,6 +211,8 @@ function VraagForm() {
   if (loading) return null;
 
   const isTrueFalse = form.type === "true_false";
+  const hasTextOptions = ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
+  const hasMedia = ["image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
   const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
   const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
 
@@ -178,31 +229,104 @@ function VraagForm() {
           <div style={F}>
             <label style={L}>Type</label>
             <select value={form.type} onChange={(e) => set("type", e.target.value)} className="glass-input form-select">
-              <option value="multiple_choice">Multiple choice</option>
-              <option value="true_false">Waar / Niet waar</option>
-              <option value="image">Afbeelding</option>
-              <option value="audio">Audio</option>
-            </select>
-          </div>
-
-          <div style={F}>
-            <label style={L}>Antwoordopties</label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => (
-                <input key={key} value={form[key]} onChange={(e) => set(key, e.target.value)}
-                  placeholder={`Optie ${["A","B","C","D"][i]}`} disabled={isTrueFalse} required={i < 2}
-                  className="glass-input" style={isTrueFalse ? { opacity: 0.5 } : undefined} />
+              {Object.entries(TYPE_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
               ))}
-            </div>
-          </div>
-
-          <div style={F}>
-            <label style={L}>Correct antwoord</label>
-            <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
-              <option value="">— Kies het juiste antwoord —</option>
-              {activeOptions().map((opt) => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
+
+          {/* Media URL voor image/audio/video/blur_reveal/guess_the_song */}
+          {hasMedia && (
+            <div style={F}>
+              <label style={L}>
+                {form.type === "video" ? "Video URL (YouTube embed of MP4)" :
+                 form.type === "audio" || form.type === "guess_the_song" ? "Audio URL (MP3/WAV)" :
+                 "Afbeelding URL"}
+              </label>
+              <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)}
+                placeholder="https://..." className="glass-input" />
+            </div>
+          )}
+
+          {/* Blur steps voor blur_reveal */}
+          {form.type === "blur_reveal" && (
+            <div style={F}>
+              <label style={L}>Aantal onscherp-stappen (1-10)</label>
+              <input type="range" min={1} max={10} value={form.blur_steps}
+                onChange={(e) => set("blur_steps", Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
+              <span style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>{form.blur_steps} stappen</span>
+            </div>
+          )}
+
+          {/* Afbeelding-opties voor image_answer */}
+          {form.type === "image_answer" && (
+            <div style={F}>
+              <label style={L}>Afbeelding URLs als antwoorden</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
+                  <input key={key} type="url" value={form[key]} onChange={(e) => set(key, e.target.value)}
+                    placeholder={`Afbeelding ${["A","B","C","D"][i]} URL`} required={i < 2} className="glass-input" />
+                ))}
+              </div>
+              <div style={F}>
+                <label style={L}>Correct antwoord (URL van de juiste afbeelding)</label>
+                <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
+                  <option value="">— Kies het juiste antwoord —</option>
+                  {[form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean).map((url, i) => (
+                    <option key={url} value={url}>Afbeelding {["A","B","C","D"][i]}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Schatting velden voor estimate */}
+          {form.type === "estimate" && (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                <div style={F}>
+                  <label style={L}>Minimum</label>
+                  <input type="number" value={form.estimate_min} onChange={(e) => set("estimate_min", Number(e.target.value))} className="glass-input form-input" />
+                </div>
+                <div style={F}>
+                  <label style={L}>Maximum</label>
+                  <input type="number" value={form.estimate_max} onChange={(e) => set("estimate_max", Number(e.target.value))} className="glass-input form-input" />
+                </div>
+                <div style={F}>
+                  <label style={L}>Eenheid</label>
+                  <input type="text" value={form.estimate_unit} onChange={(e) => set("estimate_unit", e.target.value)} placeholder="km, kg, jaar..." className="glass-input form-input" />
+                </div>
+              </div>
+              <div style={F}>
+                <label style={L}>Correct antwoord (exact getal)</label>
+                <input type="number" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-input" />
+              </div>
+            </>
+          )}
+
+          {/* Tekst antwoordopties (niet voor estimate en image_answer) */}
+          {hasTextOptions && (
+            <>
+              <div style={F}>
+                <label style={L}>Antwoordopties</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => (
+                    <input key={key} value={form[key]} onChange={(e) => set(key, e.target.value)}
+                      placeholder={`Optie ${["A","B","C","D"][i]}`} disabled={isTrueFalse} required={i < 2}
+                      className="glass-input" style={isTrueFalse ? { opacity: 0.5 } : undefined} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={F}>
+                <label style={L}>Correct antwoord</label>
+                <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
+                  <option value="">— Kies het juiste antwoord —</option>
+                  {activeOptions().map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+            </>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             {([["Tijdslimiet (sec)", "time_limit_seconds", 5, 120], ["Punten", "base_points", 0, 9999], ["Ronde", "round", 1, 99], ["Volgorde", "order", 0, 999]] as const).map(([label, field, min, max]) => (

@@ -19,6 +19,12 @@ interface QuestionDoc {
   is_double_points: boolean;
   round: number;
   order: number;
+  media_url?: string;
+  blur_steps?: number;
+  estimate_min?: number;
+  estimate_max?: number;
+  estimate_unit?: string;
+  image_options?: string[];
 }
 
 interface ImportRow {
@@ -34,6 +40,12 @@ interface ImportRow {
   is_double_points: string;
   round: string;
   order: string;
+  media_url?: string;
+  blur_steps?: string;
+  estimate_min?: string;
+  estimate_max?: string;
+  estimate_unit?: string;
+  image_options?: string;
 }
 
 export default function QuizBeheerPage() {
@@ -105,9 +117,10 @@ export default function QuizBeheerPage() {
 
   function handleExport() {
     if (!questions.length) return;
-    const header = "question_text,type,option_a,option_b,option_c,option_d,correct_answer,time_limit_seconds,base_points,is_double_points,round,order";
+    const header = "question_text,type,option_a,option_b,option_c,option_d,correct_answer,time_limit_seconds,base_points,is_double_points,round,order,media_url,blur_steps,estimate_min,estimate_max,estimate_unit,image_options";
     const rows = questions.map((q) => {
       const opts = q.options ?? [];
+      const imgOpts = q.image_options ?? [];
       const cells = [
         csvCell(q.question_text),
         csvCell(q.type),
@@ -121,6 +134,12 @@ export default function QuizBeheerPage() {
         String(q.is_double_points),
         String(q.round),
         String(q.order),
+        csvCell(q.media_url ?? ""),
+        String(q.blur_steps ?? ""),
+        String(q.estimate_min ?? ""),
+        String(q.estimate_max ?? ""),
+        csvCell(q.estimate_unit ?? ""),
+        csvCell(imgOpts.join("|")),
       ];
       return cells.join(",");
     });

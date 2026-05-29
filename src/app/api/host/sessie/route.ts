@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { quiz_id } = body as { quiz_id?: string };
+  const { quiz_id, concept } = body as { quiz_id?: string; concept?: boolean };
 
   // Generate unique 6-char code [A-Z0-9]
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
     question_index: 0,
     question_order: questionIds,
     started_at: null,
+    is_active: concept ? false : true,
     created_at: FieldValue.serverTimestamp(),
   });
 

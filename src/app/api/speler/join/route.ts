@@ -21,7 +21,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sessie niet gevonden" }, { status: 404 });
   }
 
-  const sessionData = sessionSnap.data() as { status: string; state: string };
+  const sessionData = sessionSnap.data() as { status: string; state: string; is_active?: boolean };
+
+  if (sessionData.is_active === false) {
+    return NextResponse.json(
+      { error: "Sessie is momenteel niet actief. Wacht op de host." },
+      { status: 409 }
+    );
+  }
 
   if (sessionData.status !== "lobby") {
     return NextResponse.json(

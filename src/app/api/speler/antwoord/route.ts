@@ -63,24 +63,36 @@ export async function POST(req: NextRequest) {
     time_limit_seconds: number;
     type: string;
     is_double_points: boolean;
+    estimate_min?: number;
+    estimate_max?: number;
   };
 
   // Calculate points
   const isCorrect = answer === question.correct_answer;
   let points = 0;
 
-  if (isCorrect) {
+  if (question.type === "estimate") {
+    const correct = parseFloat(question.correct_answer);
+    const given = parseFloat(answer);
+    const range = (question.estimate_max ?? 100) - (question.estimate_min ?? 0);
+    const deviation = Math.abs(correct - given);
+    const ratio = Math.max(0, 1 - deviation / (range / 2));
+    points = Math.round(Math.floor(question.base_points / 10) * ratio);
+    if (question.is_double_points) points *= 2;
+  } else if (isCorrect) {
     const ratio = Math.max(
       0,
       1 - response_time_ms / (question.time_limit_seconds * 1000)
     );
     const speedBonus =
-      question.type === "true_false" ? 0 : Math.floor(500 * ratio);
-    points = question.base_points + speedBonus;
+      question.type === "true_false" ? 0 : Math.floor(50 * ratio);
+    points = Math.floor(question.base_points / 10) + speedBonus;
     if (question.is_double_points) points *= 2;
   }
 
   // Write answer doc
+  const isCorrectForRecord = question.type === "estimate" ? points > 0 : isCorrect;
+
   await adminDb
     .collection("sessions")
     .doc(session_id)
@@ -90,7 +102,7 @@ export async function POST(req: NextRequest) {
       player_id,
       question_id,
       answer,
-      is_correct: isCorrect,
+      is_correct: isCorrectForRecord,
       response_time_ms,
       points_awarded: points,
       submitted_at: FieldValue.serverTimestamp(),
@@ -106,6 +118,6 @@ export async function POST(req: NextRequest) {
       score: FieldValue.increment(points),
     });
 
-  return NextResponse.json({ is_correct: isCorrect, points_awarded: points });
+  return NextResponse.json({ is_correct: isCorrectForRecord, points_awarded: points });
 }
 

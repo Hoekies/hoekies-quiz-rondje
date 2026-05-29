@@ -1,4 +1,14 @@
-export type QuestionType = "multiple_choice" | "true_false" | "image" | "audio";
+export type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "image"
+  | "audio"
+  | "blur_reveal"
+  | "image_answer"
+  | "video"
+  | "estimate"
+  | "guess_the_song";
+
 export type SessionStatus = "lobby" | "active" | "finished";
 export type SessionState =
   | "lobby"
@@ -32,6 +42,11 @@ export interface Question {
   time_limit_seconds: number;
   base_points: number;
   is_double_points: boolean;
+  blur_steps?: number;
+  estimate_min?: number;
+  estimate_max?: number;
+  estimate_unit?: string;
+  image_options?: string[];
 }
 
 export interface Session {
@@ -43,6 +58,7 @@ export interface Session {
   state: SessionState;
   started_at: string | null;
   question_order?: string[];
+  is_active?: boolean;
 }
 
 export interface Player {

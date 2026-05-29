@@ -22,6 +22,7 @@ const BLOCK_CLASS = [
 
 type Step =
   | "join"
+  | "inactive"
   | "lobby"
   | "question"
   | "answered"
@@ -51,6 +52,7 @@ interface SessionDoc {
   reset_at?: { seconds: number } | null;
   resume_at?: { seconds: number } | null;
   question_opened_at?: { seconds: number } | null;
+  is_active?: boolean;
 }
 
 interface QuestionDoc {
@@ -64,6 +66,11 @@ interface QuestionDoc {
   time_limit_seconds: number;
   base_points: number;
   is_double_points: boolean;
+  blur_steps?: number;
+  estimate_min?: number;
+  estimate_max?: number;
+  estimate_unit?: string;
+  image_options?: string[];
 }
 
 export default function SpeelPage() {
@@ -82,6 +89,9 @@ export default function SpeelPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
+  const [blurLevel, setBlurLevel] = useState(20);
+  const [estimateValue, setEstimateValue] = useState(0);
+  const [audioPlayed, setAudioPlayed] = useState(false);
 
   const [playerCount, setPlayerCount] = useState(0);
   const [myScore, setMyScore] = useState(0);
@@ -178,6 +188,10 @@ export default function SpeelPage() {
   // Determine step from session state
   useEffect(() => {
     if (!session) return;
+    if (session.is_active === false) {
+      setStep("inactive");
+      return;
+    }
     if (!playerId) {
       console.log(`[TIMING] No playerId, step → join (sessionStorage had: ${sessionStorage.getItem("quiz_player_id")})`);
       setStep("join");
@@ -283,6 +297,37 @@ export default function SpeelPage() {
     setShuffledOptions(opts);
   }, [question?.id]);
 
+  // Blur-reveal: stapsgewijs onscherp verminderen
+  useEffect(() => {
+    if (question?.type !== "blur_reveal" || step !== "question") return;
+    const steps = question.blur_steps ?? 5;
+    const intervalMs = (question.time_limit_seconds * 1000) / steps;
+    setBlurLevel(20);
+    const iv = setInterval(() => {
+      setBlurLevel((prev) => Math.max(0, prev - 20 / steps));
+    }, intervalMs);
+    return () => clearInterval(iv);
+  }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Estimate: initieer slider op middenwaarde
+  useEffect(() => {
+    if (question?.type !== "estimate") return;
+    const mid = Math.round(((question.estimate_min ?? 0) + (question.estimate_max ?? 100)) / 2);
+    setEstimateValue(mid);
+  }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guess the song: automatisch afspelen, stoppen na 5 seconden
+  useEffect(() => {
+    if (question?.type !== "guess_the_song" || step !== "question") return;
+    setAudioPlayed(false);
+    const audio = document.getElementById("guess-audio") as HTMLAudioElement | null;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, 5000);
+    return () => { clearTimeout(t); audio.pause(); };
+  }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Join handler
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -334,6 +379,22 @@ export default function SpeelPage() {
       // Score updates via subscription (players collection), not here
     }
     setSubmitting(false);
+  }
+
+  // ── INACTIVE ─────────────────────────────────────────────────────────────
+  if (step === "inactive") {
+    return (
+      <div className="speler-shell">
+        <header className="speler-header">
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
+        </header>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ fontSize: "clamp(2.5rem, 12vw, 4rem)" }}>🔒</p>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.4rem)", textAlign: "center" }}>Sessie niet actief</h2>
+          <p style={{ color: "var(--muted)", fontSize: "clamp(0.85rem, 2.5vw, 1rem)", textAlign: "center" }}>Wacht op de host om de sessie te activeren.</p>
+        </div>
+      </div>
+    );
   }
 
   // ── JOIN ─────────────────────────────────────────────────────────────────
@@ -411,27 +472,90 @@ export default function SpeelPage() {
             </p>
           </div>
 
+          {/* image */}
           {question.type === "image" && question.media_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px" }} />
           )}
+          {/* audio */}
           {question.type === "audio" && question.media_url && (
             <audio controls src={question.media_url} style={{ width: "100%", flexShrink: 0 }} />
           )}
+          {/* blur_reveal */}
+          {question.type === "blur_reveal" && question.media_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px", filter: `blur(${blurLevel}px)`, transition: "filter 0.8s ease" }} />
+          )}
+          {/* video */}
+          {question.type === "video" && question.media_url && (
+            question.media_url.includes("youtube") || question.media_url.includes("youtu.be") ? (
+              <iframe src={question.media_url} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", border: "none", flexShrink: 0 }} allow="autoplay" />
+            ) : (
+              <video src={question.media_url} controls style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "28%" }} />
+            )
+          )}
+          {/* guess_the_song */}
+          {question.type === "guess_the_song" && question.media_url && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              <audio id="guess-audio" src={question.media_url} preload="auto" style={{ display: "none" }} />
+              <div className="glass-card" style={{ padding: "12px 20px", textAlign: "center" }}>
+                {audioPlayed
+                  ? <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>🎵 5 seconden gespeeld — raad het lied!</p>
+                  : <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>🎵 Luister...</p>
+                }
+              </div>
+            </div>
+          )}
 
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
-            {options.map((opt: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => handleAnswer(opt)}
+          {/* Tekst antwoordknoppen */}
+          {question.type !== "image_answer" && question.type !== "estimate" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
+              {options.map((opt: string, i: number) => (
+                <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer}
+                  className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}>
+                  <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{LABEL[i]}</span>
+                  <span>{opt}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Afbeelding als antwoord */}
+          {question.type === "image_answer" && question.image_options && (
+            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", minHeight: 0 }}>
+              {question.image_options.map((url: string, i: number) => (
+                <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer}
+                  className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
+                  style={{ padding: "4px", overflow: "hidden", flexDirection: "column", gap: "4px" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Optie ${LABEL[i]}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Schatting slider */}
+          {question.type === "estimate" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "0 8px" }}>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "clamp(1.8rem, 8vw, 2.5rem)" }}>
+                  {estimateValue}{question.estimate_unit ? ` ${question.estimate_unit}` : ""}
+                </span>
+              </div>
+              <input type="range" min={question.estimate_min ?? 0} max={question.estimate_max ?? 100}
+                value={estimateValue} onChange={(e) => setEstimateValue(Number(e.target.value))}
                 disabled={!!selectedAnswer}
-                className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}
-              >
-                <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{LABEL[i]}</span>
-                <span>{opt}</span>
+                style={{ width: "100%", accentColor: "var(--cyan)", height: "8px" }} />
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>{question.estimate_min ?? 0}{question.estimate_unit ? ` ${question.estimate_unit}` : ""}</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>{question.estimate_max ?? 100}{question.estimate_unit ? ` ${question.estimate_unit}` : ""}</span>
+              </div>
+              <button onClick={() => handleAnswer(String(estimateValue))} disabled={!!selectedAnswer || submitting}
+                className="btn-game">
+                Bevestigen
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
