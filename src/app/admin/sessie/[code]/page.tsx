@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   doc,
@@ -9,6 +9,7 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -54,16 +55,11 @@ export default function HostControlPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
-  const tokenRef = useRef<string | null>(null);
 
-  // Auth guard + store token
+  // Auth guard
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/admin/login");
-      } else {
-        tokenRef.current = await user.getIdToken();
-      }
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) router.push("/admin/login");
     });
     return unsub;
   }, [router]);
@@ -146,23 +142,17 @@ export default function HostControlPage() {
     setActionLoading(true);
     setError("");
 
-    const user = auth.currentUser;
-    if (!user) {
-      router.push("/admin/login");
-      return;
-    }
-    const token = await user.getIdToken();
+    let status: string;
+    if (state === "lobby") status = "lobby";
+    else if (state === "endscreen") status = "finished";
+    else status = "active";
 
-    const res = await fetch(`/api/host/sessie/${code}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ state, ...extra }),
-    });
-    const json = await res.json();
-    if (!res.ok) setError(json.error ?? "Fout bij updaten");
+    try {
+      await updateDoc(doc(db, "sessions", code), { state, status, ...extra });
+    } catch (err) {
+      console.error(err);
+      setError("Fout bij updaten — controleer of je ingelogd bent als admin");
+    }
     setActionLoading(false);
   }
 

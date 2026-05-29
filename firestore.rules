@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.rol == 'admin';
+    }
+
+    // Sessies: admin schrijft direct, iedereen leest (onSnapshot op telefoon)
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      // Spelers: lezen voor iedereen, schrijven via Admin SDK (join/reset API)
+      match /players/{playerId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      // Antwoorden: alleen server-side via Admin SDK
+      match /answers/{answerId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // Quizzen en vragen: admin schrijft, iedereen leest (onSnapshot op telefoon)
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /questions/{questionId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+  }
+}
