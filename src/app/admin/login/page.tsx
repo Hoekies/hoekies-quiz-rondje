@@ -31,76 +31,70 @@ export default function AdminLoginPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ background: "var(--game-gradient)" }}
     >
-      <div
-        className="w-full max-w-sm rounded-2xl p-8 flex flex-col gap-6"
-        style={{
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.14)",
-        }}
-      >
+      <div className="w-full max-w-xs flex flex-col items-center gap-8">
+
         {/* Logo */}
-        <div className="flex justify-center">
-          <img
-            src="/logo.png"
-            alt="Hoekies Quiz Rondje"
-            className="w-52 object-contain drop-shadow-lg"
-          />
+        <img
+          src="/logo.png"
+          alt="Hoekies Quiz Rondje"
+          className="w-56 object-contain drop-shadow-lg"
+        />
+
+        {/* Card */}
+        <div
+          className="w-full rounded-2xl p-6 flex flex-col gap-5"
+          style={{
+            background: "rgba(255,255,255,0.10)",
+            border: "1px solid rgba(255,255,255,0.18)",
+          }}
+        >
+          <h1 className="text-white text-xl font-black text-center">Host inloggen</h1>
+
+          <form onSubmit={handleLogin} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
+                E-mailadres
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                className="w-full rounded-xl px-4 py-3 text-gray-800 font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                style={{ background: "#fff" }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-white/60 text-xs font-bold uppercase tracking-wider">
+                Wachtwoord
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="w-full rounded-xl px-4 py-3 text-gray-800 font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                style={{ background: "#fff" }}
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl font-black text-white text-base transition-all active:scale-95 disabled:opacity-60 mt-1"
+              style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
+            >
+              {loading ? "Inloggen..." : "Inloggen"}
+            </button>
+          </form>
         </div>
-
-        <div className="text-center">
-          <h1 className="text-white text-2xl font-black">Host inloggen</h1>
-        </div>
-
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-white/70 text-sm font-semibold">
-              E-mailadres
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              className="w-full rounded-xl px-4 py-3 text-white border focus:outline-none transition-colors"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                borderColor: "rgba(255,255,255,0.18)",
-              }}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-white/70 text-sm font-semibold">
-              Wachtwoord
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              className="w-full rounded-xl px-4 py-3 text-white border focus:outline-none transition-colors"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                borderColor: "rgba(255,255,255,0.18)",
-              }}
-            />
-          </div>
-
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl font-black text-white text-lg transition-all active:scale-95 disabled:opacity-60 mt-2"
-            style={{ background: "var(--cyan)", boxShadow: "var(--crt-glow)" }}
-          >
-            {loading ? "Inloggen..." : "Inloggen"}
-          </button>
-        </form>
       </div>
     </main>
   );
