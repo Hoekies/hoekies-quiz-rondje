@@ -30,6 +30,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const existingSnap = await sessionRef
+    .collection("players")
+    .where("name", "==", name.trim())
+    .limit(1)
+    .get();
+
+  if (!existingSnap.empty) {
+    return NextResponse.json(
+      { error: "Deze naam is al bezet, kies een andere" },
+      { status: 409 }
+    );
+  }
+
   const playerRef = await sessionRef.collection("players").add({
     name: name.trim(),
     score: 0,

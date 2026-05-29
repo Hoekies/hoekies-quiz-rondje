@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const preferredRegion = ["ams1", "fra1", "cdg1"];
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import type { SessionState } from "@/types/database";

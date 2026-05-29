@@ -43,6 +43,7 @@ interface SessionDoc {
   state: string;
   current_question_id: string | null;
   question_index: number;
+  reset_at?: { seconds: number } | null;
 }
 
 interface QuestionDoc {
@@ -178,6 +179,18 @@ export default function SpeelPage() {
   useEffect(() => {
     setSelectedAnswer(null);
   }, [session?.current_question_id]);
+
+  // Detecteer sessie-reset: speler uitloggen zodat niemand er nog in zit
+  useEffect(() => {
+    if (!session?.reset_at || !playerId) return;
+    sessionStorage.removeItem("quiz_player_id");
+    setPlayerId(null);
+    setStep("join");
+    setSelectedAnswer(null);
+    setAnswerResult(null);
+    setMyScore(0);
+    setRanks([]);
+  }, [session?.reset_at?.seconds]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shuffle antwoorden eenmalig als nieuwe vraag laadt
   useEffect(() => {

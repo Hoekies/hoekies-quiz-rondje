@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
+export const preferredRegion = ["ams1", "fra1", "cdg1"];
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 async function verifyAdmin(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get("Authorization");
@@ -62,7 +64,7 @@ export async function POST(
   };
 
   for (const player of playersSnap.docs) {
-    batch.update(player.ref, { score: 0 });
+    batch.delete(player.ref);
     opCount++;
     if (opCount >= BATCH_LIMIT) await flush();
   }
@@ -80,6 +82,7 @@ export async function POST(
     question_index: 0,
     question_order: newQuestionOrder,
     started_at: null,
+    reset_at: FieldValue.serverTimestamp(),
   });
 
   await batch.commit();
