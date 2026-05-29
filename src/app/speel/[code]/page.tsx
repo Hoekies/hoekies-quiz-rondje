@@ -260,7 +260,7 @@ export default function SpeelPage() {
   if (step === "join") {
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center px-4"
+        className="h-dvh flex flex-col items-center justify-center px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <div className="w-full max-w-sm flex flex-col gap-6">
@@ -305,7 +305,7 @@ export default function SpeelPage() {
   if (step === "lobby") {
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center gap-6 px-4"
+        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <div className="text-center flex flex-col gap-3">
@@ -389,7 +389,7 @@ export default function SpeelPage() {
   // Vraag laadt nog (step=question maar verkeerd of geen id)
   if (step === "question") {
     return (
-      <main className="min-h-screen flex items-center justify-center" style={{ background: "var(--game-gradient)" }}>
+      <main className="h-dvh flex items-center justify-center overflow-hidden" style={{ background: "var(--game-gradient)" }}>
         <p className="text-white/60 text-lg font-bold animate-pulse">Vraag laden…</p>
       </main>
     );
@@ -399,7 +399,7 @@ export default function SpeelPage() {
   if (step === "answered") {
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center gap-4 px-4"
+        className="h-dvh flex flex-col items-center justify-center gap-4 px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <p className="text-5xl">⏳</p>
@@ -424,7 +424,7 @@ export default function SpeelPage() {
 
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center gap-6 px-4"
+        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <p className="text-8xl">{correct ? "✅" : "❌"}</p>
@@ -467,11 +467,11 @@ export default function SpeelPage() {
 
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center gap-6 px-4"
+        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <h2 className="text-white font-black text-2xl">Tussenstand</h2>
-        <div className="w-full max-w-sm flex flex-col gap-3">
+        <div className="w-full flex flex-col gap-3">
           {ranks.map((p, i) => (
             <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
               <span className="text-xl w-6 text-center">{emoji[i]}</span>
@@ -507,7 +507,7 @@ export default function SpeelPage() {
 
     return (
       <main
-        className="min-h-screen flex flex-col items-center justify-center gap-6 px-4"
+        className="h-dvh flex flex-col items-center justify-center gap-6 px-4 overflow-hidden"
         style={{ background: "var(--game-gradient)" }}
       >
         <p className="text-6xl">🏆</p>
@@ -535,7 +535,7 @@ export default function SpeelPage() {
   // Fallback
   return (
     <main
-      className="min-h-screen flex items-center justify-center"
+      className="h-dvh flex items-center justify-center overflow-hidden"
       style={{ background: "var(--game-gradient)" }}
     >
       <p className="text-white/50">Laden...</p>
