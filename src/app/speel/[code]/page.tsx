@@ -24,7 +24,9 @@ type Step =
   | "answered"
   | "reveal"
   | "leaderboard"
-  | "endscreen";
+  | "endscreen"
+  | "paused"
+  | "resuming";
 
 interface AnswerResult {
   is_correct: boolean;
@@ -44,6 +46,7 @@ interface SessionDoc {
   current_question_id: string | null;
   question_index: number;
   reset_at?: { seconds: number } | null;
+  resume_at?: { seconds: number } | null;
 }
 
 interface QuestionDoc {
@@ -79,6 +82,7 @@ export default function SpeelPage() {
   const [playerCount, setPlayerCount] = useState(0);
   const [myScore, setMyScore] = useState(0);
   const [ranks, setRanks] = useState<PlayerRank[]>([]);
+  const [countdown, setCountdown] = useState(10);
 
   // Restore player_id from sessionStorage
   useEffect(() => {
@@ -166,6 +170,12 @@ export default function SpeelPage() {
       case "finale":
         setStep("lobby");
         break;
+      case "paused":
+        setStep("paused");
+        break;
+      case "resuming":
+        setStep("resuming");
+        break;
       case "endscreen":
         setStep("endscreen");
         break;
@@ -176,6 +186,19 @@ export default function SpeelPage() {
   useEffect(() => {
     setSelectedAnswer(null);
   }, [session?.current_question_id]);
+
+  // 10-seconden aftelling bij resuming
+  useEffect(() => {
+    if (step !== "resuming" || !session?.resume_at) return;
+    const endMs = session.resume_at.seconds * 1000 + 10000;
+    const tick = () => {
+      const rem = Math.max(0, (endMs - Date.now()) / 1000);
+      setCountdown(rem);
+    };
+    tick();
+    const iv = setInterval(tick, 100);
+    return () => clearInterval(iv);
+  }, [step, session?.resume_at?.seconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detecteer sessie-reset: speler uitloggen zodat niemand er nog in zit
   useEffect(() => {
@@ -446,6 +469,51 @@ export default function SpeelPage() {
             <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>punten</p>
           </div>
           <p style={{ color: "var(--text)", fontSize: "1.1rem", textAlign: "center" }}>{msg}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── PAUSED ───────────────────────────────────────────────────────────────
+  if (step === "paused") {
+    return (
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "5rem", lineHeight: 1 }}>🍺</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "2rem", textAlign: "center" }}>Pauze!</h2>
+          <div className="glass-card" style={{ padding: "16px 28px", textAlign: "center" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pak een drankje en wacht op de host...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── RESUMING ─────────────────────────────────────────────────────────────
+  if (step === "resuming") {
+    const pct = Math.min(100, (countdown / 10) * 100);
+    return (
+      <div className="speler-shell">
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "24px", padding: "32px 20px" }}>
+          <p style={{ fontSize: "4rem", lineHeight: 1 }}>🍺</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "1.8rem", textAlign: "center" }}>
+            Quiz gaat verder!
+          </h2>
+          <div style={{ width: "100%", maxWidth: "320px", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+            <p style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "2.5rem", lineHeight: 1 }}>
+              {Math.ceil(countdown)}
+            </p>
+            <div style={{ width: "100%", height: "12px", background: "rgba(255,255,255,0.12)", borderRadius: "6px", overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: `${pct}%`,
+                background: "linear-gradient(90deg, var(--cyan-dark), var(--cyan))",
+                borderRadius: "6px",
+                transition: "width 0.1s linear",
+                boxShadow: "0 0 12px rgba(0,217,255,0.5)",
+              }} />
+            </div>
+          </div>
         </div>
       </div>
     );

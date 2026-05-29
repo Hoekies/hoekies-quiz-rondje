@@ -25,6 +25,7 @@ interface SessionDoc {
   question_index: number;
   question_order?: string[];
   started_at: unknown;
+  resume_at?: { seconds: number } | null;
 }
 
 interface QuestionDoc {
@@ -119,6 +120,23 @@ export default function HostControlPage() {
     );
     return unsub;
   }, [code]);
+
+  // Na endscreen: terug naar dashboard
+  useEffect(() => {
+    if (session?.state === "endscreen") {
+      const t = setTimeout(() => router.push("/admin"), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [session?.state, router]);
+
+  // Na resuming: automatisch question_open na 10,5 seconden
+  useEffect(() => {
+    if (session?.state !== "resuming") return;
+    const t = setTimeout(() => {
+      updateDoc(doc(db, "sessions", code), { state: "question_open", status: "active" }).catch(console.error);
+    }, 10500);
+    return () => clearTimeout(t);
+  }, [session?.state, code]);
 
   // Subscribe to answers for current question
   useEffect(() => {
@@ -222,7 +240,14 @@ export default function HostControlPage() {
           current_question_id: currentQuestion?.id ?? null,
         });
         break;
+      case "paused":
+        patchSession("resuming", { resume_at: new Date() });
+        break;
     }
+  }
+
+  function handlePause() {
+    if (session?.state === "question_open") patchSession("paused");
   }
 
   const nextLabel = isLastQuestion
@@ -238,6 +263,8 @@ export default function HostControlPage() {
     answer_reveal: "📊 Leaderboard",
     leaderboard: nextLabel,
     finale: "Toon finale vraag",
+    paused: "▶ Hervat quiz",
+    resuming: "⏱ Aftellen...",
     endscreen: "Quiz afgerond",
   };
 
@@ -313,20 +340,33 @@ export default function HostControlPage() {
         {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
 
         {/* Actie */}
-        {session.state !== "endscreen" ? (
+        {session.state === "endscreen" ? (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Je wordt doorgestuurd naar het dashboard...</p>
+          </div>
+        ) : session.state === "resuming" ? (
+          <button disabled className="btn-game" style={{ fontSize: "1.15rem", opacity: 0.7 }}>
+            ⏱ Aftellen tot start...
+          </button>
+        ) : (
           <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem" }}>
             {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
           </button>
-        ) : (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
-            <a href="/admin" style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "8px", display: "block" }}>Terug naar dashboard</a>
-          </div>
         )}
 
-        <button onClick={handleReset} disabled={actionLoading} className="btn btn-danger" style={{ opacity: 0.7 }}>
-          Sessie resetten (scores op 0)
-        </button>
+        {/* Pauze-knop — alleen tijdens question_open */}
+        {session.state === "question_open" && (
+          <button onClick={handlePause} disabled={actionLoading} className="btn btn-ghost" style={{ fontWeight: 700 }}>
+            🍺 Pauzeer
+          </button>
+        )}
+
+        {session.state !== "endscreen" && session.state !== "resuming" && (
+          <button onClick={handleReset} disabled={actionLoading} className="btn btn-danger" style={{ opacity: 0.6, fontSize: "0.85rem" }}>
+            Sessie resetten (scores op 0)
+          </button>
+        )}
       </div>
     </AdminLayout>
   );

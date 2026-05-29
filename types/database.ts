@@ -7,7 +7,9 @@ export type SessionState =
   | "answer_reveal"
   | "leaderboard"
   | "finale"
-  | "endscreen";
+  | "endscreen"
+  | "paused"
+  | "resuming";
 
 export interface Quiz {
   id: string;
