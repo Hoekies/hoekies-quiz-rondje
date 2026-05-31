@@ -9,6 +9,8 @@ import {
   query,
   where,
   getDoc,
+  enableNetwork,
+  disableNetwork,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -125,6 +127,24 @@ export default function SpeelPage() {
       const stored = sessionStorage.getItem("quiz_player_id");
       if (stored) setPlayerId(stored);
     }
+  }, []);
+
+  // iOS Safari fix: force Firestore reconnect when page becomes visible again.
+  // iOS drops WebSocket connections when the browser goes to background,
+  // causing 30+ second delays when returning to the quiz.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    let reconnecting = false;
+    const handleVisibility = () => {
+      if (!document.hidden && !reconnecting) {
+        reconnecting = true;
+        disableNetwork(db)
+          .then(() => enableNetwork(db))
+          .finally(() => { reconnecting = false; });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   // Subscribe to session
