@@ -9,8 +9,7 @@ import {
   query,
   where,
   getDoc,
-  enableNetwork,
-  disableNetwork,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -129,23 +128,15 @@ export default function SpeelPage() {
     }
   }, []);
 
-  // iOS Safari fix: force Firestore reconnect when page becomes visible again.
-  // iOS drops WebSocket connections when the browser goes to background,
-  // causing 30+ second delays when returning to the quiz.
+  // iOS keepalive: iOS Safari throttles WebSocket/long-poll connections when the
+  // app has been idle. A lightweight Firestore read every 20 s keeps the connection
+  // warm so real-time updates arrive instantly instead of after a 30-second delay.
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    let reconnecting = false;
-    const handleVisibility = () => {
-      if (!document.hidden && !reconnecting) {
-        reconnecting = true;
-        disableNetwork(db)
-          .then(() => enableNetwork(db))
-          .finally(() => { reconnecting = false; });
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+    const iv = setInterval(() => {
+      getDoc(doc(db, "sessions", code)).catch(() => {});
+    }, 20_000);
+    return () => clearInterval(iv);
+  }, [code]);
 
   // Subscribe to session
   useEffect(() => {
@@ -157,20 +148,21 @@ export default function SpeelPage() {
     return unsub;
   }, [code]);
 
-  // Laad ALLE vragen zodra quiz_id bekend is — geen per-vraag laadscherm meer
+  // Laad ALLE vragen eenmalig zodra quiz_id bekend is.
+  // Questions change never during a live quiz, so a one-time getDocs is sufficient
+  // and avoids holding an extra persistent listener (which contributes to iOS
+  // WebSocket throttling when combined with the session/players/answers listeners).
   useEffect(() => {
     if (!session?.quiz_id) return;
-    const unsub = onSnapshot(
-      collection(db, "quizzes", session.quiz_id, "questions"),
-      (snap) => {
+    getDocs(collection(db, "quizzes", session.quiz_id, "questions"))
+      .then((snap) => {
         const map: Record<string, QuestionDoc> = {};
         snap.docs.forEach((d) => {
           map[d.id] = { id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) };
         });
         setQuestionsMap(map);
-      }
-    );
-    return unsub;
+      })
+      .catch(() => {});
   }, [session?.quiz_id]);
 
   // Subscribe to all answers for this player (fast, parallel with session update)
