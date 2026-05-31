@@ -120,12 +120,26 @@ export default function SpeelPage() {
     });
   }, []);
 
-  // Restore playerId from sessionStorage on first mount (iPhone refresh fix)
+  // Restore playerId from localStorage on mount.
+  // localStorage survives tab close and Safari restarts; sessionStorage does not.
+  // Key includes the session code so different quiz sessions don't collide.
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("quiz_player_id");
-      if (stored) setPlayerId(stored);
-    }
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(`quiz_player_id_${code}`);
+    if (stored) setPlayerId(stored);
+  }, [code]);
+
+  // Disable iOS "Shake to Undo" — shaking the phone must not trigger anything.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prevent = (e: Event) => {
+      const be = e as InputEvent;
+      if (be.inputType === "historyUndo" || be.inputType === "historyRedo") {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("beforeinput", prevent, true);
+    return () => document.removeEventListener("beforeinput", prevent, true);
   }, []);
 
   // iOS keepalive: iOS Safari throttles WebSocket/long-poll connections when the
@@ -288,7 +302,7 @@ export default function SpeelPage() {
   // Detecteer sessie-reset: speler uitloggen zodat niemand er nog in zit
   useEffect(() => {
     if (!session?.reset_at || !playerId) return;
-    sessionStorage.removeItem("quiz_player_id");
+    localStorage.removeItem(`quiz_player_id_${code}`);
     setPlayerId(null);
     setStep("join");
     setSelectedAnswer(null);
@@ -376,7 +390,7 @@ export default function SpeelPage() {
       return;
     }
 
-    sessionStorage.setItem("quiz_player_id", json.player_id);
+    localStorage.setItem(`quiz_player_id_${code}`, json.player_id);
     setPlayerId(json.player_id);
     setStep("lobby");
   }
