@@ -12,9 +12,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Hoekies Quiz Rondje",
   description: "De nostalgische borrelquiz voor vrienden.",
-  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
-  icons: { icon: "/favicon.png", apple: "/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
