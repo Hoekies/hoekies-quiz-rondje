@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
@@ -58,6 +58,10 @@ export default function QuizBeheerPage() {
   const [importStatus, setImportStatus] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeRound, setActiveRound] = useState<number | "all">("all");
+  const [roundNames, setRoundNames] = useState<Record<string, string>>({});
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   // Auth guard
   useEffect(() => {
@@ -71,14 +75,28 @@ export default function QuizBeheerPage() {
     return unsub;
   }, [router]);
 
-  // Haal eerste quiz op
+  // Haal eerste quiz op + ronde-namen
   useEffect(() => {
     (async () => {
       const snap = await getDocs(query(collection(db, "quizzes"), limit(1)));
-      if (!snap.empty) setQuizId(snap.docs[0].id);
+      if (!snap.empty) {
+        setQuizId(snap.docs[0].id);
+        const data = snap.docs[0].data();
+        if (data.round_names) setRoundNames(data.round_names as Record<string, string>);
+      }
       setLoading(false);
     })();
   }, []);
+
+  async function saveRoundName(round: number, name: string) {
+    if (!quizId) return;
+    setRenaming(true);
+    const updated: Record<string, string> = { ...roundNames, [String(round)]: name.trim() };
+    if (!name.trim()) delete updated[String(round)];
+    await updateDoc(doc(db, "quizzes", quizId), { round_names: updated });
+    setRoundNames(updated);
+    setRenaming(false);
+  }
 
   // Abonneer op vragen
   useEffect(() => {
@@ -211,6 +229,11 @@ export default function QuizBeheerPage() {
     );
   }
 
+  const rounds = [...new Set(questions.map((q) => q.round))].sort((a, b) => a - b);
+  const countFor = (r: number) => questions.filter((q) => q.round === r).length;
+  const roundLabel = (r: number) => roundNames[r] ? `${roundNames[r]}` : `Ronde ${r}`;
+  const visible = activeRound === "all" ? questions : questions.filter((q) => q.round === activeRound);
+
   return (
     <AdminLayout title={`Vragen beheren (${questions.length})`}>
       <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "800px" }}>
@@ -232,14 +255,45 @@ export default function QuizBeheerPage() {
         {importStatus && <p style={{ color: "var(--green)", fontSize: "0.85rem" }}>{importStatus}</p>}
         {actionError && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{actionError}</p>}
 
+        {/* Ronde-tabs */}
+        {rounds.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px" }}>
+            <button onClick={() => setActiveRound("all")}
+              style={{ padding: "6px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                background: activeRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: activeRound === "all" ? "#000" : "var(--text)" }}>
+              Alle ({questions.length})
+            </button>
+            {rounds.map((r) => (
+              <button key={r} onClick={() => { setActiveRound(r); setRenameValue(roundNames[r] ?? ""); }}
+                style={{ padding: "6px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                  background: activeRound === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: activeRound === r ? "#000" : "var(--text)" }}>
+                {roundLabel(r)} ({countFor(r)})
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Ronde hernoemen */}
+        {activeRound !== "all" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem", fontWeight: 700 }}>Naam ronde {activeRound}:</span>
+            <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder={`Ronde ${activeRound}`}
+              className="glass-input" style={{ width: "auto", flex: 1, minWidth: "140px", padding: "8px 12px" }} />
+            <button onClick={() => saveRoundName(activeRound as number, renameValue)} disabled={renaming}
+              className="btn btn-cyan" style={{ fontSize: "0.82rem", padding: "8px 14px" }}>
+              {renaming ? "..." : "Opslaan"}
+            </button>
+          </div>
+        )}
+
         {/* Vragenlijst */}
-        {questions.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="card" style={{ textAlign: "center", color: "var(--muted)", padding: "40px" }}>
-            Nog geen vragen. Voeg er een toe of importeer een CSV.
+            {questions.length === 0 ? "Nog geen vragen. Voeg er een toe of importeer een CSV." : "Geen vragen in deze ronde."}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {questions.map((q) => (
+            {visible.map((q) => (
               <div key={q.id} className="card speler-rij" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
                 <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
