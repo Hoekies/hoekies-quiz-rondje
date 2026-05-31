@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
-import { auth, db, storage } from "@/lib/firebase";
-import { compressImage } from "@/lib/media";
+import { auth, db } from "@/lib/firebase";
+import { compressImage, uploadMedia } from "@/lib/media";
 import AdminLayout from "../AdminLayout";
 
 interface ThemeSettings {
@@ -77,9 +76,7 @@ export default function ThemaPagina() {
     if (!blob) { setError("Maak eerst een selectie"); return; }
     setSaving("logo"); setError("");
     try {
-      const storageRef = ref(storage, "theme/logo.png");
-      await uploadBytes(storageRef, blob, { contentType: "image/png" });
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadMedia(blob, "image");
       await setDoc(doc(db, "settings", "theme"), { logo_url: url }, { merge: true });
       setTheme((t) => ({ ...t, logo_url: url }));
       setLogoCropSrc(null);
@@ -104,9 +101,7 @@ export default function ThemaPagina() {
     setSaving("bg"); setError("");
     try {
       const compressed = await compressImage(file, 1920, 0.82);
-      const storageRef = ref(storage, "theme/background.jpg");
-      await uploadBytes(storageRef, compressed, { contentType: "image/jpeg" });
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadMedia(compressed, "image");
       await setDoc(doc(db, "settings", "theme"), { background_url: url }, { merge: true });
       setTheme((t) => ({ ...t, background_url: url }));
       setSuccess("Achtergrond opgeslagen!"); setTimeout(() => setSuccess(""), 3000);

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { compressImage, uploadMedia, mediaPath } from "@/lib/media";
+import { compressImage, uploadMedia } from "@/lib/media";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Suspense } from "react";
@@ -234,7 +234,7 @@ function VraagForm() {
       ctx.drawImage(imgRef.current, completedCrop.x * sx, completedCrop.y * sy, completedCrop.width * sx, completedCrop.height * sy, 0, 0, canvas.width, canvas.height);
       const blob: Blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/jpeg", 0.9));
       const compressed = await compressImage(blob, 1280, 0.82);
-      const url = await uploadMedia(mediaPath("img", quizId, "jpg"), compressed, "image/jpeg");
+      const url = await uploadMedia(compressed, "image");
       setForm((f) => ({ ...f, media_url: url }));
       setCropSrc(null);
     } catch (err) {
@@ -248,7 +248,7 @@ function VraagForm() {
     if (!file || !quizId) return;
     setUploading(true); setError("");
     try {
-      const url = await uploadMedia(mediaPath("audio", quizId, "mp3"), file, file.type || "audio/mpeg");
+      const url = await uploadMedia(file, "video"); // audio = video-resource bij Cloudinary
       setForm((f) => ({ ...f, media_url: url }));
     } catch (err) { setError("Upload mislukt: " + (err as Error).message); }
     setUploading(false);
@@ -259,7 +259,7 @@ function VraagForm() {
     if (!file || !quizId) return;
     setUploading(true); setError("");
     try {
-      const url = await uploadMedia(mediaPath("video", quizId, "mp4"), file, file.type || "video/mp4");
+      const url = await uploadMedia(file, "video");
       setForm((f) => ({ ...f, media_url: url }));
     } catch (err) { setError("Upload mislukt: " + (err as Error).message); }
     setUploading(false);

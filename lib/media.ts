@@ -1,5 +1,6 @@
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebase";
+// Cloudinary upload (gratis tier, geen Firebase Storage/Blaze nodig).
+const CLOUD_NAME = "dav2heqew";
+const UPLOAD_PRESET = "Hoekies";
 
 // Comprimeer een afbeelding: schaal naar maxSize (langste zijde) en encode als JPEG.
 export async function compressImage(file: File | Blob, maxSize: number, quality = 0.82): Promise<Blob> {
@@ -21,14 +22,20 @@ export async function compressImage(file: File | Blob, maxSize: number, quality 
   });
 }
 
-// Upload een blob/bestand naar Firebase Storage en geef de download-URL terug.
-export async function uploadMedia(path: string, data: Blob | File, contentType: string): Promise<string> {
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, data, { contentType });
-  return getDownloadURL(storageRef);
-}
-
-// Unieke padnaam binnen media/ op basis van quiz + tijd.
-export function mediaPath(folder: "img" | "audio" | "video", quizId: string, ext: string): string {
-  return `media/${folder}/${quizId}_${Date.now()}.${ext}`;
+// Upload een blob/bestand naar Cloudinary, geef de secure_url terug.
+// kind: "image" voor foto's, "video" voor video én audio (Cloudinary behandelt audio als video-resource).
+export async function uploadMedia(data: Blob | File, kind: "image" | "video" = "image"): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", data);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${kind}/upload`, {
+    method: "POST",
+    body: fd,
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`Cloudinary upload mislukt (${res.status}) ${txt.slice(0, 120)}`);
+  }
+  const json = await res.json();
+  return json.secure_url as string;
 }
