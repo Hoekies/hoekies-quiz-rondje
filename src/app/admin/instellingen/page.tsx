@@ -104,16 +104,6 @@ export default function InstellingenPage() {
           )}
         </div>
 
-        {/* Permissions uitleg */}
-        <div style={{ background: "rgba(255,217,59,0.06)", border: "1px solid rgba(255,217,59,0.25)", borderRadius: "12px", padding: "16px 18px" }}>
-          <p style={{ color: "var(--gold)", fontWeight: 700, fontSize: "0.85rem", marginBottom: "6px" }}>⚠ Fout bij opslaan?</p>
-          <p style={{ color: "var(--text)", fontSize: "0.82rem", lineHeight: 1.6 }}>
-            Als je "Missing or insufficient permissions" ziet, moeten de Firestore-beveiligingsregels nog worden gedeployed naar Firebase. Open een terminal in de projectmap en voer uit:
-          </p>
-          <code style={{ display: "block", marginTop: "8px", color: "var(--cyan)", background: "rgba(0,0,0,0.3)", padding: "8px 12px", borderRadius: "6px", fontSize: "0.8rem" }}>
-            firebase deploy --only firestore:rules --project hoekies-quiz-rondje
-          </code>
-        </div>
       </div>
     </AdminLayout>
   );
