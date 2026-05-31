@@ -511,9 +511,9 @@ export default function SpeelPage() {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
     return (
       <div className="speler-shell">
-        <header className="speler-header">
+        <header className="speler-header" style={{ justifyContent: "center", padding: "8px 0" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ height: "64px", objectFit: "contain" }} />
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "72px", objectFit: "contain" }} />
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
           <div className="glass-card" style={{ padding: "clamp(12px, 2.5vw, 16px)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(60px, 15vh, 100px)" }}>
@@ -749,7 +749,7 @@ export default function SpeelPage() {
       <div className="speler-shell" style={lbBgStyle}>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(56px, 14vw, 80px)", height: "clamp(56px, 14vw, 80px)", objectFit: "contain" }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(112px, 28vw, 160px)", height: "clamp(112px, 28vw, 160px)", objectFit: "contain" }} />
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
             {ranks.map((p, i) => (
