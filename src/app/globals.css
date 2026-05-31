@@ -138,6 +138,15 @@ h3 { font-size: 1rem;   font-weight: 600; color: var(--ink); }
   border-color: rgba(0, 217, 255, 0.7);
   background: rgba(255, 255, 255, 0.12);
 }
+select.glass-input {
+  background: rgba(10, 18, 32, 0.95);
+  color: #e8f0ff;
+  cursor: pointer;
+}
+select.glass-input option {
+  background: #0d1a2d;
+  color: #e8f0ff;
+}
 
 /* ── Antwoord-blokken ── */
 .answer-block {

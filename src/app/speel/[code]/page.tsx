@@ -14,6 +14,47 @@ import {
 import { db } from "@/lib/firebase";
 
 const LABEL = ["A", "B", "C", "D"];
+
+function Confetti({ active, duration = 10000 }: { active: boolean; duration?: number }) {
+  useEffect(() => {
+    if (!active || typeof document === "undefined") return;
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext("2d")!;
+    const colors = ["#00d9ff", "#ffd93b", "#ff6bcd", "#22c55e", "#ff3b5c", "#ffffff", "#a78bfa"];
+    const particles = Array.from({ length: 160 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 300,
+      vx: (Math.random() - 0.5) * 5,
+      vy: 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      w: 8 + Math.random() * 8,
+      h: 4 + Math.random() * 4,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = Date.now();
+    let raf: number;
+    function draw() {
+      if (Date.now() - start > duration) { canvas.remove(); return; }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.rot += p.rotV;
+        if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; p.vy = 2 + Math.random() * 4; }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    return () => { cancelAnimationFrame(raf); canvas.remove(); };
+  }, [active, duration]);
+  return null;
+}
 const BLOCK_CLASS = [
   "answer-block--a",
   "answer-block--b",
@@ -465,7 +506,7 @@ export default function SpeelPage() {
               />
               {joinError && <p style={{ color: "var(--red)", fontSize: "0.85rem", textAlign: "center" }}>{joinError}</p>}
               <button type="submit" disabled={joining || !name.trim()} className="btn-game">
-                {joining ? "Deelnemen..." : "Meedoen 🎮"}
+                {joining ? "Deelnemen..." : "Meedoen"}
               </button>
             </form>
           </div>
@@ -527,7 +568,7 @@ export default function SpeelPage() {
       <div className="speler-shell">
         <header className="speler-header" style={{ justifyContent: "center", padding: "8px 0" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "72px", objectFit: "contain" }} />
+          <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "108px", objectFit: "contain" }} />
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
           <div className="glass-card" style={{ padding: "clamp(12px, 2.5vw, 16px)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(60px, 15vh, 100px)" }}>
@@ -761,11 +802,11 @@ export default function SpeelPage() {
       : {};
     return (
       <div className="speler-shell" style={lbBgStyle}>
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px) clamp(16px, 3vh, 24px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(112px, 28vw, 160px)", height: "clamp(112px, 28vw, 160px)", objectFit: "contain" }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0 }} />
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
                 <span style={{ fontSize: "1.2rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
@@ -774,7 +815,7 @@ export default function SpeelPage() {
               </div>
             ))}
           </div>
-          <div className="glass-card" style={{ padding: "16px 28px", textAlign: "center" }}>
+          <div className="glass-card" style={{ padding: "14px 28px", textAlign: "center", width: "100%", marginTop: "auto" }}>
             <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score</p>
             <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.6rem" }}>{myScore} punten</p>
           </div>
@@ -795,31 +836,27 @@ export default function SpeelPage() {
       : {};
     return (
       <div className="speler-shell" style={endBgStyle}>
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(16px, 4vh, 28px) clamp(16px, 4vw, 20px)" }}>
+        <Confetti active={true} duration={10000} />
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(48px, 12vw, 70px)", height: "clamp(48px, 12vw, 70px)", objectFit: "contain" }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0 }} />
 
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.3rem, 6vw, 1.8rem)", textAlign: "center" }}>Quiz voorbij!</h2>
 
           {/* Winnaar highlight */}
           {winner && (
             <div className="glass-card" style={{ width: "100%", padding: "16px 20px", textAlign: "center", borderColor: "var(--gold)", background: "rgba(255,217,59,0.08)" }}>
-              <p style={{ color: "var(--gold)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "6px" }}>Winnaar</p>
+              <p style={{ color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, marginBottom: "6px" }}>Winnaar</p>
               <p style={{ fontSize: "clamp(2rem, 10vw, 3rem)", lineHeight: 1 }}>🏆</p>
               <p style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5vw, 1.6rem)", marginTop: "4px" }}>{winner.name}</p>
               <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>{winner.score} punten</p>
             </div>
           )}
 
-          {/* Jij bent de winnaar */}
-          {isWinner && (
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>Jij hebt gewonnen! 🎉</p>
-            </div>
-          )}
+          {isWinner && <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)", textAlign: "center" }}>Jij hebt gewonnen! 🎉</p>}
 
           {/* Top 3 */}
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}
                 style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
@@ -830,13 +867,11 @@ export default function SpeelPage() {
             ))}
           </div>
 
-          {/* Jouw score als niet in top 3 */}
-          {(myRank === 0 || myRank > 3) && (
-            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center" }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score</p>
-              <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem" }}>{myScore} punten</p>
-            </div>
-          )}
+          {/* Jouw score onderaan */}
+          <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", width: "100%", marginTop: "auto" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score{myRank > 0 ? ` — #${myRank}` : ""}</p>
+            <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem" }}>{myScore} punten</p>
+          </div>
         </div>
       </div>
     );

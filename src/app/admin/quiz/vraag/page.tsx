@@ -254,7 +254,7 @@ function VraagForm() {
   const isMatch = form.type === "match";
   const hasMedia = ["image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
   const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
-  const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
+  const L = { color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700 };
 
   return (
     <AdminLayout title={isEdit ? "Vraag bewerken" : "Nieuwe vraag"}>
@@ -431,7 +431,7 @@ function VraagForm() {
 
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
             <input type="checkbox" checked={form.is_double_points} onChange={(e) => set("is_double_points", e.target.checked)} style={{ width: "18px", height: "18px", accentColor: "var(--cyan)" }} />
-            <span style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Dubbele punten (finale vraag)</span>
+            <span style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Bonusvraag (dubbele punten)</span>
           </label>
 
           {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
