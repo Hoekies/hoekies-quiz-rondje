@@ -592,6 +592,11 @@ export default function SpeelPage() {
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "108px", objectFit: "contain" }} />
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
+          {question.is_double_points && (
+            <div style={{ flexShrink: 0, textAlign: "center", background: "linear-gradient(135deg, var(--gold), #ffb700)", color: "#1a1200", fontWeight: 900, fontSize: "clamp(0.95rem, 3.5vw, 1.2rem)", padding: "6px 14px", borderRadius: "10px", letterSpacing: "0.04em", boxShadow: "0 2px 12px rgba(255,217,59,0.4)" }}>
+              ⭐ Bonusvraag! Dubbele punten
+            </div>
+          )}
           <div className="glass-card" style={{ padding: "clamp(12px, 2.5vw, 16px)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "clamp(60px, 15vh, 100px)" }}>
             <p style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(0.95rem, 3vw, 1.1rem)", textAlign: "center", lineHeight: 1.4 }}>
               {question.question_text}
