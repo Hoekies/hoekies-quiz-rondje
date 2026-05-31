@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === "development";
 
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://apis.google.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.googleapis.com https://*.firebaseio.com https://res.cloudinary.com",
   "media-src 'self' blob: data: https://*.googleapis.com https://*.firebaseio.com https://res.cloudinary.com",

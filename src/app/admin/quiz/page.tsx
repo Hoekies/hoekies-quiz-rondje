@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { collection, onSnapshot, query, orderBy, limit, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, limit, getDocs, doc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
@@ -98,20 +98,17 @@ export default function QuizBeheerPage() {
     setRenaming(false);
   }
 
-  // Abonneer op vragen
+  // Abonneer op vragen — sorteer client-side (geen samengestelde index nodig)
   useEffect(() => {
     if (!quizId) return;
     const unsub = onSnapshot(
-      query(
-        collection(db, "quizzes", quizId, "questions"),
-        orderBy("round"),
-        orderBy("order")
-      ),
+      collection(db, "quizzes", quizId, "questions"),
       (snap) => {
-        setQuestions(
-          snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) }))
-        );
-      }
+        const qs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) }));
+        qs.sort((a, b) => (a.round - b.round) || (a.order - b.order));
+        setQuestions(qs);
+      },
+      (err) => setActionError("Fout bij laden vragen: " + err.message)
     );
     return unsub;
   }, [quizId]);
