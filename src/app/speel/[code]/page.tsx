@@ -117,6 +117,10 @@ interface QuestionDoc {
   left_items?: string[];
   right_items?: string[];
   guess_duration?: 5 | 10;
+  audio_start?: number;
+  video_start?: number;
+  clip_duration?: 5 | 10;
+  answer_mode?: "multiple_choice" | "true_false";
 }
 
 export default function SpeelPage() {
@@ -398,17 +402,34 @@ export default function SpeelPage() {
     }
   }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Guess the song: automatisch afspelen, stoppen na 5 seconden
+  // Audio: speel segment vanaf audio_start voor clip_duration seconden
   useEffect(() => {
-    if (question?.type !== "guess_the_song" || step !== "question") return;
+    if (question?.type !== "audio" || step !== "question") return;
     setAudioPlayed(false);
-    const audio = document.getElementById("guess-audio") as HTMLAudioElement | null;
+    const audio = document.getElementById("clip-audio") as HTMLAudioElement | null;
     if (!audio) return;
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-    const durationMs = (question.guess_duration ?? 5) * 1000;
-    const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, durationMs);
+    const startSec = question.audio_start ?? 0;
+    const durMs = (question.clip_duration ?? question.guess_duration ?? 5) * 1000;
+    const play = () => { audio.currentTime = startSec; audio.play().catch(() => {}); };
+    if (audio.readyState >= 1) play(); else audio.addEventListener("loadedmetadata", play, { once: true });
+    const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, durMs);
     return () => { clearTimeout(t); audio.pause(); };
+  }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Video MP4: speel vanaf video_start voor clip_duration seconden
+  useEffect(() => {
+    if (question?.type !== "video" || step !== "question") return;
+    const url = question.media_url ?? "";
+    const isYouTube = /youtube|youtu\.be/.test(url);
+    if (isYouTube) return; // YouTube handelt iframe + timer apart
+    const video = document.getElementById("clip-video") as HTMLVideoElement | null;
+    if (!video) return;
+    const startSec = question.video_start ?? 0;
+    const durMs = (question.clip_duration ?? 5) * 1000;
+    const play = () => { video.currentTime = startSec; video.play().catch(() => {}); };
+    if (video.readyState >= 1) play(); else video.addEventListener("loadedmetadata", play, { once: true });
+    const t = setTimeout(() => { video.pause(); }, durMs);
+    return () => { clearTimeout(t); video.pause(); };
   }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Join handler
@@ -582,9 +603,16 @@ export default function SpeelPage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px" }} />
           )}
-          {/* audio */}
+          {/* audio: verborgen, speelt segment automatisch */}
           {question.type === "audio" && question.media_url && (
-            <audio controls src={question.media_url} style={{ width: "100%", flexShrink: 0 }} />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              <audio id="clip-audio" src={question.media_url} preload="auto" style={{ display: "none" }} />
+              <div className="glass-card" style={{ padding: "12px 20px", textAlign: "center" }}>
+                {audioPlayed
+                  ? <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>🎵 {question.clip_duration ?? question.guess_duration ?? 5} seconden gespeeld</p>
+                  : <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>🎵 Luister...</p>}
+              </div>
+            </div>
           )}
           {/* blur_reveal */}
           {question.type === "blur_reveal" && question.media_url && (
@@ -592,25 +620,18 @@ export default function SpeelPage() {
             <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px", filter: `blur(${blurLevel}px)`, transition: "filter 0.8s ease" }} />
           )}
           {/* video */}
-          {question.type === "video" && question.media_url && (
-            question.media_url.includes("youtube") || question.media_url.includes("youtu.be") ? (
-              <iframe src={question.media_url} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", border: "none", flexShrink: 0 }} allow="autoplay" />
-            ) : (
-              <video src={question.media_url} controls style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "28%" }} />
-            )
-          )}
-          {/* guess_the_song */}
-          {question.type === "guess_the_song" && question.media_url && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-              <audio id="guess-audio" src={question.media_url} preload="auto" style={{ display: "none" }} />
-              <div className="glass-card" style={{ padding: "12px 20px", textAlign: "center" }}>
-                {audioPlayed
-                  ? <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>🎵 {question.guess_duration ?? 5} seconden gespeeld — raad het lied!</p>
-                  : <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>🎵 Luister...</p>
-                }
-              </div>
-            </div>
-          )}
+          {question.type === "video" && question.media_url && (() => {
+            const url = question.media_url;
+            const isYT = /youtube|youtu\.be/.test(url);
+            if (isYT) {
+              const idMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
+              const vid = idMatch?.[1] ?? "";
+              const start = question.video_start ?? 0;
+              const embed = `https://www.youtube.com/embed/${vid}?start=${start}&autoplay=1&controls=0&modestbranding=1`;
+              return <iframe src={embed} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", border: "none", flexShrink: 0 }} allow="autoplay; encrypted-media" />;
+            }
+            return <video id="clip-video" src={url} playsInline style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
+          })()}
 
           {/* Tekst antwoordknoppen */}
           {question.type !== "image_answer" && question.type !== "estimate" && (

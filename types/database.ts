@@ -7,7 +7,6 @@ export type QuestionType =
   | "image_answer"
   | "video"
   | "estimate"
-  | "guess_the_song"
   | "match";
 
 export type SessionStatus = "lobby" | "active" | "finished";
@@ -52,6 +51,10 @@ export interface Question {
   left_items?: string[];
   right_items?: string[];
   guess_duration?: 5 | 10;
+  audio_start?: number;
+  video_start?: number;
+  clip_duration?: 5 | 10;
+  answer_mode?: "multiple_choice" | "true_false";
 }
 
 export interface Session {

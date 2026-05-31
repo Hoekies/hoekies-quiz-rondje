@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { auth, db, storage } from "@/lib/firebase";
+import { compressImage } from "@/lib/media";
 import AdminLayout from "../AdminLayout";
 
 interface ThemeSettings {
@@ -17,25 +18,6 @@ interface ThemeSettings {
 
 function centerAspectCrop(width: number, height: number): Crop {
   return centerCrop(makeAspectCrop({ unit: "%", width: 80 }, 1, width, height), width, height);
-}
-
-async function compressImage(file: File, maxSize: number, quality = 0.82): Promise<Blob> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxSize / Math.max(img.naturalWidth, img.naturalHeight));
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob((b) => resolve(b ?? file), "image/jpeg", quality);
-    };
-    img.src = url;
-  });
 }
 
 export default function ThemaPagina() {

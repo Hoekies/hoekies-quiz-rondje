@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
+import { compressImage, uploadMedia, mediaPath } from "@/lib/media";
+import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import { Suspense } from "react";
 import AdminLayout from "../../AdminLayout";
 
@@ -32,9 +35,14 @@ interface QuestionForm {
   img_opt_b: string;
   img_opt_c: string;
   img_opt_d: string;
-  // video / audio / image / guess_the_song
+  // video / audio / image
   media_url: string;
   guess_duration: 5 | 10;
+  audio_start: number;
+  video_start: number;
+  clip_duration: 5 | 10;
+  answer_mode: "multiple_choice" | "true_false";
+  video_source: "youtube" | "upload";
   // match
   left_1: string;
   left_2: string;
@@ -70,6 +78,11 @@ const DEFAULT_FORM: QuestionForm = {
   img_opt_d: "",
   media_url: "",
   guess_duration: 5,
+  audio_start: 0,
+  video_start: 0,
+  clip_duration: 5,
+  answer_mode: "multiple_choice",
+  video_source: "youtube",
   left_1: "",
   left_2: "",
   left_3: "",
@@ -85,12 +98,11 @@ const TYPE_LABELS: Record<string, string> = {
   multiple_choice: "Multiple choice",
   true_false: "Waar / Niet waar",
   image: "Afbeelding als vraag",
-  audio: "Audio als vraag",
+  audio: "Audio / raad het lied",
   blur_reveal: "Vervagend beeld",
   image_answer: "Afbeelding als antwoord",
   video: "Video als vraag",
   estimate: "Schatting (slider)",
-  guess_the_song: "Raad het lied (5 sec)",
   match: "Koppelen (A→1, B→2, C→3)",
 };
 
@@ -146,6 +158,11 @@ function VraagForm() {
           img_opt_d: imgOpts[3] ?? "",
           media_url: d.media_url ?? "",
           guess_duration: (d.guess_duration === 10 ? 10 : 5) as 5 | 10,
+          audio_start: d.audio_start ?? 0,
+          video_start: d.video_start ?? 0,
+          clip_duration: ((d.clip_duration ?? d.guess_duration) === 10 ? 10 : 5) as 5 | 10,
+          answer_mode: d.answer_mode === "true_false" ? "true_false" : "multiple_choice",
+          video_source: (d.type === "video" && d.media_url && !/youtube|youtu\.be/.test(d.media_url)) ? "upload" : "youtube",
           left_1: (d.left_items ?? [])[0] ?? "",
           left_2: (d.left_items ?? [])[1] ?? "",
           left_3: (d.left_items ?? [])[2] ?? "",
@@ -183,6 +200,71 @@ function VraagForm() {
     return [form.option_a, form.option_b, form.option_c, form.option_d].filter(Boolean);
   }
 
+  // ── Media-upload state ───────────────────────────────────────────────
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [scale, setScale] = useState(1);
+  const [uploading, setUploading] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  function onImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setCropSrc(ev.target?.result as string); setCrop(undefined); setScale(1); };
+    reader.readAsDataURL(file);
+  }
+
+  function onCropImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    setCrop(centerCrop(makeAspectCrop({ unit: "%", width: 90 }, w / h, w, h), w, h));
+  }
+
+  async function saveCroppedImage() {
+    if (!imgRef.current || !completedCrop || !quizId) { setError("Maak eerst een uitsnede"); return; }
+    setUploading(true); setError("");
+    try {
+      const sx = imgRef.current.naturalWidth / imgRef.current.width;
+      const sy = imgRef.current.naturalHeight / imgRef.current.height;
+      const canvas = document.createElement("canvas");
+      canvas.width = completedCrop.width * sx;
+      canvas.height = completedCrop.height * sy;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(imgRef.current, completedCrop.x * sx, completedCrop.y * sy, completedCrop.width * sx, completedCrop.height * sy, 0, 0, canvas.width, canvas.height);
+      const blob: Blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/jpeg", 0.9));
+      const compressed = await compressImage(blob, 1280, 0.82);
+      const url = await uploadMedia(mediaPath("img", quizId, "jpg"), compressed, "image/jpeg");
+      setForm((f) => ({ ...f, media_url: url }));
+      setCropSrc(null);
+    } catch (err) {
+      setError("Upload mislukt: " + (err as Error).message);
+    }
+    setUploading(false);
+  }
+
+  async function onAudioFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !quizId) return;
+    setUploading(true); setError("");
+    try {
+      const url = await uploadMedia(mediaPath("audio", quizId, "mp3"), file, file.type || "audio/mpeg");
+      setForm((f) => ({ ...f, media_url: url }));
+    } catch (err) { setError("Upload mislukt: " + (err as Error).message); }
+    setUploading(false);
+  }
+
+  async function onVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !quizId) return;
+    setUploading(true); setError("");
+    try {
+      const url = await uploadMedia(mediaPath("video", quizId, "mp4"), file, file.type || "video/mp4");
+      setForm((f) => ({ ...f, media_url: url }));
+    } catch (err) { setError("Upload mislukt: " + (err as Error).message); }
+    setUploading(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!quizId) { setError("Geen quiz_id"); return; }
@@ -193,14 +275,18 @@ function VraagForm() {
     if (!user) { router.push("/admin/login"); return; }
     const token = await user.getIdToken();
 
-    const options = activeOptions();
+    const mediaTypeUsesToggle = ["image", "blur_reveal", "video"].includes(form.type);
+    let options = activeOptions();
+    if (mediaTypeUsesToggle && form.answer_mode === "true_false") {
+      options = ["Waar", "Niet waar"];
+    }
     const imageOptions = [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean);
 
     const payload: Record<string, unknown> = {
       quiz_id: quizId,
       question_text: form.question_text.trim(),
       type: form.type,
-      options: ["multiple_choice", "true_false", "image", "audio", "video", "guess_the_song", "blur_reveal"].includes(form.type) && options.length > 0 ? options : null,
+      options: ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal"].includes(form.type) && options.length > 0 ? options : null,
       correct_answer: form.correct_answer,
       time_limit_seconds: form.time_limit_seconds,
       base_points: form.base_points,
@@ -210,8 +296,16 @@ function VraagForm() {
       media_url: form.media_url || null,
     };
 
+    if (mediaTypeUsesToggle) payload.answer_mode = form.answer_mode;
     if (form.type === "blur_reveal") payload.blur_steps = form.blur_steps;
-    if (form.type === "guess_the_song") payload.guess_duration = form.guess_duration;
+    if (form.type === "audio") {
+      payload.audio_start = form.audio_start;
+      payload.clip_duration = form.clip_duration;
+    }
+    if (form.type === "video") {
+      payload.video_start = form.video_start;
+      payload.clip_duration = form.clip_duration;
+    }
     if (form.type === "estimate") {
       payload.estimate_min = form.estimate_min;
       payload.estimate_max = form.estimate_max;
@@ -250,11 +344,14 @@ function VraagForm() {
   if (loading) return null;
 
   const isTrueFalse = form.type === "true_false";
-  const hasTextOptions = ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
+  const usesToggle = ["image", "blur_reveal", "video"].includes(form.type);
+  const toggleIsTF = usesToggle && form.answer_mode === "true_false";
+  // 4-keuze tekstvelden tonen: zuivere keuze-typen + media-typen in 4-keuze modus
+  const hasTextOptions = ["multiple_choice", "true_false", "audio"].includes(form.type) || (usesToggle && form.answer_mode === "multiple_choice");
   const isMatch = form.type === "match";
-  const hasMedia = ["image", "audio", "video", "blur_reveal", "guess_the_song"].includes(form.type);
   const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
   const L = { color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700 };
+  const tfWaardes = ["Waar", "Niet waar"];
 
   return (
     <AdminLayout title={isEdit ? "Vraag bewerken" : "Nieuwe vraag"}>
@@ -275,33 +372,31 @@ function VraagForm() {
             </select>
           </div>
 
-          {/* Media URL voor image/audio/video/blur_reveal/guess_the_song */}
-          {hasMedia && (
+          {/* Afbeelding / vervagend beeld: upload + crop + compress */}
+          {(form.type === "image" || form.type === "blur_reveal") && (
             <div style={F}>
-              <label style={L}>
-                {form.type === "video" ? "Video URL (YouTube embed of MP4)" :
-                 form.type === "audio" || form.type === "guess_the_song" ? "Audio URL (MP3/WAV)" :
-                 "Afbeelding URL"}
-              </label>
-              <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)}
-                placeholder="https://..." className="glass-input" />
-            </div>
-          )}
-
-          {/* Afspeelduur voor guess_the_song */}
-          {form.type === "guess_the_song" && (
-            <div style={F}>
-              <label style={L}>Afspeelduur</label>
-              <div style={{ display: "flex", gap: "12px" }}>
-                {([5, 10] as const).map((sec) => (
-                  <label key={sec} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                    <input type="radio" name="guess_duration" value={sec} checked={form.guess_duration === sec}
-                      onChange={() => set("guess_duration", sec)}
-                      style={{ accentColor: "var(--cyan)", width: "16px", height: "16px" }} />
-                    <span style={{ color: form.guess_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{sec} seconden</span>
-                  </label>
-                ))}
-              </div>
+              <label style={L}>Afbeelding</label>
+              {form.media_url && !cropSrc && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.media_url} alt="Preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />
+              )}
+              <input type="file" accept="image/*" onChange={onImageFile} className="glass-input" style={{ padding: "8px" }} />
+              {cropSrc && (
+                <div style={{ ...F, gap: "10px" }}>
+                  <label style={L}>Zoom</label>
+                  <input type="range" min={0.5} max={3} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
+                  <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px" }}>
+                    <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img ref={imgRef} src={cropSrc} alt="Crop" onLoad={onCropImgLoad} style={{ transform: `scale(${scale})`, transformOrigin: "top left", maxWidth: "100%" }} />
+                    </ReactCrop>
+                  </div>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button type="button" onClick={saveCroppedImage} disabled={uploading} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{uploading ? "Uploaden..." : "Bijsnijden + opslaan"}</button>
+                    <button type="button" onClick={() => setCropSrc(null)} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Annuleren</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -312,6 +407,100 @@ function VraagForm() {
               <input type="range" min={1} max={10} value={form.blur_steps}
                 onChange={(e) => set("blur_steps", Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
               <span style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>{form.blur_steps} stappen</span>
+            </div>
+          )}
+
+          {/* Audio: upload MP3 + startpunt + duur */}
+          {form.type === "audio" && (
+            <div style={F}>
+              <label style={L}>Audiobestand (MP3)</label>
+              {form.media_url && <audio controls src={form.media_url} style={{ width: "100%" }} />}
+              <input type="file" accept="audio/*" onChange={onAudioFile} className="glass-input" style={{ padding: "8px" }} />
+              {uploading && <span style={{ color: "var(--cyan)", fontSize: "0.82rem" }}>Uploaden...</span>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={F}>
+                  <label style={L}>Startpunt (sec)</label>
+                  <input type="number" min={0} value={form.audio_start} onChange={(e) => set("audio_start", Number(e.target.value))} className="glass-input" />
+                </div>
+                <div style={F}>
+                  <label style={L}>Afspeelduur</label>
+                  <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
+                    {([5, 10] as const).map((sec) => (
+                      <label key={sec} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input type="radio" name="clip_duration" checked={form.clip_duration === sec} onChange={() => set("clip_duration", sec)} style={{ accentColor: "var(--cyan)" }} />
+                        <span style={{ color: form.clip_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>{sec}s</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Video: YouTube of MP4-upload + startpunt + duur */}
+          {form.type === "video" && (
+            <div style={F}>
+              <label style={L}>Videobron</label>
+              <div style={{ display: "flex", gap: "16px" }}>
+                {(["youtube", "upload"] as const).map((src) => (
+                  <label key={src} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <input type="radio" name="video_source" checked={form.video_source === src} onChange={() => set("video_source", src)} style={{ accentColor: "var(--cyan)" }} />
+                    <span style={{ color: form.video_source === src ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{src === "youtube" ? "YouTube" : "MP4 uploaden"}</span>
+                  </label>
+                ))}
+              </div>
+              {form.video_source === "youtube" ? (
+                <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." className="glass-input" />
+              ) : (
+                <>
+                  {form.media_url && <video controls src={form.media_url} style={{ width: "100%", maxHeight: "200px", borderRadius: "10px" }} />}
+                  <input type="file" accept="video/mp4" onChange={onVideoFile} className="glass-input" style={{ padding: "8px" }} />
+                  {uploading && <span style={{ color: "var(--cyan)", fontSize: "0.82rem" }}>Uploaden...</span>}
+                </>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={F}>
+                  <label style={L}>Startpunt (sec)</label>
+                  <input type="number" min={0} value={form.video_start} onChange={(e) => set("video_start", Number(e.target.value))} className="glass-input" />
+                </div>
+                <div style={F}>
+                  <label style={L}>Afspeelduur</label>
+                  <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
+                    {([5, 10] as const).map((sec) => (
+                      <label key={sec} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input type="radio" name="clip_duration_v" checked={form.clip_duration === sec} onChange={() => set("clip_duration", sec)} style={{ accentColor: "var(--cyan)" }} />
+                        <span style={{ color: form.clip_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>{sec}s</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Antwoordtype-toggle voor image/blur/video */}
+          {usesToggle && (
+            <div style={F}>
+              <label style={L}>Antwoordtype</label>
+              <div style={{ display: "flex", gap: "16px" }}>
+                {([["multiple_choice", "4 keuzes"], ["true_false", "Waar / Onjuist"]] as const).map(([mode, lbl]) => (
+                  <label key={mode} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <input type="radio" name="answer_mode" checked={form.answer_mode === mode} onChange={() => set("answer_mode", mode)} style={{ accentColor: "var(--cyan)" }} />
+                    <span style={{ color: form.answer_mode === mode ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{lbl}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Waar/Onjuist correct-antwoord keuze voor media-toggle */}
+          {toggleIsTF && (
+            <div style={F}>
+              <label style={L}>Correct antwoord</label>
+              <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
+                <option value="">— Kies —</option>
+                {tfWaardes.map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
             </div>
           )}
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const validTypes = ["multiple_choice", "true_false", "image", "audio", "blur_reveal", "image_answer", "video", "estimate", "guess_the_song"];
+    const validTypes = ["multiple_choice", "true_false", "image", "audio", "blur_reveal", "image_answer", "video", "estimate", "match"];
     const type = row.type?.trim() || "multiple_choice";
     if (!validTypes.includes(type)) {
       errors.push(`Rij ${i + 2}: ongeldig type "${type}"`);
