@@ -67,6 +67,7 @@ type Step =
   | "inactive"
   | "lobby"
   | "laatste_vraag"
+  | "ronde_klaar"
   | "question"
   | "answered"
   | "reveal"
@@ -92,6 +93,7 @@ interface SessionDoc {
   state: string;
   current_question_id: string | null;
   question_index: number;
+  question_order?: string[];
   reset_at?: { seconds: number } | null;
   resume_at?: { seconds: number } | null;
   question_opened_at?: { seconds: number } | null;
@@ -310,6 +312,9 @@ export default function SpeelPage() {
         break;
       case "laatste_vraag":
         setStep("laatste_vraag");
+        break;
+      case "ronde_klaar":
+        setStep("ronde_klaar");
         break;
       case "finale":
         setStep("lobby");
@@ -587,9 +592,14 @@ export default function SpeelPage() {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
     return (
       <div className="speler-shell">
-        <header className="speler-header" style={{ justifyContent: "center", padding: "8px 0" }}>
+        <header className="speler-header" style={{ flexDirection: "column", justifyContent: "center", padding: "8px 0", gap: "4px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "108px", objectFit: "contain" }} />
+          {session?.question_order?.length ? (
+            <span style={{ color: "var(--cyan)", fontWeight: 700, fontSize: "clamp(0.8rem, 2.5vw, 0.95rem)" }}>
+              Vraag {(session.question_index ?? 0) + 1} / {session.question_order.length}
+            </span>
+          ) : null}
         </header>
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
           {question.is_double_points && (
@@ -761,6 +771,38 @@ export default function SpeelPage() {
               </div>
             );
           })()}
+        </div>
+      </div>
+    );
+  }
+
+  // ── RONDE KLAAR ──────────────────────────────────────────────────────────
+  if (step === "ronde_klaar") {
+    const medals = ["leaderboard-row--gold", "leaderboard-row--silver", "leaderboard-row--bronze"];
+    const emoji = ["🥇", "🥈", "🥉"];
+    const myRank = ranks.findIndex((p) => p.id === playerId) + 1;
+    const bg = themeBg ? { backgroundImage: `linear-gradient(rgba(6,14,26,0.72), rgba(6,14,26,0.82)), url(${themeBg})`, backgroundSize: "cover", backgroundPosition: "center" } : {};
+    return (
+      <div className="speler-shell" style={bg}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(120px, 30vw, 170px)", height: "clamp(120px, 30vw, 170px)", objectFit: "contain", flexShrink: 0 }} />
+          <p style={{ fontSize: "clamp(2rem, 9vw, 3rem)" }}>🏁</p>
+          <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5.5vw, 1.6rem)", textAlign: "center" }}>Ronde klaar!</h2>
+          <p style={{ color: "var(--muted)", fontSize: "0.9rem", textAlign: "center" }}>Wacht op de host voor de volgende ronde…</p>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+            {ranks.map((p, i) => (
+              <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`} style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
+                <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}{p.id === playerId ? " (jij)" : ""}</span>
+                <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
+              </div>
+            ))}
+          </div>
+          <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", width: "100%", marginTop: "auto" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw totaal{myRank > 0 ? ` — #${myRank}` : ""}</p>
+            <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem" }}>{myScore} punten</p>
+          </div>
         </div>
       </div>
     );

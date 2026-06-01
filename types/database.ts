@@ -18,6 +18,7 @@ export type SessionState =
   | "leaderboard"
   | "finale"
   | "laatste_vraag"
+  | "ronde_klaar"
   | "endscreen"
   | "paused"
   | "resuming";

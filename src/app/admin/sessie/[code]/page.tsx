@@ -265,6 +265,7 @@ export default function HostControlPage() {
     switch (session.state) {
       case "lobby":
       case "ronde_intro":
+      case "ronde_klaar":
         patchSession("question_open", {
           current_question_id: questionOrder[0] ?? null,
           question_index: 0,
@@ -278,8 +279,10 @@ export default function HostControlPage() {
         patchSession("leaderboard");
         break;
       case "leaderboard":
-        if (isLastQuestion || session?.force_end) {
+        if (session?.force_end) {
           patchSession("endscreen");
+        } else if (isLastQuestion) {
+          patchSession("ronde_klaar", { current_question_id: null });
         } else if (nextQuestion?.is_double_points) {
           patchSession("finale", {
             current_question_id: nextQuestion.id,
@@ -326,10 +329,12 @@ export default function HostControlPage() {
     await updateDoc(doc(db, "sessions", code), { force_end: !session.force_end });
   }
 
-  const nextLabel = isLastQuestion
-    ? "Eindscherm"
+  const nextLabel = session?.force_end
+    ? "🏁 Eindscherm"
+    : isLastQuestion
+    ? "✅ Ronde afronden"
     : nextQuestion?.is_double_points
-    ? "🔥 Finale"
+    ? "🔥 Bonusvraag"
     : "➡ Volgende vraag";
 
   const actionLabel: Record<string, string> = {
@@ -340,6 +345,7 @@ export default function HostControlPage() {
     leaderboard: nextLabel,
     finale: "Toon bonusvraag",
     laatste_vraag: "🏁 Start laatste vraag",
+    ronde_klaar: "🚀 Start volgende ronde",
     paused: "▶ Hervat quiz",
     resuming: "⏱ Aftellen...",
     endscreen: "Quiz afgerond",
@@ -387,8 +393,17 @@ export default function HostControlPage() {
           </div>
         )}
 
-        {/* Ronde-keuze (alleen in lobby) */}
-        {session.state === "lobby" && rounds.length > 0 && (
+        {/* Ronde-klaar melding */}
+        {session.state === "ronde_klaar" && (
+          <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
+            <p style={{ fontSize: "1.6rem" }}>✅</p>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
+            <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
+          </div>
+        )}
+
+        {/* Ronde-keuze (lobby of tussen rondes) */}
+        {(session.state === "lobby" || session.state === "ronde_klaar") && rounds.length > 0 && (
           <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
             <span style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Welke vragen?</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -463,6 +478,15 @@ export default function HostControlPage() {
         ) : (
           <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem" }}>
             {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
+          </button>
+        )}
+
+        {/* Beëindig spel — toont meteen de eindstand */}
+        {session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming" && (
+          <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
+            disabled={actionLoading}
+            style={{ fontWeight: 700, fontSize: "0.95rem", padding: "11px 16px", borderRadius: "10px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer" }}>
+            🏁 Beëindig spel (toon eindstand)
           </button>
         )}
 

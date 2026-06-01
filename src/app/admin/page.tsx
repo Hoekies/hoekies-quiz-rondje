@@ -98,7 +98,7 @@ export default function AdminDashboard() {
   }, [sessions]);
 
   // Laad vragen + ronde-namen voor de actieve sessie in lobby
-  const activeLobby = sessions.find((s) => s.is_active && s.state === "lobby");
+  const activeLobby = sessions.find((s) => s.is_active && (s.state === "lobby" || s.state === "ronde_klaar"));
   useEffect(() => {
     const qid = activeLobby?.quiz_id;
     if (!qid) { setActiveQuestions([]); return; }
