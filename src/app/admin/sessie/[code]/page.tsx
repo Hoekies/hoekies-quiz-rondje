@@ -60,6 +60,7 @@ export default function HostControlPage() {
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
+  const [roundNames, setRoundNames] = useState<Record<string, string>>({});
 
   // Auth guard
   useEffect(() => {
@@ -102,6 +103,14 @@ export default function HostControlPage() {
     });
     return unsub;
   }, [code]);
+
+  // Load round names from quiz
+  useEffect(() => {
+    if (!session?.quiz_id) return;
+    getDoc(doc(db, "quizzes", session.quiz_id)).then((snap) => {
+      if (snap.exists() && snap.data().round_names) setRoundNames(snap.data().round_names as Record<string, string>);
+    });
+  }, [session?.quiz_id]);
 
   // Load questions when we have quiz_id
   useEffect(() => {
@@ -201,6 +210,25 @@ export default function HostControlPage() {
   const nextQuestionId = questionOrder[currentIdx + 1];
   const nextQuestion = questions.find((q) => q.id === nextQuestionId) ?? null;
   const isLastQuestion = currentIdx >= 0 && currentIdx === questionOrder.length - 1;
+
+  // Ronde-keuze (alleen in lobby)
+  const rounds = [...new Set(questions.map((q) => q.round))].sort((a, b) => a - b);
+  const roundLabel = (r: number) => roundNames[r] ? roundNames[r] : `Ronde ${r}`;
+  // Welke ronde is momenteel geselecteerd? (alle order-ids horen bij die ronde)
+  const selectedRound: number | "all" = (() => {
+    if (!session?.question_order?.length) return "all";
+    const rs = new Set(session.question_order.map((id) => questions.find((q) => q.id === id)?.round).filter((r) => r !== undefined));
+    return rs.size === 1 ? ([...rs][0] as number) : "all";
+  })();
+
+  async function selectRound(r: number | "all") {
+    const ids = (r === "all" ? questions : questions.filter((q) => q.round === r)).map((q) => q.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    await updateDoc(doc(db, "sessions", code), { question_order: ids, current_question_id: null, question_index: 0 });
+  }
 
   async function handleReset() {
     if (!window.confirm("Sessie volledig resetten? Alle scores worden op 0 gezet en antwoorden gewist.")) return;
@@ -354,6 +382,28 @@ export default function HostControlPage() {
             <p style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
               {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
             </p>
+          </div>
+        )}
+
+        {/* Ronde-keuze (alleen in lobby) */}
+        {session.state === "lobby" && rounds.length > 0 && (
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
+            <span style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Welke vragen?</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              <button onClick={() => selectRound("all")}
+                style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                  background: selectedRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === "all" ? "#000" : "var(--text)" }}>
+                Hele quiz ({questions.length})
+              </button>
+              {rounds.map((r) => (
+                <button key={r} onClick={() => selectRound(r)}
+                  style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                    background: selectedRound === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === r ? "#000" : "var(--text)" }}>
+                  {roundLabel(r)} ({questions.filter((q) => q.round === r).length})
+                </button>
+              ))}
+            </div>
+            <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
           </div>
         )}
 
