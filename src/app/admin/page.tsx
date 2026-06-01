@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, getDocs, getDoc, deleteDoc, doc, updateDoc, writeBatch, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDocs, deleteDoc, doc, updateDoc, writeBatch } from "firebase/firestore";
 import QRCode from "qrcode";
 import { auth, db } from "@/lib/firebase";
 import AdminLayout from "./AdminLayout";
+import SessionControl from "./SessionControl";
 
 interface SessionDoc {
   code: string;
@@ -17,9 +18,6 @@ interface SessionDoc {
   question_order?: string[];
   current_question_id?: string | null;
 }
-
-interface PlayerDoc { id: string; name: string; score: number; avatar?: string; }
-interface QDoc { id: string; round: number; order: number; }
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -34,13 +32,7 @@ export default function AdminDashboard() {
   const [globalLoading, setGlobalLoading] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedMsg, setSeedMsg] = useState("");
-  const [leaderboard, setLeaderboard] = useState<PlayerDoc[]>([]);
-  const [lbCode, setLbCode] = useState<string | null>(null);
-  const [activeQuestions, setActiveQuestions] = useState<QDoc[]>([]);
-  const [roundNames, setRoundNames] = useState<Record<string, string>>({});
-  const [starting, setStarting] = useState(false);
   const qrGenerated = useRef<Set<string>>(new Set());
-  const lbUnsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -62,28 +54,8 @@ export default function AdminDashboard() {
         counts[s.code] = ps.size;
       }));
       setPlayerCounts(counts);
-
-      // Subscribe leaderboard van actieve sessie
-      const active = docs.find((s) => s.is_active && s.status !== "finished");
-      if (active && active.code !== lbCode) {
-        lbUnsubRef.current?.();
-        setLbCode(active.code);
-        lbUnsubRef.current = onSnapshot(
-          collection(db, "sessions", active.code, "players"),
-          (psnap) => {
-            const ps: PlayerDoc[] = psnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PlayerDoc, "id">) }));
-            ps.sort((a, b) => b.score - a.score);
-            setLeaderboard(ps.slice(0, 5));
-          }
-        );
-      } else if (!active) {
-        lbUnsubRef.current?.();
-        lbUnsubRef.current = null;
-        setLbCode(null);
-        setLeaderboard([]);
-      }
     });
-    return () => { unsub(); lbUnsubRef.current?.(); };
+    return () => { unsub(); };
   }, [authChecked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -96,44 +68,6 @@ export default function AdminDashboard() {
       }
     });
   }, [sessions]);
-
-  // Laad vragen + ronde-namen voor de actieve sessie in lobby
-  const activeLobby = sessions.find((s) => s.is_active && (s.state === "lobby" || s.state === "ronde_klaar"));
-  useEffect(() => {
-    const qid = activeLobby?.quiz_id;
-    if (!qid) { setActiveQuestions([]); return; }
-    (async () => {
-      const [qsnap, quizSnap] = await Promise.all([
-        getDocs(collection(db, "quizzes", qid, "questions")),
-        getDoc(doc(db, "quizzes", qid)),
-      ]);
-      const qs = qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<QDoc, "id">) }));
-      qs.sort((a, b) => (a.round - b.round) || (a.order - b.order));
-      setActiveQuestions(qs);
-      setRoundNames((quizSnap.data()?.round_names as Record<string, string>) ?? {});
-    })();
-  }, [activeLobby?.quiz_id]);
-
-  async function dashSelectRound(s: SessionDoc, r: number | "all") {
-    const ids = (r === "all" ? activeQuestions : activeQuestions.filter((q) => q.round === r)).map((q) => q.id);
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
-    }
-    await updateDoc(doc(db, "sessions", s.code), { question_order: ids, current_question_id: null, question_index: 0 });
-  }
-
-  async function dashStart(s: SessionDoc) {
-    setStarting(true);
-    const order = s.question_order && s.question_order.length > 0 ? s.question_order : activeQuestions.map((q) => q.id);
-    if (order.length === 0) { setStarting(false); return; }
-    await updateDoc(doc(db, "sessions", s.code), {
-      state: "question_open", status: "active",
-      current_question_id: order[0], question_index: 0,
-      question_order: order, question_opened_at: serverTimestamp(),
-    });
-    setStarting(false);
-  }
 
   async function handleCreateSession() {
     setCreating(true); setCreateError("");
@@ -205,21 +139,11 @@ export default function AdminDashboard() {
 
   const statusLabel: Record<string, string> = { lobby: "Wacht op spelers", active: "Bezig", finished: "Afgerond" };
   const statusColor: Record<string, string> = { lobby: "var(--cyan)", active: "var(--green)", finished: "var(--muted)" };
-  const medals = ["🥇", "🥈", "🥉", "4.", "5."];
 
   if (!authChecked) return null;
 
   const activeSessions = sessions.filter((s) => s.status === "active");
   const activeSession = sessions.find((s) => s.is_active && s.status !== "finished");
-  const dashRounds = [...new Set(activeQuestions.map((q) => q.round))].sort((a, b) => a - b);
-  const dashRoundLabel = (r: number) => roundNames[r] ? roundNames[r] : `Ronde ${r}`;
-  const dashSelected: number | "all" = (() => {
-    const ord = activeLobby?.question_order;
-    if (!ord?.length) return "all";
-    const rs = new Set(ord.map((id) => activeQuestions.find((q) => q.id === id)?.round).filter((r) => r !== undefined));
-    return rs.size === 1 ? ([...rs][0] as number) : "all";
-  })();
-  const dashSelectedCount = activeLobby?.question_order?.length ?? activeQuestions.length;
 
   return (
     <AdminLayout title="Dashboard">
@@ -233,50 +157,10 @@ export default function AdminDashboard() {
           {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
         </div>
 
-        {/* Ronde kiezen + starten voor actieve lobby-sessie */}
-        {activeLobby && dashRounds.length > 0 && (
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "18px 20px", border: "1px solid rgba(0,217,255,0.25)" }}>
-            <span style={{ color: "var(--cyan)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Start sessie {activeLobby.code} — kies vragen
-            </span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              <button onClick={() => dashSelectRound(activeLobby, "all")}
-                style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                  background: dashSelected === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: dashSelected === "all" ? "#000" : "var(--text)" }}>
-                Hele quiz ({activeQuestions.length})
-              </button>
-              {dashRounds.map((r) => (
-                <button key={r} onClick={() => dashSelectRound(activeLobby, r)}
-                  style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                    background: dashSelected === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: dashSelected === r ? "#000" : "var(--text)" }}>
-                  {dashRoundLabel(r)} ({activeQuestions.filter((q) => q.round === r).length})
-                </button>
-              ))}
-            </div>
-            <button onClick={() => dashStart(activeLobby)} disabled={starting || dashSelectedCount === 0} className="btn-game" style={{ fontSize: "0.95rem", padding: "12px" }}>
-              {starting ? "Starten..." : `🚀 Start (${dashSelectedCount} vragen)`}
-            </button>
-          </div>
-        )}
-
-        {/* Leaderboard actieve sessie */}
-        {activeSession && leaderboard.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Live stand — {activeSession.code}
-              </p>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pulse 1.5s infinite" }} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {leaderboard.map((p, i) => (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: i === 0 ? "rgba(255,217,59,0.08)" : "rgba(255,255,255,0.04)", borderRadius: "10px", border: `1px solid ${i === 0 ? "rgba(255,217,59,0.3)" : "rgba(255,255,255,0.08)"}` }}>
-                  <span style={{ fontSize: "1rem", width: "24px", textAlign: "center" }}>{medals[i]}</span>
-                  <span style={{ flex: 1, color: "#fff", fontWeight: 600, fontSize: "0.9rem" }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
-                  <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "0.95rem" }}>{p.score}</span>
-                </div>
-              ))}
-            </div>
+        {/* Live besturing van de actieve sessie — alles-in-één */}
+        {activeSession && (
+          <div style={{ paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <SessionControl code={activeSession.code} />
           </div>
         )}
 
