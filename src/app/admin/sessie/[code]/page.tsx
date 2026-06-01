@@ -403,7 +403,13 @@ export default function HostControlPage() {
   if (loading) return null;
   if (!session) return <AdminLayout title="Sessie"><p style={{ color: "var(--muted)" }}>Sessie niet gevonden.</p></AdminLayout>;
 
-  const S = { display: "flex", flexDirection: "column" as const, gap: "20px", maxWidth: "720px" };
+  const S = { display: "flex", flexDirection: "column" as const, gap: "18px", maxWidth: "760px", margin: "0 auto", width: "100%" };
+
+  // Gedeelde labelstijl voor paneel-koppen
+  const sectionLabel = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
+  // Of de secundaire beheerknoppen zichtbaar zijn
+  const showBeheer = session.state !== "resuming";
+  const showActieveBeheer = session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming";
 
   return (
     <AdminLayout title={`Sessie ${code}`}>
@@ -411,7 +417,7 @@ export default function HostControlPage() {
 
         {/* Knoppenrij */}
         {(() => {
-          const btn = { display: "inline-flex", alignItems: "center", gap: "8px", padding: "9px 16px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer" } as const;
+          const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "9px 16px", minHeight: "40px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer" } as const;
           const msg = waTemplate.replace(/\{code\}/g, code);
           const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
           return (
@@ -419,6 +425,7 @@ export default function HostControlPage() {
               <span style={{ ...btn, background: "rgba(0,217,255,0.12)", borderColor: "rgba(0,217,255,0.3)", color: "var(--cyan)", cursor: "default" }}>
                 {session.state.replace(/_/g, " ").toUpperCase()}
               </span>
+              <span style={{ flex: 1 }} />
               <a href={`/qr/${code}`} target="_blank" style={btn}>QR ↗</a>
               <a href={`/presentatie/${code}`} target="_blank" style={btn}>Presentatie ↗</a>
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
@@ -430,55 +437,66 @@ export default function HostControlPage() {
           );
         })()}
 
-        {/* QR lobby */}
-        {session.state === "lobby" && qrDataUrl && (
-          <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "24px" }}>
-            <p style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Scan om mee te doen</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt="QR code" width={180} height={180} style={{ borderRadius: "10px" }} />
-            <p style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
-              {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
-            </p>
-          </div>
-        )}
+        {/* Lobby: QR + ronde-keuze naast elkaar (stapelt op mobiel) */}
+        {(session.state === "lobby" || session.state === "ronde_klaar") && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
 
-        {/* Ronde-klaar melding */}
-        {session.state === "ronde_klaar" && (
-          <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
-            <p style={{ fontSize: "1.6rem" }}>✅</p>
-            <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
-            <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
-          </div>
-        )}
+            {/* QR lobby */}
+            {session.state === "lobby" && qrDataUrl && (
+              <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "24px" }}>
+                <p style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Scan om mee te doen</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} alt="QR code" width={180} height={180} style={{ borderRadius: "10px" }} />
+                <p style={{ color: "var(--muted)", fontSize: "0.75rem", textAlign: "center", wordBreak: "break-all" }}>
+                  {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
+                </p>
+              </div>
+            )}
 
-        {/* Ronde-keuze (lobby of tussen rondes) */}
-        {(session.state === "lobby" || session.state === "ronde_klaar") && rounds.length > 0 && (
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
-            <span style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Welke vragen?</span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              <button onClick={() => selectRound("all")}
-                style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                  background: selectedRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === "all" ? "#000" : "var(--text)" }}>
-                Hele quiz ({questions.length})
-              </button>
-              {rounds.map((r) => (
-                <button key={r} onClick={() => selectRound(r)}
-                  style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                    background: selectedRound === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === r ? "#000" : "var(--text)" }}>
-                  {roundLabel(r)} ({questions.filter((q) => q.round === r).length})
-                </button>
-              ))}
-            </div>
-            <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
+            {/* Ronde-klaar melding + ronde-keuze */}
+            {(session.state === "ronde_klaar" || (session.state === "lobby" && rounds.length > 0)) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {/* Ronde-klaar melding */}
+                {session.state === "ronde_klaar" && (
+                  <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
+                    <p style={{ fontSize: "1.6rem" }}>✅</p>
+                    <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
+                    <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
+                  </div>
+                )}
+
+                {/* Ronde-keuze (lobby of tussen rondes) */}
+                {rounds.length > 0 && (
+                  <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
+                    <span style={sectionLabel}>Welke vragen?</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                      <button onClick={() => selectRound("all")}
+                        style={{ padding: "8px 14px", minHeight: "40px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                          background: selectedRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === "all" ? "#000" : "var(--text)" }}>
+                        Hele quiz ({questions.length})
+                      </button>
+                      {rounds.map((r) => (
+                        <button key={r} onClick={() => selectRound(r)}
+                          style={{ padding: "8px 14px", minHeight: "40px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                            background: selectedRound === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === r ? "#000" : "var(--text)" }}>
+                          {roundLabel(r)} ({questions.filter((q) => q.round === r).length})
+                        </button>
+                      ))}
+                    </div>
+                    <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
         {/* Vraag + spelers */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
           {currentQuestion && (
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <span style={sectionLabel}>
                   Vraag {currentIdx + 1} / {questionOrder.length}
                 </span>
                 <span className="status-pil status-pil--blauw">{currentQuestion.type}</span>
@@ -496,7 +514,7 @@ export default function HostControlPage() {
           )}
 
           <div className="card" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "4px" }}>
+            <p style={{ ...sectionLabel, marginBottom: "4px" }}>
               Spelers ({players.length})
             </p>
             {players.length === 0 ? (
@@ -514,65 +532,74 @@ export default function HostControlPage() {
 
         {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
 
-        {/* Actie */}
+        {/* Primaire actie */}
         {session.state === "endscreen" ? (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <div className="card" style={{ textAlign: "center", padding: "24px 0" }}>
             <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
             <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Je wordt doorgestuurd naar het dashboard...</p>
           </div>
         ) : session.state === "resuming" ? (
-          <button disabled className="btn-game" style={{ fontSize: "1.15rem", opacity: 0.7 }}>
+          <button disabled className="btn-game" style={{ fontSize: "1.15rem", opacity: 0.7, width: "100%" }}>
             ⏱ Aftellen tot start...
           </button>
         ) : (
-          <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem" }}>
+          <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem", width: "100%" }}>
             {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
           </button>
         )}
 
-        {/* Beëindig spel — toont meteen de eindstand */}
-        {session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming" && (
-          <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
-            disabled={actionLoading}
-            style={{ fontWeight: 700, fontSize: "0.95rem", padding: "11px 16px", borderRadius: "10px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer" }}>
-            🏁 Beëindig spel (toon eindstand)
-          </button>
-        )}
+        {/* Sessiebeheer — gegroepeerde secundaire / utility-acties */}
+        {showBeheer && (
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 20px" }}>
+            <span style={sectionLabel}>Sessiebeheer</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
 
-        {/* Pauze-knop — alleen tijdens question_open */}
-        {session.state === "question_open" && (
-          <button onClick={handlePause} disabled={actionLoading} className="btn btn-ghost" style={{ fontWeight: 700 }}>
-            🍺 Pauzeer
-          </button>
-        )}
+              {/* Pauze-knop — alleen tijdens question_open */}
+              {session.state === "question_open" && (
+                <button onClick={handlePause} disabled={actionLoading}
+                  style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer" }}>
+                  🍺 Pauzeer
+                </button>
+              )}
 
-        {/* Stop na deze vraag — beschikbaar tijdens actieve sessie, niet op eindscherm */}
-        {session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming" && (
-          <button
-            onClick={handleToggleForceEnd}
-            style={{
-              fontWeight: 700, fontSize: "0.9rem", padding: "10px 16px", borderRadius: "10px",
-              border: `2px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
-              background: session.force_end ? "rgba(255,107,53,0.15)" : "transparent",
-              color: session.force_end ? "#ff6b35" : "var(--muted)", cursor: "pointer",
-            }}
-          >
-            {session.force_end ? "✓ Stopt na deze vraag" : "Stop na deze vraag"}
-          </button>
-        )}
+              {/* Stop na deze vraag — beschikbaar tijdens actieve sessie */}
+              {showActieveBeheer && (
+                <button
+                  onClick={handleToggleForceEnd}
+                  style={{
+                    fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px",
+                    border: `1px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
+                    background: session.force_end ? "rgba(255,107,53,0.15)" : "transparent",
+                    color: session.force_end ? "#ff6b35" : "var(--muted)", cursor: "pointer",
+                  }}
+                >
+                  {session.force_end ? "✓ Stopt na deze vraag" : "Stop na deze vraag"}
+                </button>
+              )}
 
-        {session.state !== "resuming" && (
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button onClick={handleRestart} disabled={actionLoading}
-              style={{ fontSize: "0.85rem", fontWeight: 700, padding: "8px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "var(--text)", cursor: "pointer" }}>
-              Herstarten (scores behouden)
-            </button>
-            {session.state !== "endscreen" && (
-              <button onClick={handleReset} disabled={actionLoading}
-                style={{ fontSize: "0.85rem", fontWeight: 700, padding: "8px 14px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.35)", background: "transparent", color: "var(--red)", cursor: "pointer", opacity: 0.7 }}>
-                Resetten (scores wissen)
+              {/* Herstarten (scores behouden) */}
+              <button onClick={handleRestart} disabled={actionLoading}
+                style={{ fontSize: "0.85rem", fontWeight: 700, padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "var(--text)", cursor: "pointer" }}>
+                Herstarten (scores behouden)
               </button>
-            )}
+
+              {/* Resetten (scores wissen) */}
+              {session.state !== "endscreen" && (
+                <button onClick={handleReset} disabled={actionLoading}
+                  style={{ fontSize: "0.85rem", fontWeight: 700, padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.35)", background: "transparent", color: "var(--red)", cursor: "pointer", opacity: 0.85 }}>
+                  Resetten (scores wissen)
+                </button>
+              )}
+
+              {/* Beëindig spel — toont meteen de eindstand */}
+              {showActieveBeheer && (
+                <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
+                  disabled={actionLoading}
+                  style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer", marginLeft: "auto" }}>
+                  🏁 Beëindig spel (toon eindstand)
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
