@@ -99,25 +99,34 @@ export async function POST(req: NextRequest) {
   const isAdmin = await verifyAdmin(req);
   if (!isAdmin) return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
 
-  let created = 0;
-  let skipped = 0;
-
-  for (const quiz of QUIZZEN) {
-    // Check if quiz already exists by title
-    const existing = await adminDb.collection("quizzes").where("title", "==", quiz.title).limit(1).get();
-    if (!existing.empty) { skipped++; continue; }
-
-    // Create quiz
-    const quizRef = await adminDb.collection("quizzes").add({
-      title: quiz.title,
-      description: quiz.description,
+  // Gebruik de bestaande (eerste) quiz, of maak er één — de app speelt altijd uit één quiz.
+  const quizzesSnap = await adminDb.collection("quizzes").limit(1).get();
+  let quizRef;
+  if (quizzesSnap.empty) {
+    quizRef = await adminDb.collection("quizzes").add({
+      title: "Hoekies Quiz",
+      description: "Standaard quiz",
       created_at: FieldValue.serverTimestamp(),
     });
+  } else {
+    quizRef = quizzesSnap.docs[0].ref;
+  }
 
-    // Batch create questions
-    let batch = adminDb.batch();
-    let ops = 0;
-    for (const q of quiz.questions) {
+  // Elke categorie wordt een eigen ronde (1=Sport, 2=Algemene Kennis, 3=Muziek).
+  const existingRoundsSnap = await quizRef.collection("questions").get();
+  const usedRounds = new Set(existingRoundsSnap.docs.map((d) => d.data().round as number));
+  let nextRound = Math.max(0, ...Array.from(usedRounds)) + 1;
+
+  const roundNames: Record<string, string> = {};
+  let added = 0;
+  let batch = adminDb.batch();
+  let ops = 0;
+
+  for (const cat of QUIZZEN) {
+    const round = nextRound++;
+    roundNames[round] = cat.title.replace(/ jaren.*/i, "");
+    let order = 1;
+    for (const q of cat.questions) {
       const qRef = quizRef.collection("questions").doc();
       batch.set(qRef, {
         question_text: q.question_text,
@@ -127,22 +136,21 @@ export async function POST(req: NextRequest) {
         time_limit_seconds: 20,
         base_points: 1000,
         is_double_points: false,
-        round: q.round,
-        order: q.order,
+        round,
+        order: order++,
         media_url: null,
         explanation: null,
         created_at: FieldValue.serverTimestamp(),
       });
-      ops++;
+      added++; ops++;
       if (ops >= 400) { await batch.commit(); batch = adminDb.batch(); ops = 0; }
     }
-    if (ops > 0) await batch.commit();
-    created++;
   }
+  if (ops > 0) await batch.commit();
 
-  return NextResponse.json({
-    message: created > 0
-      ? `${created} quiz${created > 1 ? "zen" : ""} aangemaakt${skipped > 0 ? `, ${skipped} al aanwezig` : ""}`
-      : "Alle standaard quizzen zijn al aanwezig",
-  });
+  // Ronde-namen toevoegen aan de quiz (bestaande behouden)
+  const existingNames = (quizzesSnap.empty ? {} : (quizzesSnap.docs[0].data().round_names ?? {})) as Record<string, string>;
+  await quizRef.set({ round_names: { ...existingNames, ...roundNames } }, { merge: true });
+
+  return NextResponse.json({ message: `${added} vragen toegevoegd in 3 rondes (Sport, Algemene Kennis, Muziek)` });
 }
