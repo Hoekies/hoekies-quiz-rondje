@@ -533,10 +533,12 @@ export default function SessionControl({ code }: { code: string }) {
         <div className="card" style={{ padding: "16px 20px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}>
 
-            {/* Pauze-knop — alleen tijdens question_open */}
-            {session.state === "question_open" && (
-              <button onClick={handlePause} disabled={actionLoading}
-                style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "var(--text)" }}>
+            {/* Pauze-knop — altijd zichtbaar, actief tijdens question_open */}
+            {showActieveBeheer && (
+              <button onClick={handlePause} disabled={actionLoading || session.state !== "question_open"}
+                style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)",
+                  color: "var(--text)", opacity: session.state === "question_open" ? 1 : 0.45,
+                  cursor: session.state === "question_open" ? "pointer" : "not-allowed" }}>
                 🍺 Pauzeer
               </button>
             )}
