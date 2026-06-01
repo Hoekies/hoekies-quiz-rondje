@@ -1,14 +1,11 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import AdminLayout from "../../AdminLayout";
-import SessionControl from "../../SessionControl";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function HostControlPage() {
-  const { code } = useParams<{ code: string }>();
-  return (
-    <AdminLayout title={`Sessie ${code}`}>
-      <SessionControl code={code} />
-    </AdminLayout>
-  );
+// Beheer gebeurt voortaan volledig via het dashboard. Deze route stuurt door.
+export default function HostControlRedirect() {
+  const router = useRouter();
+  useEffect(() => { router.replace("/admin"); }, [router]);
+  return null;
 }

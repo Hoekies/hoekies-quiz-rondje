@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (sessionData.status !== "lobby") {
+  // Invallen mag tijdens een lopende sessie; alleen een afgeronde sessie weigeren.
+  if (sessionData.status === "finished") {
     return NextResponse.json(
-      { error: "Deze sessie is al gestart of beëindigd" },
+      { error: "Deze sessie is al afgelopen" },
       { status: 409 }
     );
   }

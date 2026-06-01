@@ -218,9 +218,6 @@ export default function AdminDashboard() {
                       </div>
                       {session.is_active ? "Actief" : "Inactief"}
                     </button>
-                    <a href={`/admin/sessie/${session.code}`} style={{ display: "flex", alignItems: "center", padding: "7px 14px", background: "rgba(255,255,255,0.05)", borderRight: "1px solid rgba(255,255,255,0.14)", color: "var(--cyan)", fontSize: "0.78rem", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-                      Beheren →
-                    </a>
                     <button onClick={() => handleDeleteSession(session.code)} title="Verwijderen"
                       style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
                       ✕
