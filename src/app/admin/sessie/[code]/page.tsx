@@ -166,17 +166,21 @@ export default function HostControlPage() {
 
   // Subscribe to answers for current question (count + waarden voor verdeling)
   const answersValuesRef = useRef<string[]>([]);
+  const countedQidRef = useRef<string | null>(null); // welke vraag de huidige telling betreft
   useEffect(() => {
     setAnswerCount(0);
     answersValuesRef.current = [];
+    countedQidRef.current = null;
     if (!session?.current_question_id) return;
+    const qid = session.current_question_id;
 
     const q = query(
       collection(db, "sessions", code, "answers"),
-      where("question_id", "==", session.current_question_id)
+      where("question_id", "==", qid)
     );
 
     const unsub = onSnapshot(q, (snap) => {
+      countedQidRef.current = qid;
       setAnswerCount(snap.size);
       answersValuesRef.current = snap.docs.map((d) => (d.data().answer as string) ?? "");
     });
@@ -187,6 +191,8 @@ export default function HostControlPage() {
   const autoClosedRef = useRef<string | null>(null);
   useEffect(() => {
     if (session?.state !== "question_open" || !session.current_question_id) return;
+    // Alleen sluiten als de telling écht bij de huidige vraag hoort (anders stale count van vorige vraag)
+    if (countedQidRef.current !== session.current_question_id) return;
     if (players.length === 0 || answerCount < players.length) return;
     if (autoClosedRef.current === session.current_question_id) return;
     autoClosedRef.current = session.current_question_id;
