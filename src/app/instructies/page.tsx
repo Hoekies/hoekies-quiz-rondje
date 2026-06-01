@@ -76,7 +76,7 @@ export default function InstructiesPage() {
         </div>
 
         {/* Puntensysteem */}
-        <div style={{ background: "rgba(0,217,255,0.07)", border: "1px solid rgba(0,217,255,0.2)", borderRadius: "14px", padding: "20px" }}>
+        <div style={{ background: "rgba(13,180,171,0.07)", border: "1px solid rgba(13,180,171,0.2)", borderRadius: "14px", padding: "20px" }}>
           <p style={{ color: "var(--cyan)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>Puntensysteem</p>
           <p style={{ color: "var(--text)", fontSize: "0.875rem", lineHeight: 1.7 }}>
             Goed antwoord = <strong style={{ color: "#fff" }}>100 punten</strong> + snelheidsbonus tot <strong style={{ color: "#fff" }}>50 extra punten</strong>.<br />

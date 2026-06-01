@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
         <img
           src={theme.logo_url ?? "/logo-vierkant.png"}
           alt="Hoekies Quiz Rondje"
-          style={{ width: "120px", height: "120px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }}
+          style={{ width: "120px", height: "120px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(13,180,171,0.25))" }}
         />
 
         <div className="glass-card" style={{ width: "100%", padding: "32px 28px" }}>

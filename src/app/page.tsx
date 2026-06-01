@@ -29,7 +29,7 @@ export default function LandingPage() {
       <div />
 
       <div style={{ width: "100%", maxWidth: "340px", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" }}>
-        <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "260px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,217,255,0.25))" }} />
+        <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "260px", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(13,180,171,0.25))" }} />
 
         <form onSubmit={handleJoin} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "12px" }}>
           <input

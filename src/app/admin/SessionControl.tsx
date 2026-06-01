@@ -414,7 +414,7 @@ export default function SessionControl({ code }: { code: string }) {
         const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
         return (
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <span style={{ ...btn, background: "rgba(0,217,255,0.12)", borderColor: "rgba(0,217,255,0.3)", color: "var(--cyan)", cursor: "default" }}>
+            <span style={{ ...btn, background: "rgba(13,180,171,0.12)", borderColor: "rgba(13,180,171,0.3)", color: "var(--cyan)", cursor: "default" }}>
               {session.state.replace(/_/g, " ").toUpperCase()}
             </span>
             <span style={{ flex: 1 }} />

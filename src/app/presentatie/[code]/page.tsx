@@ -187,7 +187,7 @@ export default function PresentatiePage() {
             className="font-black tracking-[0.3em] text-8xl"
             style={{
               color: "var(--cyan)",
-              textShadow: "0 0 20px rgba(6,182,212,0.6)",
+              textShadow: "0 0 20px rgba(13,180,171,0.6)",
             }}
           >
             {code}
@@ -219,8 +219,8 @@ export default function PresentatiePage() {
                 key={p.id}
                 className="px-3 py-1.5 rounded-full text-sm font-bold text-white"
                 style={{
-                  background: "rgba(6,182,212,0.25)",
-                  border: "1px solid rgba(6,182,212,0.4)",
+                  background: "rgba(13,180,171,0.25)",
+                  border: "1px solid rgba(13,180,171,0.4)",
                 }}
               >
                 {p.avatar ? `${p.avatar} ` : ""}{p.name}

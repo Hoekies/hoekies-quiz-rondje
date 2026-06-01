@@ -27,7 +27,7 @@ function Confetti({ active, duration = 10000 }: { active: boolean; duration?: nu
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d")!;
-    const colors = ["#00d9ff", "#ffd93b", "#ff6bcd", "#22c55e", "#ff3b5c", "#ffffff", "#a78bfa"];
+    const colors = ["#0db4ab", "#ffd93b", "#ff6bcd", "#22c55e", "#ff3b5c", "#ffffff", "#a78bfa"];
     const particles = Array.from({ length: 160 }, () => ({
       x: Math.random() * canvas.width,
       y: -20 - Math.random() * 300,
@@ -605,7 +605,7 @@ export default function SpeelPage() {
                   <button key={a} type="button" onClick={() => setAvatar(a)}
                     style={{ fontSize: "clamp(1.1rem, 5vw, 1.5rem)", padding: "6px 0", borderRadius: "10px", cursor: "pointer",
                       border: `2px solid ${avatar === a ? "var(--cyan)" : "rgba(255,255,255,0.12)"}`,
-                      background: avatar === a ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.04)" }}>
+                      background: avatar === a ? "rgba(13,180,171,0.15)" : "rgba(255,255,255,0.04)" }}>
                     {a}
                   </button>
                 ))}
@@ -1124,7 +1124,7 @@ export default function SpeelPage() {
                 background: "linear-gradient(90deg, var(--cyan-dark), var(--cyan))",
                 borderRadius: "6px",
                 transition: "width 0.1s linear",
-                boxShadow: "0 0 12px rgba(0,217,255,0.5)",
+                boxShadow: "0 0 12px rgba(13,180,171,0.5)",
               }} />
             </div>
           </div>

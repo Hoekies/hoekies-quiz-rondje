@@ -22,7 +22,7 @@ export default function QRPage() {
     >
       <h1
         className="text-white font-black text-center"
-        style={{ fontSize: "clamp(1.5rem, 5vw, 3rem)", textShadow: "0 0 20px rgba(6,182,212,0.6)" }}
+        style={{ fontSize: "clamp(1.5rem, 5vw, 3rem)", textShadow: "0 0 20px rgba(13,180,171,0.6)" }}
       >
         Scan om mee te doen
       </h1>
@@ -47,10 +47,10 @@ export default function QRPage() {
       <div
         className="px-8 py-3 rounded-full font-black text-3xl tracking-widest"
         style={{
-          background: "rgba(6,182,212,0.2)",
-          border: "2px solid rgba(6,182,212,0.5)",
+          background: "rgba(13,180,171,0.2)",
+          border: "2px solid rgba(13,180,171,0.5)",
           color: "var(--cyan)",
-          textShadow: "0 0 20px rgba(6,182,212,0.6)",
+          textShadow: "0 0 20px rgba(13,180,171,0.6)",
         }}
       >
         {code}

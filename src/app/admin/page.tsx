@@ -121,7 +121,7 @@ export default function AdminDashboard() {
 
             <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
               <button onClick={() => handleToggleActive(activeSession)} disabled={!!toggling} title={activeSession.is_active ? "Zet inactief" : "Zet actief"}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: activeSession.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: activeSession.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: activeSession.is_active ? "rgba(13,180,171,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: activeSession.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
                 <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: activeSession.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
                   <div style={{ position: "absolute", top: "2px", left: activeSession.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
                 </div>

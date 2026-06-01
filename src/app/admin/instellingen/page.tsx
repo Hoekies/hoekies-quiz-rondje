@@ -61,7 +61,7 @@ export default function InstellingenPage() {
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", marginBottom: "16px" }}>WhatsApp uitnodigingstekst</h2>
           <div style={{ ...F, gap: "12px" }}>
             <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
-              Gebruik <code style={{ color: "var(--cyan)", background: "rgba(0,217,255,0.1)", padding: "1px 6px", borderRadius: "4px" }}>{"{code}"}</code> als plaatshouder voor de sessiecode en de link.
+              Gebruik <code style={{ color: "var(--cyan)", background: "rgba(13,180,171,0.1)", padding: "1px 6px", borderRadius: "4px" }}>{"{code}"}</code> als plaatshouder voor de sessiecode en de link.
             </p>
             <textarea
               value={waTemplate}
