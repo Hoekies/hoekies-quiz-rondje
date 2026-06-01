@@ -150,6 +150,7 @@ export default function SpeelPage() {
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [blurLevel, setBlurLevel] = useState(20);
   const [estimateValue, setEstimateValue] = useState(0);
+  const [openText, setOpenText] = useState("");
   const [audioPlayed, setAudioPlayed] = useState(false);
   const [matchSelections, setMatchSelections] = useState<Record<number, number>>({});
   const [activeLeft, setActiveLeft] = useState<number | null>(null);
@@ -448,6 +449,9 @@ export default function SpeelPage() {
     setEstimateValue(mid);
   }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Reset open-tekst bij nieuwe vraag
+  useEffect(() => { setOpenText(""); }, [question?.id]);
+
   // Match: reset selecties en shuffle rechter items bij nieuwe vraag
   useEffect(() => {
     setMatchSelections({});
@@ -729,7 +733,7 @@ export default function SpeelPage() {
           })()}
 
           {/* Tekst antwoordknoppen */}
-          {question.type !== "image_answer" && question.type !== "estimate" && (
+          {question.type !== "image_answer" && question.type !== "estimate" && question.type !== "open" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
@@ -772,6 +776,20 @@ export default function SpeelPage() {
                 <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>{question.estimate_max ?? 100}{question.estimate_unit ? ` ${question.estimate_unit}` : ""}</span>
               </div>
               <button onClick={() => handleAnswer(String(estimateValue))} disabled={!!selectedAnswer || submitting}
+                className="btn-game">
+                Bevestigen
+              </button>
+            </div>
+          )}
+
+          {/* Open vraag — vrij typen */}
+          {question.type === "open" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "12px", padding: "0 4px" }}>
+              <input type="text" value={openText} onChange={(e) => setOpenText(e.target.value)}
+                disabled={!!selectedAnswer || timeUp} placeholder="Typ je antwoord..." maxLength={80}
+                className="glass-input" style={{ fontSize: "clamp(1rem, 4vw, 1.2rem)", textAlign: "center", fontWeight: 600 }}
+                onKeyDown={(e) => { if (e.key === "Enter" && openText.trim() && !selectedAnswer && !timeUp) handleAnswer(openText.trim()); }} />
+              <button onClick={() => handleAnswer(openText.trim())} disabled={!openText.trim() || !!selectedAnswer || submitting || timeUp}
                 className="btn-game">
                 Bevestigen
               </button>

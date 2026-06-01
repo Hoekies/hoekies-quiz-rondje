@@ -87,8 +87,12 @@ export async function POST(req: NextRequest) {
     estimate_max?: number;
   };
 
+  // Genormaliseerde vergelijking voor open vragen
+  const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
+  const openCorrect = question.type === "open" && norm(answer) === norm(question.correct_answer);
+
   // Calculate points
-  const isCorrect = answer === question.correct_answer;
+  const isCorrect = question.type === "open" ? openCorrect : answer === question.correct_answer;
   let points = 0;
 
   let matchCorrect = false;

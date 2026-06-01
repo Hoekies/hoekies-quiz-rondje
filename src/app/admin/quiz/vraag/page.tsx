@@ -103,6 +103,7 @@ const TYPE_LABELS: Record<string, string> = {
   image_answer: "Afbeelding als antwoord",
   video: "Video als vraag",
   estimate: "Schatting (slider)",
+  open: "Open vraag (typen)",
   match: "Koppelen (A→1, B→2, C→3)",
 };
 
@@ -548,6 +549,15 @@ function VraagForm() {
                 <input type="number" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-input" />
               </div>
             </>
+          )}
+
+          {/* Open vraag — vrij typen */}
+          {form.type === "open" && (
+            <div style={F}>
+              <label style={L}>Correct antwoord</label>
+              <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Het juiste antwoord" className="glass-input" />
+              <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Speler typt zelf. Hoofdletters/spaties tellen niet mee.</span>
+            </div>
           )}
 
           {/* Match koppelen */}

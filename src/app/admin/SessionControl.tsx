@@ -26,6 +26,7 @@ interface SessionDoc {
   question_order?: string[];
   started_at: unknown;
   resume_at?: { seconds: number } | null;
+  resume_state?: SessionState;
   question_opened_at?: { seconds: number } | null;
   force_end?: boolean;
   distribution_qid?: string;
@@ -141,11 +142,12 @@ export default function SessionControl({ code }: { code: string }) {
     }
   }, [session?.state, router]);
 
-  // Na resuming: automatisch question_open na 10,5 seconden
+  // Na resuming: automatisch terug naar de vorige toestand na 10,5 seconden
   useEffect(() => {
     if (session?.state !== "resuming") return;
+    const back = session.resume_state ?? "question_open";
     const t = setTimeout(() => {
-      updateDoc(doc(db, "sessions", code), { state: "question_open", status: "active" }).catch(console.error);
+      updateDoc(doc(db, "sessions", code), { state: back, status: "active" }).catch(console.error);
     }, 10500);
     return () => clearTimeout(t);
   }, [session?.state, code]);
@@ -359,8 +361,9 @@ export default function SessionControl({ code }: { code: string }) {
     }
   }
 
+  const canPause = !!session && ["answer_reveal", "leaderboard", "ronde_klaar"].includes(session.state);
   function handlePause() {
-    if (session?.state === "question_open") patchSession("paused");
+    if (canPause) patchSession("paused", { resume_state: session!.state });
   }
 
   async function handleToggleForceEnd() {
@@ -533,12 +536,12 @@ export default function SessionControl({ code }: { code: string }) {
         <div className="card" style={{ padding: "16px 20px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}>
 
-            {/* Pauze-knop — altijd zichtbaar, actief tijdens question_open */}
+            {/* Pauze-knop — actief tijdens antwoord/leaderboard, niet tijdens een open vraag */}
             {showActieveBeheer && (
-              <button onClick={handlePause} disabled={actionLoading || session.state !== "question_open"}
+              <button onClick={handlePause} disabled={actionLoading || !canPause}
                 style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)",
-                  color: "var(--text)", opacity: session.state === "question_open" ? 1 : 0.45,
-                  cursor: session.state === "question_open" ? "pointer" : "not-allowed" }}>
+                  color: "var(--text)", opacity: canPause ? 1 : 0.45,
+                  cursor: canPause ? "pointer" : "not-allowed" }}>
                 🍺 Pauzeer
               </button>
             )}

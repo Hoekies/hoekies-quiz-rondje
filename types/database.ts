@@ -7,6 +7,7 @@ export type QuestionType =
   | "image_answer"
   | "video"
   | "estimate"
+  | "open"
   | "match";
 
 export type SessionStatus = "lobby" | "active" | "finished";
