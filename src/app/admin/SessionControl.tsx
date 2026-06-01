@@ -29,6 +29,7 @@ interface SessionDoc {
   question_opened_at?: { seconds: number } | null;
   force_end?: boolean;
   distribution_qid?: string;
+  played_rounds?: number[];
 }
 
 interface QuestionDoc {
@@ -59,7 +60,6 @@ export default function SessionControl({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
-  const [qrDataUrl, setQrDataUrl] = useState("");
   const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
   const [roundNames, setRoundNames] = useState<Record<string, string>>({});
 
@@ -70,18 +70,6 @@ export default function SessionControl({ code }: { code: string }) {
     });
     return unsub;
   }, [router]);
-
-  // Generate QR code
-  useEffect(() => {
-    (async () => {
-      try {
-        const mod = await import("qrcode");
-        const url = `https://hoekies-quiz-rondje.vercel.app/speel/${code}`;
-        const dataUrl = await mod.toDataURL(url, { width: 200, margin: 2 });
-        setQrDataUrl(dataUrl);
-      } catch {}
-    })();
-  }, [code]);
 
   // Load WhatsApp template
   useEffect(() => {
@@ -329,7 +317,11 @@ export default function SessionControl({ code }: { code: string }) {
         if (session?.force_end) {
           patchSession("endscreen");
         } else if (isLastQuestion) {
-          patchSession("ronde_klaar", { current_question_id: null });
+          // Markeer de zojuist gespeelde ronde als gespeeld
+          const justPlayedRound = currentQuestion?.round ?? (typeof selectedRound === "number" ? selectedRound : undefined);
+          const played = new Set(session?.played_rounds ?? []);
+          if (justPlayedRound !== undefined) played.add(justPlayedRound);
+          patchSession("ronde_klaar", { current_question_id: null, played_rounds: [...played].sort((a, b) => a - b) });
         } else if (nextQuestion?.is_double_points) {
           patchSession("finale", {
             current_question_id: nextQuestion.id,
@@ -425,91 +417,75 @@ export default function SessionControl({ code }: { code: string }) {
             <span style={{ flex: 1 }} />
             <a href={`/qr/${code}`} target="_blank" style={btn}>QR ↗</a>
             <a href={`/presentatie/${code}`} target="_blank" style={btn}>Presentatie ↗</a>
-            <a href={waUrl} target="_blank" rel="noopener noreferrer"
-              style={{ ...btn, background: "linear-gradient(135deg, #25D366, #128C7E)", borderColor: "transparent", color: "#fff", boxShadow: "0 2px 10px rgba(37,211,102,0.35)" }}>
+            <a href={waUrl} target="_blank" rel="noopener noreferrer" title="Deel via WhatsApp" aria-label="Deel via WhatsApp"
+              style={{ ...btn, padding: "9px", width: "40px", background: "linear-gradient(135deg, #25D366, #128C7E)", borderColor: "transparent", color: "#fff", boxShadow: "0 2px 10px rgba(37,211,102,0.35)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              WhatsApp
             </a>
           </div>
         );
       })()}
 
-      {/* Lobby: QR + ronde-keuze naast elkaar (stapelt op mobiel) */}
-      {(session.state === "lobby" || session.state === "ronde_klaar") && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
+      {/* Hoofd 2-koloms layout: links ronde-keuze / vraag, rechts spelers (stapelt op mobiel) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
 
-          {/* QR lobby */}
-          {session.state === "lobby" && qrDataUrl && (
-            <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "24px" }}>
-              <p style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Scan om mee te doen</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} alt="QR code" width={180} height={180} style={{ borderRadius: "10px" }} />
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", textAlign: "center", wordBreak: "break-all" }}>
-                {typeof window !== "undefined" ? `${window.location.origin}/speel/${code}` : ""}
-              </p>
+        {/* LINKS — ronde-keuze (lobby/ronde_klaar) of huidige vraag */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+          {/* Ronde-klaar melding */}
+          {session.state === "ronde_klaar" && (
+            <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
+              <p style={{ fontSize: "1.6rem" }}>✅</p>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
+              <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
             </div>
           )}
 
-          {/* Ronde-klaar melding + ronde-keuze */}
-          {(session.state === "ronde_klaar" || (session.state === "lobby" && rounds.length > 0)) && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Ronde-klaar melding */}
-              {session.state === "ronde_klaar" && (
-                <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
-                  <p style={{ fontSize: "1.6rem" }}>✅</p>
-                  <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
-                  <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
-                </div>
-              )}
-
-              {/* Ronde-keuze (lobby of tussen rondes) */}
-              {rounds.length > 0 && (
-                <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
-                  <span style={sectionLabel}>Welke vragen?</span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    <button onClick={() => selectRound("all")}
+          {/* Ronde-keuze (lobby of tussen rondes) */}
+          {(session.state === "lobby" || session.state === "ronde_klaar") && rounds.length > 0 && (
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
+              <span style={sectionLabel}>Welke ronde?</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {rounds.map((r) => {
+                  const isSelected = selectedRound === r;
+                  const isPlayed = (session.played_rounds ?? []).includes(r);
+                  return (
+                    <button key={r} onClick={() => selectRound(r)}
                       style={{ padding: "8px 14px", minHeight: "40px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                        background: selectedRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === "all" ? "#000" : "var(--text)" }}>
-                      Hele quiz ({questions.length})
+                        background: isSelected ? "var(--cyan)" : "rgba(255,255,255,0.06)",
+                        color: isSelected ? "#000" : (isPlayed ? "var(--muted)" : "var(--text)"),
+                        opacity: isPlayed && !isSelected ? 0.6 : 1 }}>
+                      {isPlayed ? "✓ " : ""}{roundLabel(r)} ({questions.filter((q) => q.round === r).length})
                     </button>
-                    {rounds.map((r) => (
-                      <button key={r} onClick={() => selectRound(r)}
-                        style={{ padding: "8px 14px", minHeight: "40px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                          background: selectedRound === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: selectedRound === r ? "#000" : "var(--text)" }}>
-                        {roundLabel(r)} ({questions.filter((q) => q.round === r).length})
-                      </button>
-                    ))}
-                  </div>
-                  <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
+                  );
+                })}
+              </div>
+              <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
+            </div>
+          )}
+
+          {/* Huidige vraag */}
+          {currentQuestion && (
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={sectionLabel}>
+                  Vraag {currentIdx + 1} / {questionOrder.length}
+                </span>
+                <span className="status-pil status-pil--blauw">{currentQuestion.type}</span>
+              </div>
+              <p style={{ color: "var(--ink)", fontWeight: 600, lineHeight: 1.4 }}>{currentQuestion.question_text}</p>
+              <p style={{ color: "var(--green)", fontWeight: 700, fontSize: "0.9rem" }}>✓ {currentQuestion.correct_answer}</p>
+              {session.state === "question_open" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.06)", padding: "10px 14px", borderRadius: "8px", marginTop: "4px" }}>
+                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Antwoorden</span>
+                  <span style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.2rem", marginLeft: "auto" }}>{answerCount}</span>
+                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>/ {players.length}</span>
                 </div>
               )}
             </div>
           )}
         </div>
-      )}
 
-      {/* Vraag + spelers */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
-        {currentQuestion && (
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={sectionLabel}>
-                Vraag {currentIdx + 1} / {questionOrder.length}
-              </span>
-              <span className="status-pil status-pil--blauw">{currentQuestion.type}</span>
-            </div>
-            <p style={{ color: "var(--ink)", fontWeight: 600, lineHeight: 1.4 }}>{currentQuestion.question_text}</p>
-            <p style={{ color: "var(--green)", fontWeight: 700, fontSize: "0.9rem" }}>✓ {currentQuestion.correct_answer}</p>
-            {session.state === "question_open" && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.06)", padding: "10px 14px", borderRadius: "8px", marginTop: "4px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Antwoorden</span>
-                <span style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.2rem", marginLeft: "auto" }}>{answerCount}</span>
-                <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>/ {players.length}</span>
-              </div>
-            )}
-          </div>
-        )}
-
+        {/* RECHTS — spelers */}
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <p style={{ ...sectionLabel, marginBottom: "4px" }}>
             Spelers ({players.length})

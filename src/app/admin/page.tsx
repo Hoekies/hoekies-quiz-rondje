@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, getDocs, deleteDoc, doc, updateDoc, writeBatch } from "firebase/firestore";
-import QRCode from "qrcode";
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AdminLayout from "./AdminLayout";
 import SessionControl from "./SessionControl";
@@ -22,17 +21,13 @@ interface SessionDoc {
 export default function AdminDashboard() {
   const router = useRouter();
   const [sessions, setSessions] = useState<SessionDoc[]>([]);
-  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
-  const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState("");
-  const [globalLoading, setGlobalLoading] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedMsg, setSeedMsg] = useState("");
-  const qrGenerated = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -45,29 +40,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authChecked) return;
     const q = query(collection(db, "sessions"), orderBy("created_at", "desc"));
-    const unsub = onSnapshot(q, async (snap) => {
+    const unsub = onSnapshot(q, (snap) => {
       const docs = snap.docs.map((d) => ({ code: d.id, ...(d.data() as Omit<SessionDoc, "code">) }));
       setSessions(docs);
-      const counts: Record<string, number> = {};
-      await Promise.all(docs.map(async (s) => {
-        const ps = await getDocs(collection(db, "sessions", s.code, "players"));
-        counts[s.code] = ps.size;
-      }));
-      setPlayerCounts(counts);
     });
     return () => { unsub(); };
   }, [authChecked]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    sessions.forEach(async (s) => {
-      if (s.is_active && !qrGenerated.current.has(s.code)) {
-        qrGenerated.current.add(s.code);
-        const url = `https://hoekies-quiz-rondje.vercel.app/speel/${s.code}`;
-        const dataUrl = await QRCode.toDataURL(url, { width: 160, margin: 1, color: { dark: "#ffffff", light: "#00000000" } });
-        setQrUrls((prev) => ({ ...prev, [s.code]: dataUrl }));
-      }
-    });
-  }, [sessions]);
 
   async function handleCreateSession() {
     setCreating(true); setCreateError("");
@@ -104,25 +82,6 @@ export default function AdminDashboard() {
     setToggling(null);
   }
 
-  async function handleAlleInactief() {
-    if (!confirm("Alle sessies op inactief zetten?")) return;
-    setGlobalLoading(true);
-    const batch = writeBatch(db);
-    sessions.forEach((s) => batch.update(doc(db, "sessions", s.code), { is_active: false }));
-    await batch.commit();
-    setGlobalLoading(false);
-  }
-
-  async function handleAlleStoppen() {
-    if (!confirm("Alle actieve sessies stoppen (eindscherm)?")) return;
-    setGlobalLoading(true);
-    const batch = writeBatch(db);
-    sessions.filter((s) => s.status === "active")
-      .forEach((s) => batch.update(doc(db, "sessions", s.code), { state: "endscreen", status: "finished" }));
-    await batch.commit();
-    setGlobalLoading(false);
-  }
-
   async function handleSeedStandaard() {
     const user = auth.currentUser;
     if (!user) return;
@@ -142,20 +101,39 @@ export default function AdminDashboard() {
 
   if (!authChecked) return null;
 
-  const activeSessions = sessions.filter((s) => s.status === "active");
   const activeSession = sessions.find((s) => s.is_active && s.status !== "finished");
+  const otherSessions = sessions.filter((s) => s.code !== activeSession?.code);
 
   return (
     <AdminLayout title="Dashboard">
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "700px" }}>
 
-        {/* Nieuwe sessie */}
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
-            {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
-          </button>
-          {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
-        </div>
+        {/* Actieve sessie — compacte header */}
+        {activeSession && (
+          <div className="card" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[activeSession.status] ?? "var(--muted)", flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.1em" }}>{activeSession.code}</span>
+              <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "10px" }}>
+                {statusLabel[activeSession.status] ?? activeSession.status}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
+              <button onClick={() => handleToggleActive(activeSession)} disabled={!!toggling} title={activeSession.is_active ? "Zet inactief" : "Zet actief"}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: activeSession.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: activeSession.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
+                <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: activeSession.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+                  <div style={{ position: "absolute", top: "2px", left: activeSession.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+                </div>
+                {activeSession.is_active ? "Actief" : "Inactief"}
+              </button>
+              <button onClick={() => handleDeleteSession(activeSession.code)} title="Verwijderen"
+                style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Live besturing van de actieve sessie — alles-in-één */}
         {activeSession && (
@@ -172,77 +150,46 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Globale sessie-acties */}
-        {sessions.length > 0 && (
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", padding: "14px 16px", background: "rgba(255,255,255,0.04)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", alignSelf: "center", marginRight: "4px" }}>Alle sessies:</span>
-            <button onClick={handleAlleInactief} disabled={globalLoading}
-              style={{ fontSize: "0.82rem", fontWeight: 700, padding: "6px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "var(--text)", cursor: "pointer" }}>
-              Inactief zetten
-            </button>
-            <button onClick={handleAlleStoppen} disabled={globalLoading || activeSessions.length === 0}
-              style={{ fontSize: "0.82rem", fontWeight: 700, padding: "6px 14px", borderRadius: "8px", border: "1px solid rgba(255,107,107,0.4)", background: "transparent", color: activeSessions.length === 0 ? "var(--muted)" : "var(--red)", cursor: activeSessions.length === 0 ? "default" : "pointer" }}>
-              {activeSessions.length > 0 ? `${activeSessions.length} sessie${activeSessions.length > 1 ? "s" : ""} stoppen` : "Geen actieve sessies"}
-            </button>
+        {/* Nieuwe sessie */}
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
+            {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
+          </button>
+          {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
+        </div>
+
+        {/* Overige sessies — compacte rij om te activeren/starten (alleen als er geen actieve sessie is) */}
+        {!activeSession && otherSessions.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Sessies ({otherSessions.length})
+            </p>
+            {otherSessions.map((session) => (
+              <div key={session.code} className="card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[session.status] ?? "var(--muted)", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1rem", letterSpacing: "0.1em" }}>{session.code}</span>
+                  <span style={{ color: "var(--muted)", fontSize: "0.78rem", marginLeft: "10px" }}>
+                    {statusLabel[session.status] ?? session.status}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
+                  <button onClick={() => handleToggleActive(session)} disabled={!!toggling} title="Activeren"
+                    style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                    <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: "rgba(255,255,255,0.2)", position: "relative", flexShrink: 0 }}>
+                      <div style={{ position: "absolute", top: "2px", left: "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff" }} />
+                    </div>
+                    Activeren
+                  </button>
+                  <button onClick={() => handleDeleteSession(session.code)} title="Verwijderen"
+                    style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Sessies */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Sessies ({sessions.length})
-          </p>
-
-          {sessions.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", color: "var(--muted)", padding: "32px" }}>
-              Nog geen sessies. Maak een nieuwe aan!
-            </div>
-          ) : (
-            sessions.map((session) => (
-              <div key={session.code} className="card" style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "4px 0" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[session.status] ?? "var(--muted)", flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1.1rem", letterSpacing: "0.1em" }}>{session.code}</span>
-                    <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "10px" }}>
-                      {statusLabel[session.status] ?? session.status} · {playerCounts[session.code] ?? 0} spelers
-                    </span>
-                  </div>
-
-                  {/* Gekoppelde knoppengroep */}
-                  <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
-                    <button onClick={() => handleToggleActive(session)} disabled={!!toggling} title={session.is_active ? "Zet inactief" : "Zet actief"}
-                      style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: session.is_active ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: session.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
-                      <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: session.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
-                        <div style={{ position: "absolute", top: "2px", left: session.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-                      </div>
-                      {session.is_active ? "Actief" : "Inactief"}
-                    </button>
-                    <button onClick={() => handleDeleteSession(session.code)} title="Verwijderen"
-                      style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                {/* QR bij actieve sessie */}
-                {session.is_active && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "14px", paddingTop: "10px", marginTop: "4px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                    {qrUrls[session.code]
-                      ? <img src={qrUrls[session.code]} alt="QR" style={{ width: "70px", height: "70px", borderRadius: "8px", background: "rgba(255,255,255,0.08)" }} />
-                      : <div style={{ width: "70px", height: "70px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: "var(--muted)", fontSize: "0.65rem" }}>QR...</span>
-                        </div>}
-                    <div>
-                      <p style={{ color: "var(--muted)", fontSize: "0.72rem" }}>Scan om mee te doen</p>
-                      <p style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", letterSpacing: "0.1em" }}>{session.code}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
 
         {/* Standaard quizzen */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
