@@ -27,8 +27,6 @@ export default function AdminDashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState("");
-  const [seedLoading, setSeedLoading] = useState(false);
-  const [seedMsg, setSeedMsg] = useState("");
   const [headerQr, setHeaderQr] = useState("");
 
   useEffect(() => {
@@ -92,19 +90,6 @@ export default function AdminDashboard() {
     setToggling(null);
   }
 
-  async function handleSeedStandaard() {
-    const user = auth.currentUser;
-    if (!user) return;
-    setSeedLoading(true); setSeedMsg("");
-    const token = await user.getIdToken();
-    const res = await fetch("/api/host/vragen/seed-standaard", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await res.json();
-    setSeedMsg(res.ok ? `✓ ${json.message}` : `✕ ${json.error ?? "Fout"}`);
-    setSeedLoading(false);
-  }
 
   const statusLabel: Record<string, string> = { lobby: "Wacht op spelers", active: "Bezig", finished: "Afgerond" };
   const statusColor: Record<string, string> = { lobby: "var(--cyan)", active: "var(--green)", finished: "var(--muted)" };
@@ -207,17 +192,6 @@ export default function AdminDashboard() {
             ))}
           </div>
         )}
-
-        {/* Standaard quizzen */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>Standaard quizzen</p>
-          <p style={{ color: "var(--text)", fontSize: "0.85rem" }}>Laad 3 kant-en-klare quizzen: Sport, Algemene Kennis en Muziek (alle jaren 90/2000, 20 vragen elk).</p>
-          <button onClick={handleSeedStandaard} disabled={seedLoading}
-            style={{ alignSelf: "flex-start", fontSize: "0.88rem", fontWeight: 700, padding: "10px 18px", borderRadius: "10px", border: "1px solid rgba(0,217,255,0.35)", background: "rgba(0,217,255,0.07)", color: "var(--cyan)", cursor: seedLoading ? "not-allowed" : "pointer" }}>
-            {seedLoading ? "Bezig..." : "Standaard quizzen importeren"}
-          </button>
-          {seedMsg && <p style={{ color: seedMsg.startsWith("✓") ? "var(--green)" : "var(--red)", fontSize: "0.85rem" }}>{seedMsg}</p>}
-        </div>
 
       </div>
     </AdminLayout>

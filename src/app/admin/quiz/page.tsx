@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { collection, onSnapshot, query, limit, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, limit, getDocs, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import Link from "next/link";
@@ -112,6 +112,30 @@ export default function QuizBeheerPage() {
     );
     return unsub;
   }, [quizId]);
+
+  async function handleDeleteAll() {
+    if (!quizId || questions.length === 0) return;
+    if (!window.confirm(`Alle ${questions.length} vragen verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
+    setActionError("");
+    let batch = writeBatch(db);
+    let n = 0;
+    for (const q of questions) {
+      batch.delete(doc(db, "quizzes", quizId, "questions", q.id));
+      if (++n >= 400) { await batch.commit(); batch = writeBatch(db); n = 0; }
+    }
+    if (n > 0) await batch.commit();
+  }
+
+  async function handleSeed() {
+    const user = auth.currentUser;
+    if (!user) return;
+    setImportStatus("Standaard quizzen laden...");
+    const token = await user.getIdToken();
+    const res = await fetch("/api/host/vragen/seed-standaard", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    const json = await res.json();
+    setImportStatus(res.ok ? `✓ ${json.message}` : "");
+    if (!res.ok) setActionError(json.error ?? "Fout bij laden");
+  }
 
   async function handleDelete(id: string) {
     if (!quizId) return;
@@ -237,19 +261,24 @@ export default function QuizBeheerPage() {
 
         {/* Acties */}
         {(() => {
-          const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "10px 16px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer", flex: "1 1 auto", textAlign: "center" as const, minWidth: "120px" };
+          const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "10px 16px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer", textAlign: "center" as const };
+          const icon = { ...btn, width: "44px", height: "44px", padding: 0, fontSize: "1.1rem", flexShrink: 0 };
           return (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} style={{ ...btn, background: "var(--cyan)", borderColor: "transparent", color: "#000" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+              <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} style={{ ...btn, background: "var(--cyan)", borderColor: "transparent", color: "#000", flex: "1 1 auto", minWidth: "150px" }}>
                 + Nieuwe vraag
               </Link>
-              <button onClick={handleExport} disabled={!questions.length} style={{ ...btn, opacity: questions.length ? 1 : 0.5 }}>
-                Exporteren (CSV)
+              <button onClick={handleExport} disabled={!questions.length} title="Exporteren (CSV)" style={{ ...icon, opacity: questions.length ? 1 : 0.5 }}>
+                ⬇️
               </button>
-              <label style={btn}>
-                Importeren (CSV)
+              <label style={icon} title="Importeren (CSV)">
+                ⬆️
                 <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleImport} />
               </label>
+              <button onClick={handleDeleteAll} disabled={!questions.length} title="Alle vragen verwijderen"
+                style={{ ...icon, borderColor: "rgba(255,59,92,0.4)", color: "var(--red)", opacity: questions.length ? 1 : 0.5 }}>
+                🗑️
+              </button>
             </div>
           );
         })()}
@@ -307,13 +336,25 @@ export default function QuizBeheerPage() {
                   <p style={{ color: "var(--green)", fontSize: "0.8rem" }}>✓ {q.correct_answer}</p>
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-                  <Link href={`/admin/quiz/vraag?quiz_id=${quizId}&id=${q.id}`} className="btn btn-ghost" style={{ fontSize: "0.8rem", padding: "6px 12px" }}>Bewerken</Link>
-                  <button onClick={() => handleDelete(q.id)} className="btn btn-danger" style={{ fontSize: "0.8rem", padding: "6px 12px" }}>Verwijder</button>
+                  <Link href={`/admin/quiz/vraag?quiz_id=${quizId}&id=${q.id}`} title="Bewerken"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", fontSize: "1rem", textDecoration: "none" }}>✏️</Link>
+                  <button onClick={() => handleDelete(q.id)} title="Verwijderen"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "38px", height: "38px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.4)", background: "rgba(255,59,92,0.06)", color: "var(--red)", fontSize: "1rem", cursor: "pointer" }}>🗑️</button>
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Standaard quizzen */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>Standaard quizzen</p>
+          <p style={{ color: "var(--text)", fontSize: "0.85rem" }}>Laad 3 kant-en-klare quizzen: Sport, Algemene Kennis en Muziek (alle jaren 90/2000, 20 vragen elk).</p>
+          <button onClick={handleSeed}
+            style={{ alignSelf: "flex-start", fontSize: "0.88rem", fontWeight: 700, padding: "10px 18px", borderRadius: "10px", border: "1px solid rgba(0,217,255,0.35)", background: "rgba(0,217,255,0.07)", color: "var(--cyan)", cursor: "pointer" }}>
+            Standaard quizzen importeren
+          </button>
+        </div>
       </div>
     </AdminLayout>
   );
