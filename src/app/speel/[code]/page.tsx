@@ -151,6 +151,7 @@ export default function SpeelPage() {
   const [blurLevel, setBlurLevel] = useState(20);
   const [estimateValue, setEstimateValue] = useState(0);
   const [openText, setOpenText] = useState("");
+  const [showSplash, setShowSplash] = useState(true);
   const [audioPlayed, setAudioPlayed] = useState(false);
   const [matchSelections, setMatchSelections] = useState<Record<number, number>>({});
   const [activeLeft, setActiveLeft] = useState<number | null>(null);
@@ -181,6 +182,12 @@ export default function SpeelPage() {
 
   // Init geluid-voorkeur
   useEffect(() => { setSoundOn(soundEnabled()); }, []);
+
+  // Intro-splash: 1 seconde vierkant logo + voortgangsbalk
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Afteltimer voor open vraag (synchroon via question_opened_at)
   useEffect(() => {
@@ -544,6 +551,22 @@ export default function SpeelPage() {
       // Score updates via subscription (players collection), not here
     }
     setSubmitting(false);
+  }
+
+  // ── INTRO SPLASH ─────────────────────────────────────────────────────────
+  if (showSplash) {
+    return (
+      <div className="speler-shell" style={{ alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px", width: "100%", maxWidth: "300px", padding: "0 24px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="Hoekies Quiz Rondje" style={{ width: "clamp(140px, 50vw, 200px)", height: "clamp(140px, 50vw, 200px)", objectFit: "contain", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ width: "100%", height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: "3px", background: "var(--cyan)", width: "0%", animation: "splashbar 1s linear forwards" }} />
+          </div>
+        </div>
+        <style>{`@keyframes splashbar { from { width: 0% } to { width: 100% } }`}</style>
+      </div>
+    );
   }
 
   // ── INACTIVE ─────────────────────────────────────────────────────────────
