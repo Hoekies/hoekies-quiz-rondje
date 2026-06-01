@@ -522,58 +522,65 @@ export default function SessionControl({ code }: { code: string }) {
       )}
 
       {/* Sessiebeheer — gegroepeerde secundaire / utility-acties */}
-      {showBeheer && (
+      {showBeheer && (() => {
+        const beheerBtn = {
+          display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center",
+          gap: "2px", minHeight: "56px", padding: "8px 12px", borderRadius: "10px", cursor: "pointer",
+          fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.2, textAlign: "center" as const, whiteSpace: "nowrap" as const,
+        };
+        const sub = { fontSize: "0.68rem", fontWeight: 600, opacity: 0.75 };
+        return (
         <div className="card" style={{ padding: "16px 20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}>
 
             {/* Pauze-knop — alleen tijdens question_open */}
             {session.state === "question_open" && (
               <button onClick={handlePause} disabled={actionLoading}
-                style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer" }}>
+                style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "var(--text)" }}>
                 🍺 Pauzeer
               </button>
             )}
 
             {/* Stop na deze vraag — beschikbaar tijdens actieve sessie */}
             {showActieveBeheer && (
-              <button
-                onClick={handleToggleForceEnd}
-                style={{
-                  fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px",
-                  border: `1px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
-                  background: session.force_end ? "rgba(255,107,53,0.15)" : "transparent",
-                  color: session.force_end ? "#ff6b35" : "var(--muted)", cursor: "pointer",
-                }}
-              >
-                {session.force_end ? "✓ Stopt na deze vraag" : "Stop na deze vraag"}
+              <button onClick={handleToggleForceEnd}
+                style={{ ...beheerBtn, border: `1px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
+                  background: session.force_end ? "rgba(255,107,53,0.15)" : "rgba(255,255,255,0.03)",
+                  color: session.force_end ? "#ff6b35" : "var(--text)" }}>
+                <span>⏸ Stop na deze vraag</span>
+                {session.force_end && <span style={sub}>✓ ingeschakeld</span>}
               </button>
             )}
 
-            {/* Herstarten (scores behouden) */}
+            {/* Herstarten */}
             <button onClick={handleRestart} disabled={actionLoading}
-              style={{ fontSize: "0.85rem", fontWeight: 700, padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "var(--text)", cursor: "pointer" }}>
-              Herstarten (scores behouden)
+              style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.03)", color: "var(--text)" }}>
+              <span>🔄 Herstarten</span>
+              <span style={sub}>scores behouden</span>
             </button>
 
-            {/* Resetten (scores wissen) */}
+            {/* Resetten */}
             {session.state !== "endscreen" && (
               <button onClick={handleReset} disabled={actionLoading}
-                style={{ fontSize: "0.85rem", fontWeight: 700, padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.35)", background: "transparent", color: "var(--red)", cursor: "pointer", opacity: 0.85 }}>
-                Resetten (scores wissen)
+                style={{ ...beheerBtn, border: "1px solid rgba(255,59,92,0.35)", background: "rgba(255,59,92,0.06)", color: "var(--red)" }}>
+                <span>🗑 Resetten</span>
+                <span style={sub}>scores wissen</span>
               </button>
             )}
 
-            {/* Beëindig spel — toont meteen de eindstand */}
+            {/* Beëindig spel — volle breedte, prominent */}
             {showActieveBeheer && (
               <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
                 disabled={actionLoading}
-                style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer", gridColumn: "1 / -1" }}>
-                🏁 Beëindig spel (toon eindstand)
+                style={{ ...beheerBtn, gridColumn: "1 / -1", minHeight: "48px", fontSize: "0.95rem",
+                  border: "2px solid var(--red)", background: "rgba(255,59,92,0.14)", color: "var(--red)" }}>
+                🏁 Beëindig spel — toon eindstand
               </button>
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
