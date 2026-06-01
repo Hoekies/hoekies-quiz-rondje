@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import QRCode from "qrcode";
 import { auth, db } from "@/lib/firebase";
 import AdminLayout from "./AdminLayout";
 import SessionControl from "./SessionControl";
@@ -28,6 +29,7 @@ export default function AdminDashboard() {
   const [toggleError, setToggleError] = useState("");
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedMsg, setSeedMsg] = useState("");
+  const [headerQr, setHeaderQr] = useState("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -46,6 +48,14 @@ export default function AdminDashboard() {
     });
     return () => { unsub(); };
   }, [authChecked]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // QR voor de actieve sessie (in de header)
+  useEffect(() => {
+    const act = sessions.find((s) => s.is_active && s.status !== "finished");
+    if (!act) { setHeaderQr(""); return; }
+    QRCode.toDataURL(`https://hoekies-quiz-rondje.vercel.app/speel/${act.code}`, { width: 160, margin: 1, color: { dark: "#ffffff", light: "#00000000" } })
+      .then(setHeaderQr).catch(() => {});
+  }, [sessions]);
 
   async function handleCreateSession() {
     setCreating(true); setCreateError("");
@@ -118,6 +128,11 @@ export default function AdminDashboard() {
                 {statusLabel[activeSession.status] ?? activeSession.status}
               </span>
             </div>
+
+            {activeSession.is_active && headerQr && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={headerQr} alt="QR" style={{ width: "56px", height: "56px", borderRadius: "8px", background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
+            )}
 
             <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
               <button onClick={() => handleToggleActive(activeSession)} disabled={!!toggling} title={activeSession.is_active ? "Zet inactief" : "Zet actief"}
