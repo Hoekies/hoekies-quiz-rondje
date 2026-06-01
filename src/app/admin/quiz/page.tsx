@@ -236,18 +236,23 @@ export default function QuizBeheerPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "800px" }}>
 
         {/* Acties */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-          <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} className="btn btn-cyan">
-            + Nieuwe vraag
-          </Link>
-          <button onClick={handleExport} disabled={!questions.length} className="btn btn-ghost">
-            Exporteren (CSV)
-          </button>
-          <label className="btn btn-ghost" style={{ cursor: "pointer" }}>
-            Importeren (CSV)
-            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleImport} />
-          </label>
-        </div>
+        {(() => {
+          const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "10px 16px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer", flex: "1 1 auto", textAlign: "center" as const, minWidth: "120px" };
+          return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              <Link href={`/admin/quiz/vraag?quiz_id=${quizId}`} style={{ ...btn, background: "var(--cyan)", borderColor: "transparent", color: "#000" }}>
+                + Nieuwe vraag
+              </Link>
+              <button onClick={handleExport} disabled={!questions.length} style={{ ...btn, opacity: questions.length ? 1 : 0.5 }}>
+                Exporteren (CSV)
+              </button>
+              <label style={btn}>
+                Importeren (CSV)
+                <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleImport} />
+              </label>
+            </div>
+          );
+        })()}
 
         {importStatus && <p style={{ color: "var(--green)", fontSize: "0.85rem" }}>{importStatus}</p>}
         {actionError && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{actionError}</p>}
