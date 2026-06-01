@@ -123,7 +123,7 @@ export default function ThemaPagina() {
   const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
 
   return (
-    <AdminLayout title="Thema">
+    <AdminLayout title="Thema quiz">
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "560px" }}>
         {success && <div style={{ color: "var(--green)", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "10px", padding: "10px 16px", fontSize: "0.9rem" }}>{success}</div>}
         {error && <div className="melding melding-fout">{error}</div>}
@@ -141,9 +141,7 @@ export default function ThemaPagina() {
               <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Upload een <strong style={{ color: "var(--cyan)" }}>vierkant logo</strong> (1:1). Zoom om de juiste uitsnede te kiezen.</p>
               <input ref={logoFileRef} type="file" accept="image/*" onChange={onLogoFileChange} style={{ display: "none" }} />
               <button onClick={() => logoFileRef.current?.click()} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>Logo uploaden</button>
-              {theme.logo_url && (
-                <button onClick={resetLogo} disabled={saving === "logo"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Herstellen naar standaard</button>
-              )}
+              <button onClick={resetLogo} disabled={saving === "logo"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Herstel standaardlogo</button>
             </div>
           </div>
           {logoCropSrc && (
@@ -181,9 +179,7 @@ export default function ThemaPagina() {
               <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Zichtbaar op het leaderboard en de inlogpagina. Gebruik een landschapsfoto.</p>
               <input ref={bgFileRef} type="file" accept="image/*" onChange={saveBg} style={{ display: "none" }} />
               <button onClick={() => bgFileRef.current?.click()} disabled={saving === "bg"} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{saving === "bg" ? "Uploaden..." : "Achtergrond uploaden"}</button>
-              {theme.background_url && (
-                <button onClick={resetBg} disabled={saving === "bg"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Achtergrond verwijderen</button>
-              )}
+              <button onClick={resetBg} disabled={saving === "bg"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Herstel standaardachtergrond</button>
             </div>
           </div>
         </div>

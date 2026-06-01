@@ -20,7 +20,7 @@ export default function AdminLayout({ children, title }: Props) {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: "🎮" },
     { href: "/admin/quiz", label: "Vragen beheren", icon: "📝" },
-    { href: "/admin/thema", label: "Thema", icon: "🎨" },
+    { href: "/admin/thema", label: "Thema quiz", icon: "🎨" },
     { href: "/admin/instellingen", label: "WhatsApp", icon: "💬" },
     { href: "/admin/handleiding", label: "Hulp", icon: "📖" },
   ];

@@ -12,6 +12,9 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { tick, correct, wrong, fanfare, unlock, soundEnabled, setSoundEnabled } from "@/lib/sound";
+
+const AVATARS = ["🦊", "🐼", "🐸", "🦁", "🐙", "🦄", "🐵", "🐧", "🦖", "🐯", "🐢", "🦉"];
 
 const LABEL = ["A", "B", "C", "D"];
 
@@ -85,6 +88,7 @@ interface PlayerRank {
   id: string;
   name: string;
   score: number;
+  avatar?: string;
 }
 
 interface SessionDoc {
@@ -98,6 +102,9 @@ interface SessionDoc {
   resume_at?: { seconds: number } | null;
   question_opened_at?: { seconds: number } | null;
   is_active?: boolean;
+  distribution?: Record<string, number>;
+  distribution_qid?: string;
+  distribution_total?: number;
 }
 
 interface QuestionDoc {
@@ -155,6 +162,10 @@ export default function SpeelPage() {
   const answersMapRef = useRef<Record<string, { answer: string; is_correct: boolean; points_awarded: number }>>({});
   const [themeLogo, setThemeLogo] = useState<string | null>(null);
   const [themeBg, setThemeBg] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState(() => AVATARS[Math.floor(Math.random() * AVATARS.length)]);
+  const [soundOn, setSoundOn] = useState(true);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const tickedRef = useRef<Set<number>>(new Set());
 
   // Laad thema-instellingen
   useEffect(() => {
@@ -166,6 +177,46 @@ export default function SpeelPage() {
       }
     });
   }, []);
+
+  // Init geluid-voorkeur
+  useEffect(() => { setSoundOn(soundEnabled()); }, []);
+
+  // Afteltimer voor open vraag (synchroon via question_opened_at)
+  useEffect(() => {
+    const q = session?.current_question_id ? questionsMap[session.current_question_id] : null;
+    if (session?.state !== "question_open" || !q?.time_limit_seconds || !session.question_opened_at?.seconds) {
+      setTimeLeft(null);
+      return;
+    }
+    const openedMs = session.question_opened_at.seconds * 1000;
+    const limit = q.time_limit_seconds;
+    const calc = () => Math.max(0, Math.ceil(limit - (Date.now() - openedMs) / 1000));
+    setTimeLeft(calc());
+    const iv = setInterval(() => {
+      const r = calc();
+      setTimeLeft(r);
+      if (r > 0 && r <= 3 && !tickedRef.current.has(r) && !selectedAnswer) {
+        tickedRef.current.add(r);
+        tick();
+      }
+    }, 250);
+    return () => clearInterval(iv);
+  }, [session?.state, session?.current_question_id, session?.question_opened_at?.seconds, questionsMap]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset tick-geheugen bij nieuwe vraag
+  useEffect(() => { tickedRef.current = new Set(); }, [session?.current_question_id]);
+
+  // Geluid bij reveal
+  useEffect(() => {
+    if (step === "reveal" && answerResult) {
+      answerResult.is_correct ? correct() : wrong();
+    }
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fanfare bij eindstand (winnaar)
+  useEffect(() => {
+    if (step === "endscreen") fanfare();
+  }, [step]);
 
   // Restore playerId from localStorage on mount.
   // localStorage survives tab close and Safari restarts; sessionStorage does not.
@@ -441,13 +492,14 @@ export default function SpeelPage() {
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+    unlock(); // audio ontgrendelen op user-gesture (iOS)
     setJoining(true);
     setJoinError("");
 
     const res = await fetch("/api/speler/join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, name: name.trim() }),
+      body: JSON.stringify({ code, name: name.trim(), avatar }),
     });
     const json = await res.json();
 
@@ -517,9 +569,20 @@ export default function SpeelPage() {
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
           <div style={{ width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ textAlign: "center" }}>
-              <p style={{ color: "var(--muted)", fontSize: "clamp(0.8rem, 2.5vw, 0.9rem)" }}>Voer je naam in om mee te doen</p>
+              <p style={{ color: "var(--muted)", fontSize: "clamp(0.8rem, 2.5vw, 0.9rem)" }}>Kies een avatar en voer je naam in</p>
             </div>
             <form onSubmit={handleJoin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {/* Avatar-kiezer */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px" }}>
+                {AVATARS.map((a) => (
+                  <button key={a} type="button" onClick={() => setAvatar(a)}
+                    style={{ fontSize: "clamp(1.1rem, 5vw, 1.5rem)", padding: "6px 0", borderRadius: "10px", cursor: "pointer",
+                      border: `2px solid ${avatar === a ? "var(--cyan)" : "rgba(255,255,255,0.12)"}`,
+                      background: avatar === a ? "rgba(0,217,255,0.15)" : "rgba(255,255,255,0.04)" }}>
+                    {a}
+                  </button>
+                ))}
+              </div>
               <input
                 type="text"
                 value={name}
@@ -590,17 +653,34 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
+    const timeUp = timeLeft !== null && timeLeft <= 0;
+    const timePct = timeLeft !== null && question.time_limit_seconds ? (timeLeft / question.time_limit_seconds) * 100 : 100;
     return (
       <div className="speler-shell">
-        <header className="speler-header" style={{ flexDirection: "column", justifyContent: "center", padding: "8px 0", gap: "4px" }}>
+        <header className="speler-header" style={{ flexDirection: "column", justifyContent: "center", padding: "8px 0", gap: "4px", position: "relative" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Hoekies Quiz Rondje" style={{ width: "100%", maxHeight: "108px", objectFit: "contain" }} />
+          <button onClick={() => { const n = !soundOn; setSoundOn(n); setSoundEnabled(n); }}
+            style={{ position: "absolute", top: "6px", right: "8px", background: "none", border: "none", fontSize: "1.1rem", cursor: "pointer", opacity: 0.7 }} title="Geluid aan/uit">
+            {soundOn ? "🔊" : "🔇"}
+          </button>
           {session?.question_order?.length ? (
             <span style={{ color: "var(--cyan)", fontWeight: 700, fontSize: "clamp(0.8rem, 2.5vw, 0.95rem)" }}>
               Vraag {(session.question_index ?? 0) + 1} / {session.question_order.length}
             </span>
           ) : null}
         </header>
+        {timeLeft !== null && (
+          <div style={{ flexShrink: 0, padding: "0 clamp(8px, 2vw, 12px)" }}>
+            <div style={{ width: "100%", height: "8px", borderRadius: "4px", background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+              <div style={{ width: `${timePct}%`, height: "100%", borderRadius: "4px", transition: "width 0.25s linear",
+                background: timePct < 30 ? "var(--red)" : timePct < 60 ? "var(--gold)" : "var(--cyan)" }} />
+            </div>
+            <p style={{ textAlign: "center", color: timeUp ? "var(--red)" : "var(--muted)", fontWeight: 700, fontSize: "0.8rem", marginTop: "2px" }}>
+              {timeUp ? "⏰ Tijd voorbij" : `${timeLeft}s`}
+            </p>
+          </div>
+        )}
         <div className="speler-content" style={{ padding: "clamp(8px, 2vw, 12px)", gap: "clamp(6px, 1.5vw, 10px)" }}>
           {question.is_double_points && (
             <div style={{ flexShrink: 0, textAlign: "center", background: "linear-gradient(135deg, var(--gold), #ffb700)", color: "#1a1200", fontWeight: 900, fontSize: "clamp(0.95rem, 3.5vw, 1.2rem)", padding: "6px 14px", borderRadius: "10px", letterSpacing: "0.04em", boxShadow: "0 2px 12px rgba(255,217,59,0.4)" }}>
@@ -652,7 +732,7 @@ export default function SpeelPage() {
           {question.type !== "image_answer" && question.type !== "estimate" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
-                <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer}
+                <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
                   className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}>
                   <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{LABEL[i]}</span>
                   <span>{opt}</span>
@@ -665,7 +745,7 @@ export default function SpeelPage() {
           {question.type === "image_answer" && question.image_options && (
             <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", minHeight: 0 }}>
               {question.image_options.map((url: string, i: number) => (
-                <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer}
+                <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer || timeUp}
                   className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
                   style={{ padding: "4px", overflow: "hidden", flexDirection: "column", gap: "4px" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -794,7 +874,7 @@ export default function SpeelPage() {
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`} style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
                 <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
-                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}{p.id === playerId ? " (jij)" : ""}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}{p.id === playerId ? " (jij)" : ""}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
             ))}
@@ -852,6 +932,28 @@ export default function SpeelPage() {
               <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.8rem" }}>+{pts} punten</p>
             </div>
           )}
+          {/* Antwoordverdeling */}
+          {question && session?.distribution && session.distribution_qid === session.current_question_id && (question.options?.length ?? 0) > 0 && (() => {
+            const total = session.distribution_total || Object.values(session.distribution).reduce((a, b) => a + b, 0) || 1;
+            return (
+              <div style={{ width: "100%", maxWidth: "340px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                {(question.options ?? []).map((opt, i) => {
+                  const cnt = session.distribution?.[opt] ?? 0;
+                  const pct = Math.round((cnt / total) * 100);
+                  const isOk = opt === question.correct_answer;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ width: "16px", fontWeight: 900, color: isOk ? "var(--green)" : "var(--muted)", fontSize: "0.8rem" }}>{LABEL[i]}</span>
+                      <div style={{ flex: 1, height: "20px", borderRadius: "5px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: isOk ? "var(--green)" : "rgba(255,255,255,0.25)", transition: "width 0.5s" }} />
+                      </div>
+                      <span style={{ width: "34px", textAlign: "right", color: "var(--muted)", fontSize: "0.78rem" }}>{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <div style={{ textAlign: "center" }}>
             {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{selectedAnswer}</span></p>}
             <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Totaal: <strong style={{ color: "var(--cyan)" }}>{myScore} punten</strong></p>
@@ -878,7 +980,7 @@ export default function SpeelPage() {
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
                 <span style={{ fontSize: "1.2rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
-                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
             ))}
@@ -916,7 +1018,7 @@ export default function SpeelPage() {
             <div className="glass-card" style={{ width: "100%", padding: "16px 20px", textAlign: "center", borderColor: "var(--gold)", background: "rgba(255,217,59,0.08)" }}>
               <p style={{ color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, marginBottom: "6px" }}>Winnaar</p>
               <p style={{ fontSize: "clamp(2rem, 10vw, 3rem)", lineHeight: 1 }}>🏆</p>
-              <p style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5vw, 1.6rem)", marginTop: "4px" }}>{winner.name}</p>
+              <p style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5vw, 1.6rem)", marginTop: "4px" }}>{winner.avatar ? `${winner.avatar} ` : ""}{winner.name}</p>
               <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>{winner.score} punten</p>
             </div>
           )}
@@ -929,7 +1031,7 @@ export default function SpeelPage() {
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}
                 style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
                 <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
-                <span style={{ fontWeight: 700, flex: 1 }}>{p.name}{p.id === playerId ? " (jij)" : ""}</span>
+                <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}{p.id === playerId ? " (jij)" : ""}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
             ))}

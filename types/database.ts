@@ -69,12 +69,16 @@ export interface Session {
   question_order?: string[];
   is_active?: boolean;
   force_end?: boolean;
+  distribution?: Record<string, number>;
+  distribution_qid?: string;
+  distribution_total?: number;
 }
 
 export interface Player {
   id: string;
   session_id: string;
   name: string;
+  avatar?: string;
   score: number;
   joined_at: string;
   last_seen_at: string;

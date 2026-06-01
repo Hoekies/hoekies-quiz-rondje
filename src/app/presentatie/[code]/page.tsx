@@ -27,6 +27,9 @@ interface SessionDoc {
   state: string;
   current_question_id: string | null;
   question_index: number;
+  distribution?: Record<string, number>;
+  distribution_qid?: string;
+  distribution_total?: number;
 }
 
 interface QuestionDoc {
@@ -48,6 +51,7 @@ interface PlayerDoc {
   id: string;
   name: string;
   score: number;
+  avatar?: string;
 }
 
 export default function PresentatiePage() {
@@ -219,7 +223,7 @@ export default function PresentatiePage() {
                   border: "1px solid rgba(6,182,212,0.4)",
                 }}
               >
-                {p.name}
+                {p.avatar ? `${p.avatar} ` : ""}{p.name}
               </span>
             ))}
           </div>
@@ -342,6 +346,10 @@ export default function PresentatiePage() {
         <div className="grid grid-cols-2 gap-4">
           {options.map((opt: string, i: number) => {
             const isCorrect = opt === question.correct_answer;
+            const showDist = session.distribution && session.distribution_qid === session.current_question_id;
+            const total = session.distribution_total || 1;
+            const cnt = session.distribution?.[opt] ?? 0;
+            const pct = showDist ? Math.round((cnt / total) * 100) : null;
             return (
               <div
                 key={i}
@@ -349,7 +357,8 @@ export default function PresentatiePage() {
               >
                 <span className="text-2xl font-black opacity-60">{LABEL[i]}</span>
                 <span className="text-xl">{opt}</span>
-                {isCorrect && <span className="ml-auto text-2xl">✓</span>}
+                {pct !== null && <span className="ml-auto text-xl font-black">{pct}%</span>}
+                {isCorrect && <span className="ml-2 text-2xl">✓</span>}
               </div>
             );
           })}
@@ -370,8 +379,8 @@ export default function PresentatiePage() {
     );
   }
 
-  // ── LEADERBOARD ──────────────────────────────────────────────────────────
-  if (session.state === "leaderboard") {
+  // ── LEADERBOARD / RONDE KLAAR ────────────────────────────────────────────
+  if (session.state === "leaderboard" || session.state === "ronde_klaar") {
     const top5 = players.slice(0, 5);
     const medals = [
       "leaderboard-row--gold",
@@ -389,13 +398,13 @@ export default function PresentatiePage() {
           className="text-white font-black text-4xl"
           style={{ textShadow: "var(--crt-glow)" }}
         >
-          Tussenstand 🏆
+          {session.state === "ronde_klaar" ? "Ronde klaar 🏁" : "Tussenstand 🏆"}
         </h2>
         <div className="w-full max-w-xl flex flex-col gap-3">
           {top5.map((p, i) => (
             <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
               <span className="text-2xl w-8 text-center">{emoji[i]}</span>
-              <span className="font-black text-xl flex-1">{p.name}</span>
+              <span className="font-black text-xl flex-1">{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
               <span
                 className="font-black text-xl"
                 style={{ color: "var(--cyan)" }}
@@ -462,7 +471,7 @@ export default function PresentatiePage() {
               className="text-white font-black text-6xl"
               style={{ textShadow: "var(--crt-glow)" }}
             >
-              {winner.name}
+              {winner.avatar ? `${winner.avatar} ` : ""}{winner.name}
             </p>
           )}
           {winner && (

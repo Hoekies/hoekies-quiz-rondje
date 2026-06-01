@@ -5,7 +5,8 @@ import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { code, name } = body as { code: string; name: string };
+  const { code, name, avatar } = body as { code: string; name: string; avatar?: string };
+  const safeAvatar = typeof avatar === "string" && avatar.length <= 8 ? avatar : "🙂";
 
   if (!code || !name || name.trim().length === 0) {
     return NextResponse.json({ error: "Code en naam zijn verplicht" }, { status: 400 });
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
 
   const playerRef = await sessionRef.collection("players").add({
     name: name.trim(),
+    avatar: safeAvatar,
     score: 0,
     joined_at: FieldValue.serverTimestamp(),
   });

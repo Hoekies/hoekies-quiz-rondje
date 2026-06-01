@@ -18,7 +18,7 @@ interface SessionDoc {
   current_question_id?: string | null;
 }
 
-interface PlayerDoc { id: string; name: string; score: number; }
+interface PlayerDoc { id: string; name: string; score: number; avatar?: string; }
 interface QDoc { id: string; round: number; order: number; }
 
 export default function AdminDashboard() {
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
               {leaderboard.map((p, i) => (
                 <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: i === 0 ? "rgba(255,217,59,0.08)" : "rgba(255,255,255,0.04)", borderRadius: "10px", border: `1px solid ${i === 0 ? "rgba(255,217,59,0.3)" : "rgba(255,255,255,0.08)"}` }}>
                   <span style={{ fontSize: "1rem", width: "24px", textAlign: "center" }}>{medals[i]}</span>
-                  <span style={{ flex: 1, color: "#fff", fontWeight: 600, fontSize: "0.9rem" }}>{p.name}</span>
+                  <span style={{ flex: 1, color: "#fff", fontWeight: 600, fontSize: "0.9rem" }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
                   <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "0.95rem" }}>{p.score}</span>
                 </div>
               ))}

@@ -27,7 +27,9 @@ interface SessionDoc {
   question_order?: string[];
   started_at: unknown;
   resume_at?: { seconds: number } | null;
+  question_opened_at?: { seconds: number } | null;
   force_end?: boolean;
+  distribution_qid?: string;
 }
 
 interface QuestionDoc {
@@ -46,6 +48,7 @@ interface PlayerDoc {
   id: string;
   name: string;
   score: number;
+  avatar?: string;
 }
 
 export default function HostControlPage() {
@@ -161,9 +164,11 @@ export default function HostControlPage() {
     return () => clearTimeout(t);
   }, [session?.state, code]);
 
-  // Subscribe to answers for current question
+  // Subscribe to answers for current question (count + waarden voor verdeling)
+  const answersValuesRef = useRef<string[]>([]);
   useEffect(() => {
     setAnswerCount(0);
+    answersValuesRef.current = [];
     if (!session?.current_question_id) return;
 
     const q = query(
@@ -173,6 +178,7 @@ export default function HostControlPage() {
 
     const unsub = onSnapshot(q, (snap) => {
       setAnswerCount(snap.size);
+      answersValuesRef.current = snap.docs.map((d) => (d.data().answer as string) ?? "");
     });
     return unsub;
   }, [code, session?.current_question_id]);
@@ -186,6 +192,33 @@ export default function HostControlPage() {
     autoClosedRef.current = session.current_question_id;
     updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
   }, [answerCount, players.length, session?.state, session?.current_question_id, code]);
+
+  // Auto-sluit op tijd: question_opened_at + time_limit verstreken → answer_reveal
+  useEffect(() => {
+    if (session?.state !== "question_open" || !session.current_question_id || !session.question_opened_at?.seconds) return;
+    const limit = currentQuestion?.time_limit_seconds ?? 20;
+    const iv = setInterval(() => {
+      const elapsed = (Date.now() - session.question_opened_at!.seconds * 1000) / 1000;
+      if (elapsed >= limit && autoClosedRef.current !== session.current_question_id) {
+        autoClosedRef.current = session.current_question_id;
+        updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
+      }
+    }, 500);
+    return () => clearInterval(iv);
+  }, [session?.state, session?.current_question_id, session?.question_opened_at?.seconds, code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Schrijf antwoordverdeling bij answer_reveal
+  useEffect(() => {
+    if (session?.state !== "answer_reveal" || !session.current_question_id) return;
+    if (session.distribution_qid === session.current_question_id) return;
+    const counts: Record<string, number> = {};
+    answersValuesRef.current.forEach((a) => { if (a) counts[a] = (counts[a] ?? 0) + 1; });
+    updateDoc(doc(db, "sessions", code), {
+      distribution: counts,
+      distribution_qid: session.current_question_id,
+      distribution_total: answersValuesRef.current.length,
+    }).catch(() => {});
+  }, [session?.state, session?.current_question_id, session?.distribution_qid, code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function patchSession(
     state: SessionState,
@@ -465,7 +498,7 @@ export default function HostControlPage() {
             ) : players.slice(0, 10).map((p, i) => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem" }}>
                 <span style={{ color: "var(--muted)", width: "18px", fontSize: "0.75rem" }}>{i + 1}</span>
-                <span style={{ color: "var(--text)", flex: 1 }}>{p.name}</span>
+                <span style={{ color: "var(--text)", flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
                 <span style={{ color: "var(--cyan)", fontWeight: 700 }}>{p.score}</span>
               </div>
             ))}
