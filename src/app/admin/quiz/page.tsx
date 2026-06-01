@@ -113,6 +113,13 @@ export default function QuizBeheerPage() {
     return unsub;
   }, [quizId]);
 
+  // Standaard de eerste ronde tonen (geen "Alle")
+  useEffect(() => {
+    const rs = [...new Set(questions.map((q) => q.round))].sort((a, b) => a - b);
+    if (rs.length === 0) return;
+    setActiveRound((cur) => (cur !== "all" && rs.includes(cur as number)) ? cur : rs[0]);
+  }, [questions]);
+
   async function handleDeleteAll() {
     if (!quizId || questions.length === 0) return;
     if (!window.confirm(`Alle ${questions.length} vragen verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
@@ -289,11 +296,6 @@ export default function QuizBeheerPage() {
         {/* Ronde-tabs */}
         {rounds.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "10px" }}>
-            <button onClick={() => setActiveRound("all")}
-              style={{ padding: "6px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                background: activeRound === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: activeRound === "all" ? "#000" : "var(--text)" }}>
-              Alle ({questions.length})
-            </button>
             {rounds.map((r) => (
               <button key={r} onClick={() => { setActiveRound(r); setRenameValue(roundNames[r] ?? ""); }}
                 style={{ padding: "6px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
