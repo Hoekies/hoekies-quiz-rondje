@@ -396,7 +396,7 @@ export default function SessionControl({ code }: { code: string }) {
   const S = { display: "flex", flexDirection: "column" as const, gap: "18px", maxWidth: "760px", margin: "0 auto", width: "100%" };
 
   // Gedeelde labelstijl voor paneel-koppen
-  const sectionLabel = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
+  const sectionLabel = { color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" };
   // Of de secundaire beheerknoppen zichtbaar zijn
   const showBeheer = session.state !== "resuming";
   const showActieveBeheer = session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming";
@@ -523,9 +523,8 @@ export default function SessionControl({ code }: { code: string }) {
 
       {/* Sessiebeheer — gegroepeerde secundaire / utility-acties */}
       {showBeheer && (
-        <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px 20px" }}>
-          <span style={sectionLabel}>Sessiebeheer</span>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+        <div className="card" style={{ padding: "16px 20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" }}>
 
             {/* Pauze-knop — alleen tijdens question_open */}
             {session.state === "question_open" && (
@@ -568,7 +567,7 @@ export default function SessionControl({ code }: { code: string }) {
             {showActieveBeheer && (
               <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
                 disabled={actionLoading}
-                style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer", marginLeft: "auto" }}>
+                style={{ fontWeight: 700, fontSize: "0.85rem", padding: "9px 16px", minHeight: "40px", borderRadius: "8px", border: "2px solid var(--red)", background: "rgba(255,59,92,0.12)", color: "var(--red)", cursor: "pointer", gridColumn: "1 / -1" }}>
                 🏁 Beëindig spel (toon eindstand)
               </button>
             )}

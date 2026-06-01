@@ -165,18 +165,20 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Nieuwe sessie */}
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
-            {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
-          </button>
-          {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
-        </div>
+        {/* Nieuwe sessie — alleen tonen als er nog geen sessie bestaat */}
+        {sessions.length === 0 && (
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
+              {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
+            </button>
+            {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
+          </div>
+        )}
 
         {/* Overige sessies — compacte rij om te activeren/starten (alleen als er geen actieve sessie is) */}
         {!activeSession && otherSessions.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>
               Sessies ({otherSessions.length})
             </p>
             {otherSessions.map((session) => (
@@ -208,7 +210,7 @@ export default function AdminDashboard() {
 
         {/* Standaard quizzen */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>Standaard quizzen</p>
+          <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>Standaard quizzen</p>
           <p style={{ color: "var(--text)", fontSize: "0.85rem" }}>Laad 3 kant-en-klare quizzen: Sport, Algemene Kennis en Muziek (alle jaren 90/2000, 20 vragen elk).</p>
           <button onClick={handleSeedStandaard} disabled={seedLoading}
             style={{ alignSelf: "flex-start", fontSize: "0.88rem", fontWeight: 700, padding: "10px 18px", borderRadius: "10px", border: "1px solid rgba(0,217,255,0.35)", background: "rgba(0,217,255,0.07)", color: "var(--cyan)", cursor: seedLoading ? "not-allowed" : "pointer" }}>

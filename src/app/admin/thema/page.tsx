@@ -120,7 +120,7 @@ export default function ThemaPagina() {
   }
 
   const F = { display: "flex", flexDirection: "column" as const, gap: "10px" };
-  const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
+  const L = { color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" };
 
   return (
     <AdminLayout title="Thema quiz">

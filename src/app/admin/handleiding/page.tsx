@@ -65,7 +65,7 @@ export default function HandleidingPage() {
   if (!authChecked) return null;
 
   const card = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: "12px", padding: "16px 20px" };
-  const L = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
+  const L = { color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" };
 
   return (
     <AdminLayout title="Hulp">
