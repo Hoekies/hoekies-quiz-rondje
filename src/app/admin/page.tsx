@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, getDocs, deleteDoc, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDocs, getDoc, deleteDoc, doc, updateDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import QRCode from "qrcode";
 import { auth, db } from "@/lib/firebase";
 import AdminLayout from "./AdminLayout";
@@ -14,9 +14,12 @@ interface SessionDoc {
   state: string;
   quiz_id: string;
   is_active?: boolean;
+  question_order?: string[];
+  current_question_id?: string | null;
 }
 
 interface PlayerDoc { id: string; name: string; score: number; }
+interface QDoc { id: string; round: number; order: number; }
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -33,6 +36,9 @@ export default function AdminDashboard() {
   const [seedMsg, setSeedMsg] = useState("");
   const [leaderboard, setLeaderboard] = useState<PlayerDoc[]>([]);
   const [lbCode, setLbCode] = useState<string | null>(null);
+  const [activeQuestions, setActiveQuestions] = useState<QDoc[]>([]);
+  const [roundNames, setRoundNames] = useState<Record<string, string>>({});
+  const [starting, setStarting] = useState(false);
   const qrGenerated = useRef<Set<string>>(new Set());
   const lbUnsubRef = useRef<(() => void) | null>(null);
 
@@ -90,6 +96,44 @@ export default function AdminDashboard() {
       }
     });
   }, [sessions]);
+
+  // Laad vragen + ronde-namen voor de actieve sessie in lobby
+  const activeLobby = sessions.find((s) => s.is_active && s.state === "lobby");
+  useEffect(() => {
+    const qid = activeLobby?.quiz_id;
+    if (!qid) { setActiveQuestions([]); return; }
+    (async () => {
+      const [qsnap, quizSnap] = await Promise.all([
+        getDocs(collection(db, "quizzes", qid, "questions")),
+        getDoc(doc(db, "quizzes", qid)),
+      ]);
+      const qs = qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<QDoc, "id">) }));
+      qs.sort((a, b) => (a.round - b.round) || (a.order - b.order));
+      setActiveQuestions(qs);
+      setRoundNames((quizSnap.data()?.round_names as Record<string, string>) ?? {});
+    })();
+  }, [activeLobby?.quiz_id]);
+
+  async function dashSelectRound(s: SessionDoc, r: number | "all") {
+    const ids = (r === "all" ? activeQuestions : activeQuestions.filter((q) => q.round === r)).map((q) => q.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    await updateDoc(doc(db, "sessions", s.code), { question_order: ids, current_question_id: null, question_index: 0 });
+  }
+
+  async function dashStart(s: SessionDoc) {
+    setStarting(true);
+    const order = s.question_order && s.question_order.length > 0 ? s.question_order : activeQuestions.map((q) => q.id);
+    if (order.length === 0) { setStarting(false); return; }
+    await updateDoc(doc(db, "sessions", s.code), {
+      state: "question_open", status: "active",
+      current_question_id: order[0], question_index: 0,
+      question_order: order, question_opened_at: serverTimestamp(),
+    });
+    setStarting(false);
+  }
 
   async function handleCreateSession() {
     setCreating(true); setCreateError("");
@@ -167,6 +211,15 @@ export default function AdminDashboard() {
 
   const activeSessions = sessions.filter((s) => s.status === "active");
   const activeSession = sessions.find((s) => s.is_active && s.status !== "finished");
+  const dashRounds = [...new Set(activeQuestions.map((q) => q.round))].sort((a, b) => a - b);
+  const dashRoundLabel = (r: number) => roundNames[r] ? roundNames[r] : `Ronde ${r}`;
+  const dashSelected: number | "all" = (() => {
+    const ord = activeLobby?.question_order;
+    if (!ord?.length) return "all";
+    const rs = new Set(ord.map((id) => activeQuestions.find((q) => q.id === id)?.round).filter((r) => r !== undefined));
+    return rs.size === 1 ? ([...rs][0] as number) : "all";
+  })();
+  const dashSelectedCount = activeLobby?.question_order?.length ?? activeQuestions.length;
 
   return (
     <AdminLayout title="Dashboard">
@@ -179,6 +232,32 @@ export default function AdminDashboard() {
           </button>
           {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
         </div>
+
+        {/* Ronde kiezen + starten voor actieve lobby-sessie */}
+        {activeLobby && dashRounds.length > 0 && (
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "18px 20px", border: "1px solid rgba(0,217,255,0.25)" }}>
+            <span style={{ color: "var(--cyan)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Start sessie {activeLobby.code} — kies vragen
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              <button onClick={() => dashSelectRound(activeLobby, "all")}
+                style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                  background: dashSelected === "all" ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: dashSelected === "all" ? "#000" : "var(--text)" }}>
+                Hele quiz ({activeQuestions.length})
+              </button>
+              {dashRounds.map((r) => (
+                <button key={r} onClick={() => dashSelectRound(activeLobby, r)}
+                  style={{ padding: "8px 14px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
+                    background: dashSelected === r ? "var(--cyan)" : "rgba(255,255,255,0.06)", color: dashSelected === r ? "#000" : "var(--text)" }}>
+                  {dashRoundLabel(r)} ({activeQuestions.filter((q) => q.round === r).length})
+                </button>
+              ))}
+            </div>
+            <button onClick={() => dashStart(activeLobby)} disabled={starting || dashSelectedCount === 0} className="btn-game" style={{ fontSize: "0.95rem", padding: "12px" }}>
+              {starting ? "Starten..." : `🚀 Start (${dashSelectedCount} vragen)`}
+            </button>
+          </div>
+        )}
 
         {/* Leaderboard actieve sessie */}
         {activeSession && leaderboard.length > 0 && (
