@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   doc,
@@ -176,6 +176,16 @@ export default function HostControlPage() {
     });
     return unsub;
   }, [code, session?.current_question_id]);
+
+  // Auto-sluit: zodra alle spelers geantwoord hebben → answer_reveal
+  const autoClosedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (session?.state !== "question_open" || !session.current_question_id) return;
+    if (players.length === 0 || answerCount < players.length) return;
+    if (autoClosedRef.current === session.current_question_id) return;
+    autoClosedRef.current = session.current_question_id;
+    updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
+  }, [answerCount, players.length, session?.state, session?.current_question_id, code]);
 
   async function patchSession(
     state: SessionState,
