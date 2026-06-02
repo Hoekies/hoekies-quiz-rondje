@@ -131,6 +131,7 @@ interface QuestionDoc {
   video_start?: number;
   clip_duration?: 5 | 10;
   answer_mode?: "multiple_choice" | "true_false";
+  video_muted?: boolean;
 }
 
 export default function SpeelPage() {
@@ -872,7 +873,7 @@ export default function SpeelPage() {
               const idMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
               const vid = idMatch?.[1] ?? "";
               const start = question.video_start ?? 0;
-              const embed = `https://www.youtube-nocookie.com/embed/${vid}?start=${start}&autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`;
+              const embed = `https://www.youtube-nocookie.com/embed/${vid}?start=${start}&autoplay=1&mute=${question.video_muted ? 1 : 0}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`;
               // Crop top/bottom van de iframe zodat YouTube-titel en knoppen buiten beeld vallen
               return (
                 <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", flexShrink: 0, position: "relative" }}>
@@ -880,7 +881,7 @@ export default function SpeelPage() {
                 </div>
               );
             }
-            return <video id="clip-video" src={url} autoPlay playsInline style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
+            return <video id="clip-video" src={url} autoPlay playsInline muted={!!question.video_muted} style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
           })()}
 
           {/* Tekst antwoordknoppen */}

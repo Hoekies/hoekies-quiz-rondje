@@ -43,6 +43,7 @@ interface QuestionForm {
   clip_duration: 5 | 10;
   answer_mode: "multiple_choice" | "true_false";
   video_source: "youtube" | "upload";
+  video_muted: boolean;
   // match
   left_1: string;
   left_2: string;
@@ -83,6 +84,7 @@ const DEFAULT_FORM: QuestionForm = {
   clip_duration: 5,
   answer_mode: "multiple_choice",
   video_source: "youtube",
+  video_muted: false,
   left_1: "",
   left_2: "",
   left_3: "",
@@ -164,6 +166,7 @@ function VraagForm() {
           clip_duration: ((d.clip_duration ?? d.guess_duration) === 10 ? 10 : 5) as 5 | 10,
           answer_mode: d.answer_mode === "true_false" ? "true_false" : "multiple_choice",
           video_source: (d.type === "video" && d.media_url && !/youtube|youtu\.be/.test(d.media_url)) ? "upload" : "youtube",
+          video_muted: !!d.video_muted,
           left_1: (d.left_items ?? [])[0] ?? "",
           left_2: (d.left_items ?? [])[1] ?? "",
           left_3: (d.left_items ?? [])[2] ?? "",
@@ -319,6 +322,7 @@ function VraagForm() {
     if (form.type === "video") {
       payload.video_start = form.video_start;
       payload.clip_duration = form.clip_duration;
+      payload.video_muted = form.video_muted;
     }
     if (form.type === "estimate") {
       payload.estimate_min = form.estimate_min;
@@ -491,6 +495,10 @@ function VraagForm() {
                   </div>
                 </div>
               </div>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", marginTop: "4px" }}>
+                <input type="checkbox" checked={!form.video_muted} onChange={(e) => set("video_muted", !e.target.checked)} style={{ width: "18px", height: "18px", accentColor: "var(--cyan)" }} />
+                <span style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Geluid afspelen</span>
+              </label>
             </div>
           )}
 

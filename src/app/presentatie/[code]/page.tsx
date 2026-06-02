@@ -45,6 +45,8 @@ interface QuestionDoc {
   time_limit_seconds: number;
   base_points: number;
   is_double_points: boolean;
+  video_start?: number;
+  video_muted?: boolean;
 }
 
 interface PlayerDoc {
@@ -309,13 +311,13 @@ export default function PresentatiePage() {
             {/youtube|youtu\.be/.test(question.media_url) ? (
               <div className="w-full max-w-3xl aspect-video rounded-xl overflow-hidden relative">
                 <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${(question.media_url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]) ?? ""}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0`}
+                  src={`https://www.youtube-nocookie.com/embed/${(question.media_url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]) ?? ""}?start=${question.video_start ?? 0}&autoplay=1&mute=${question.video_muted ? 1 : 0}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0`}
                   style={{ position: "absolute", top: "-25%", left: "-9%", width: "118%", height: "150%", border: "none", pointerEvents: "none" }}
                   allow="autoplay; encrypted-media"
                 />
               </div>
             ) : (
-              <video src={question.media_url} autoPlay className="max-h-full rounded-xl" />
+              <video src={question.media_url} autoPlay muted={!!question.video_muted} className="max-h-full rounded-xl" />
             )}
           </div>
         )}

@@ -57,6 +57,7 @@ export interface Question {
   video_start?: number;
   clip_duration?: 5 | 10;
   answer_mode?: "multiple_choice" | "true_false";
+  video_muted?: boolean;
 }
 
 export interface Session {
