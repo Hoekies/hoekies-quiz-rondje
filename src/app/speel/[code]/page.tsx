@@ -277,18 +277,67 @@ export default function SpeelPage() {
   // Questions change never during a live quiz, so a one-time getDocs is sufficient
   // and avoids holding an extra persistent listener (which contributes to iOS
   // WebSocket throttling when combined with the session/players/answers listeners).
+  // Mislukt het ophalen (iOS long-poll hikt soms), dan opnieuw proberen i.p.v.
+  // stilletjes leeg blijven (anders blijft de speler op "Vraag laden…" hangen).
   useEffect(() => {
     if (!session?.quiz_id) return;
-    getDocs(collection(db, "quizzes", session.quiz_id, "questions"))
-      .then((snap) => {
-        const map: Record<string, QuestionDoc> = {};
-        snap.docs.forEach((d) => {
-          map[d.id] = { id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) };
+    let cancelled = false;
+    const quizId = session.quiz_id;
+    const load = (attempt: number) => {
+      getDocs(collection(db, "quizzes", quizId, "questions"))
+        .then((snap) => {
+          if (cancelled) return;
+          const map: Record<string, QuestionDoc> = {};
+          snap.docs.forEach((d) => {
+            map[d.id] = { id: d.id, ...(d.data() as Omit<QuestionDoc, "id">) };
+          });
+          // Merge i.p.v. overschrijven: een eventueel lazy-geladen vraag blijft behouden
+          setQuestionsMap((prev) => ({ ...prev, ...map }));
+        })
+        .catch(() => {
+          if (cancelled || attempt >= 4) return;
+          setTimeout(() => load(attempt + 1), 600 * (attempt + 1));
         });
-        setQuestionsMap(map);
-      })
-      .catch(() => {});
+    };
+    load(0);
+    return () => { cancelled = true; };
   }, [session?.quiz_id]);
+
+  // Lazy fallback: als een vraag opengaat die (nog) niet in de map zit
+  // (timing van de bulk-load, een achteraf toegevoegde vraag, of een mislukte
+  // long-poll), haal die ene vraag direct op via getDoc. Dit garandeert dat het
+  // vraagscherm altijd verschijnt zodra de host de vraag opent.
+  const fetchingQidRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const qid = session?.current_question_id;
+    const quizId = session?.quiz_id;
+    if (!qid || !quizId) return;
+    if (questionsMap[qid]) return; // al beschikbaar
+    if (fetchingQidRef.current.has(qid)) return; // al onderweg
+    fetchingQidRef.current.add(qid);
+    let cancelled = false;
+    const load = (attempt: number) => {
+      getDoc(doc(db, "quizzes", quizId, "questions", qid))
+        .then((snap) => {
+          if (cancelled) return;
+          if (snap.exists()) {
+            setQuestionsMap((prev) =>
+              prev[qid]
+                ? prev
+                : { ...prev, [qid]: { id: snap.id, ...(snap.data() as Omit<QuestionDoc, "id">) } }
+            );
+          } else if (attempt < 4) {
+            setTimeout(() => load(attempt + 1), 500 * (attempt + 1));
+          }
+        })
+        .catch(() => {
+          if (cancelled || attempt >= 4) return;
+          setTimeout(() => load(attempt + 1), 500 * (attempt + 1));
+        });
+    };
+    load(0);
+    return () => { cancelled = true; };
+  }, [session?.current_question_id, session?.quiz_id, questionsMap]);
 
   // Subscribe to all answers for this player (fast, parallel with session update)
   useEffect(() => {
