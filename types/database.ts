@@ -8,7 +8,14 @@ export type QuestionType =
   | "video"
   | "estimate"
   | "open"
-  | "match";
+  | "match"
+  | "anagram"
+  | "gatentekst"
+  | "four_pics"
+  | "zoom_reveal"
+  | "tile_reveal"
+  | "multi_select"
+  | "clues";
 
 export type SessionStatus = "lobby" | "active" | "finished";
 export type SessionState =
@@ -58,6 +65,7 @@ export interface Question {
   clip_duration?: 5 | 10;
   answer_mode?: "multiple_choice" | "true_false" | "open";
   video_muted?: boolean;
+  clues?: string[];
 }
 
 export interface Session {

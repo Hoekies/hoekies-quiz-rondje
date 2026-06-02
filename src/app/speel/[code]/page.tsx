@@ -13,10 +13,14 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { tick, correct, wrong, fanfare, unlock, soundEnabled, setSoundEnabled } from "@/lib/sound";
+import { scramble } from "@/lib/text";
 
 const AVATARS = ["🦊", "🐼", "🐸", "🦁", "🐙", "🦄", "🐵", "🐧", "🦖", "🐯", "🐢", "🦉"];
 
 const LABEL = ["A", "B", "C", "D"];
+
+// Vaste onthul-volgorde voor de puzzelafbeelding (4x4), gelijk op speler én presentatie
+const TILE_ORDER = [5, 10, 0, 15, 3, 12, 6, 9, 1, 14, 7, 8, 4, 11, 2, 13];
 
 function Confetti({ active, duration = 10000 }: { active: boolean; duration?: number }) {
   useEffect(() => {
@@ -132,6 +136,7 @@ interface QuestionDoc {
   clip_duration?: 5 | 10;
   answer_mode?: "multiple_choice" | "true_false" | "open";
   video_muted?: boolean;
+  clues?: string[];
 }
 
 export default function SpeelPage() {
@@ -150,8 +155,11 @@ export default function SpeelPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [blurLevel, setBlurLevel] = useState(20);
+  const [zoomScale, setZoomScale] = useState(3.5);
+  const [tileShown, setTileShown] = useState(0);
   const [estimateValue, setEstimateValue] = useState(0);
   const [openText, setOpenText] = useState("");
+  const [multiSelected, setMultiSelected] = useState<string[]>([]);
   const [showSplash, setShowSplash] = useState(true);
   const [audioPlayed, setAudioPlayed] = useState(false);
   const [matchSelections, setMatchSelections] = useState<Record<number, number>>({});
@@ -549,6 +557,32 @@ export default function SpeelPage() {
     return () => clearInterval(iv);
   }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Zoom-reveal: van ingezoomd (3.5x) naar normaal (1x) over de tijd
+  useEffect(() => {
+    if (question?.type !== "zoom_reveal" || step !== "question") return;
+    const total = question.time_limit_seconds * 1000;
+    const start = Date.now();
+    setZoomScale(3.5);
+    const iv = setInterval(() => {
+      const p = Math.min(1, (Date.now() - start) / total);
+      setZoomScale(3.5 - 2.5 * p);
+    }, 80);
+    return () => clearInterval(iv);
+  }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tile-reveal: tegels verdwijnen geleidelijk (0 -> 16)
+  useEffect(() => {
+    if (question?.type !== "tile_reveal" || step !== "question") return;
+    const total = question.time_limit_seconds * 1000;
+    const start = Date.now();
+    setTileShown(0);
+    const iv = setInterval(() => {
+      const p = Math.min(1, (Date.now() - start) / total);
+      setTileShown(Math.floor(p * 16));
+    }, 120);
+    return () => clearInterval(iv);
+  }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Estimate: initieer slider op middenwaarde
   useEffect(() => {
     if (question?.type !== "estimate") return;
@@ -556,8 +590,8 @@ export default function SpeelPage() {
     setEstimateValue(mid);
   }, [question?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset open-tekst bij nieuwe vraag
-  useEffect(() => { setOpenText(""); }, [question?.id]);
+  // Reset open-tekst + multi-keuze bij nieuwe vraag
+  useEffect(() => { setOpenText(""); setMultiSelected([]); }, [question?.id]);
 
   // Match: reset selecties en shuffle rechter items bij nieuwe vraag
   useEffect(() => {
@@ -800,7 +834,15 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = question.options ?? []; // vaste volgorde = zelfde als presentatie (kleur/letter komt overeen)
-    const isOpenMode = question.type === "open" || question.answer_mode === "open";
+    const isOpenMode = ["open", "anagram", "gatentekst", "four_pics", "clues"].includes(question.type) || question.answer_mode === "open";
+    // Hints van "Wie ben ik?" verschijnen één voor één op basis van de resterende tijd
+    const clueList = question.clues ?? [];
+    const cluesVisible = (() => {
+      if (question.type !== "clues" || clueList.length === 0) return clueList.length;
+      const lim = question.time_limit_seconds || 1;
+      const elapsed = timeLeft !== null ? lim - timeLeft : lim;
+      return Math.min(clueList.length, 1 + Math.floor((elapsed / lim) * clueList.length));
+    })();
     const timeUp = timeLeft !== null && timeLeft <= 0;
     const timePct = timeLeft !== null && question.time_limit_seconds ? (timeLeft / question.time_limit_seconds) * 100 : 100;
     return (
@@ -879,9 +921,58 @@ export default function SpeelPage() {
               <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>📺 Kijk naar het grote scherm</p>
             </div>
           )}
+          {/* zoom_reveal — inzoomend, zoomt langzaam uit */}
+          {question.type === "zoom_reveal" && question.media_url && (
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${zoomScale})`, transition: "transform 0.15s linear" }} />
+            </div>
+          )}
+          {/* tile_reveal — puzzel, tegels verdwijnen geleidelijk */}
+          {question.type === "tile_reveal" && question.media_url && (
+            <div style={{ flexShrink: 0, alignSelf: "center", position: "relative", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(4, 1fr)" }}>
+                {Array.from({ length: 16 }, (_, t) => {
+                  const hidden = TILE_ORDER.indexOf(t) >= tileShown;
+                  return <div key={t} style={{ background: hidden ? "#0b1626" : "transparent", transition: "background 0.3s ease" }} />;
+                })}
+              </div>
+            </div>
+          )}
+          {/* anagram — geschudde letters */}
+          {question.type === "anagram" && question.correct_answer && (
+            <div className="glass-card" style={{ flexShrink: 0, alignSelf: "center", padding: "14px 22px" }}>
+              <p style={{ color: "var(--gold)", fontWeight: 900, letterSpacing: "0.15em", fontSize: "clamp(1.4rem, 7vw, 2rem)", textAlign: "center" }}>
+                {scramble(question.correct_answer, question.id)}
+              </p>
+            </div>
+          )}
+          {/* four_pics — 2x2 raster */}
+          {question.type === "four_pics" && question.image_options && (
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+              {question.image_options.slice(0, 4).map((url: string, i: number) => (
+                <div key={i} style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+          )}
+          {/* clues — hints verschijnen één voor één */}
+          {question.type === "clues" && (
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+              {clueList.slice(0, cluesVisible).map((c, i) => (
+                <div key={i} className="glass-card" style={{ padding: "10px 16px" }}>
+                  <p style={{ color: "#fff", fontSize: "clamp(0.85rem, 3vw, 1rem)" }}><span style={{ color: "var(--cyan)", fontWeight: 900 }}>{i + 1}.</span> {c}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Tekst antwoordknoppen */}
-          {question.type !== "image_answer" && question.type !== "estimate" && !isOpenMode && (
+          {question.type !== "image_answer" && question.type !== "estimate" && question.type !== "multi_select" && !isOpenMode && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
@@ -925,6 +1016,28 @@ export default function SpeelPage() {
               </div>
               <button onClick={() => handleAnswer(String(estimateValue))} disabled={!!selectedAnswer || submitting}
                 className="btn-game">
+                Bevestigen
+              </button>
+            </div>
+          )}
+
+          {/* Meerdere juiste antwoorden — togglen + bevestigen */}
+          {question.type === "multi_select" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
+              {options.map((opt: string, i: number) => {
+                const isSel = multiSelected.includes(opt);
+                return (
+                  <button key={i} disabled={!!selectedAnswer || timeUp}
+                    onClick={() => setMultiSelected((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])}
+                    className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}
+                    style={{ outline: isSel ? "3px solid #fff" : "none", opacity: selectedAnswer ? 0.6 : 1 }}>
+                    <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{isSel ? "✓" : LABEL[i]}</span>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+              <button onClick={() => handleAnswer(JSON.stringify(multiSelected.slice().sort()))}
+                disabled={multiSelected.length === 0 || !!selectedAnswer || submitting || timeUp} className="btn-game" style={{ flexShrink: 0 }}>
                 Bevestigen
               </button>
             </div>
@@ -1088,6 +1201,9 @@ export default function SpeelPage() {
   if (step === "reveal") {
     const correct = answerResult?.is_correct;
     const pts = answerResult?.points_awarded ?? 0;
+    // Toon JSON-antwoorden (multi_select) als leesbare lijst
+    const fmtAns = (s: string) => { try { const a = JSON.parse(s); if (Array.isArray(a)) return a.join(", "); } catch {} return s; };
+    const correctSet: string[] = (() => { try { const a = JSON.parse(question?.correct_answer ?? ""); return Array.isArray(a) ? a : []; } catch { return []; } })();
     return (
       <div className="speler-shell">
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
@@ -1106,7 +1222,7 @@ export default function SpeelPage() {
                 {(question.options ?? []).map((opt, i) => {
                   const cnt = session.distribution?.[opt] ?? 0;
                   const pct = Math.round((cnt / total) * 100);
-                  const isOk = opt === question.correct_answer;
+                  const isOk = question.type === "multi_select" ? correctSet.includes(opt) : opt === question.correct_answer;
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ width: "16px", fontWeight: 900, color: isOk ? "var(--green)" : "var(--muted)", fontSize: "0.8rem" }}>{LABEL[i]}</span>
@@ -1124,11 +1240,11 @@ export default function SpeelPage() {
           {question && question.type !== "image_answer" && question.type !== "match" && question.correct_answer && (
             <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.10)" }}>
               <p style={{ color: "var(--muted)", fontSize: "0.78rem", marginBottom: "2px" }}>Juiste antwoord</p>
-              <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{question.correct_answer}</p>
+              <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{fmtAns(question.correct_answer)}</p>
             </div>
           )}
           <div style={{ textAlign: "center" }}>
-            {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{selectedAnswer}</span></p>}
+            {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{fmtAns(selectedAnswer)}</span></p>}
             <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Totaal: <strong style={{ color: "var(--cyan)" }}>{myScore} punten</strong></p>
           </div>
         </div>

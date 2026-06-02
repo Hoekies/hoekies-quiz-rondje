@@ -34,6 +34,8 @@ interface ImportRow {
   estimate_max?: string | number;
   estimate_unit?: string;
   image_options?: string;
+  answer_mode?: string;
+  clues?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const validTypes = ["multiple_choice", "true_false", "image", "audio", "blur_reveal", "image_answer", "video", "estimate", "match"];
+    const validTypes = ["multiple_choice", "true_false", "image", "audio", "blur_reveal", "image_answer", "video", "estimate", "match", "open", "anagram", "gatentekst", "four_pics", "zoom_reveal", "tile_reveal", "multi_select", "clues"];
     const type = row.type?.trim() || "multiple_choice";
     if (!validTypes.includes(type)) {
       errors.push(`Rij ${i + 2}: ongeldig type "${type}"`);
@@ -95,6 +97,8 @@ export async function POST(req: NextRequest) {
     if (row.estimate_max !== undefined && row.estimate_max !== "") docData.estimate_max = Number(row.estimate_max);
     if (row.estimate_unit) docData.estimate_unit = String(row.estimate_unit);
     if (imageOptions?.length) docData.image_options = imageOptions;
+    if (row.answer_mode) docData.answer_mode = String(row.answer_mode);
+    if (row.clues) docData.clues = String(row.clues).split("|").map((s) => s.trim()).filter(Boolean);
     batch.set(ref, docData);
     opCount++;
     created++;

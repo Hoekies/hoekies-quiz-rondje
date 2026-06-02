@@ -11,8 +11,11 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { scramble } from "@/lib/text";
 
 const LABEL = ["A", "B", "C", "D"];
+// Vaste onthul-volgorde voor de puzzelafbeelding (4x4), gelijk aan de speler
+const TILE_ORDER = [5, 10, 0, 15, 3, 12, 6, 9, 1, 14, 7, 8, 4, 11, 2, 13];
 const BLOCK_CLASS = [
   "answer-block--a",
   "answer-block--b",
@@ -47,6 +50,8 @@ interface QuestionDoc {
   is_double_points: boolean;
   video_start?: number;
   video_muted?: boolean;
+  image_options?: string[];
+  clues?: string[];
 }
 
 interface PlayerDoc {
@@ -330,8 +335,76 @@ export default function PresentatiePage() {
           </div>
         )}
 
+        {/* Zoom-reveal */}
+        {question.type === "zoom_reveal" && question.media_url && (
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+            <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${1 + 2.5 * Math.max(0, Math.min(1, timeLeft / (question.time_limit_seconds || 1)))})`, transition: "transform 0.3s linear" }} />
+            </div>
+          </div>
+        )}
+
+        {/* Tile-reveal (puzzel) */}
+        {question.type === "tile_reveal" && question.media_url && (() => {
+          const shown = Math.floor((1 - Math.max(0, Math.min(1, timeLeft / (question.time_limit_seconds || 1)))) * 16);
+          return (
+            <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+              <div style={{ position: "relative", height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(4, 1fr)" }}>
+                  {Array.from({ length: 16 }, (_, t) => (
+                    <div key={t} style={{ background: TILE_ORDER.indexOf(t) >= shown ? "#0b1626" : "transparent", transition: "background 0.3s ease" }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Vier foto's, één antwoord */}
+        {question.type === "four_pics" && question.image_options && (
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+            <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              {question.image_options.slice(0, 4).map((url, i) => (
+                <div key={i} style={{ borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Anagram */}
+        {question.type === "anagram" && question.correct_answer && (
+          <div className="flex justify-center items-center">
+            <p className="text-yellow-300 font-black text-center" style={{ letterSpacing: "0.2em", fontSize: "clamp(2.5rem, 9vw, 5rem)" }}>
+              {scramble(question.correct_answer, question.id)}
+            </p>
+          </div>
+        )}
+
+        {/* Wie ben ik? — hints één voor één */}
+        {question.type === "clues" && (() => {
+          const list = question.clues ?? [];
+          const lim = question.time_limit_seconds || 1;
+          const elapsed = lim - timeLeft;
+          const visible = Math.min(list.length, 1 + Math.floor((elapsed / lim) * list.length));
+          return (
+            <div className="flex-1 min-h-0 flex flex-col justify-center gap-3 px-8">
+              {list.slice(0, visible).map((c, i) => (
+                <div key={i} className="rounded-xl px-6 py-4" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}>
+                  <p className="text-white text-3xl"><span className="text-cyan-300 font-black">{i + 1}.</span> {c}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Question text */}
-        <div className={`${(question.type === "image" || question.type === "blur_reveal" || question.type === "video" || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+        <div className={`${(["image", "blur_reveal", "video", "zoom_reveal", "tile_reveal", "four_pics", "clues"].includes(question.type) || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p
             className="text-white font-black text-4xl text-center leading-tight"
             style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
@@ -364,7 +437,7 @@ export default function PresentatiePage() {
         <p className="text-white/50 text-xl text-center font-bold">Antwoord</p>
 
         {/* Afbeelding (scherp) bij reveal — vierkant */}
-        {(question.type === "image" || question.type === "blur_reveal" || question.type === "match") && question.media_url && (
+        {(question.type === "image" || question.type === "blur_reveal" || question.type === "match" || question.type === "zoom_reveal" || question.type === "tile_reveal") && question.media_url && (
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -373,7 +446,21 @@ export default function PresentatiePage() {
           </div>
         )}
 
-        <div className={`${(question.type === "image" || question.type === "blur_reveal" || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+        {/* Vier foto's bij reveal — 2x2 */}
+        {question.type === "four_pics" && question.image_options && (
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+            <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              {question.image_options.slice(0, 4).map((url, i) => (
+                <div key={i} style={{ borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className={`${(["image", "blur_reveal", "zoom_reveal", "tile_reveal", "four_pics"].includes(question.type) || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p className="text-white font-black text-3xl text-center leading-tight">
             {question.question_text}
           </p>
@@ -391,7 +478,8 @@ export default function PresentatiePage() {
 
         <div className="grid grid-cols-2 gap-4">
           {options.map((opt: string, i: number) => {
-            const isCorrect = opt === question.correct_answer;
+            const correctSet = (() => { try { const a = JSON.parse(question.correct_answer); return Array.isArray(a) ? a : null; } catch { return null; } })();
+            const isCorrect = correctSet ? correctSet.includes(opt) : opt === question.correct_answer;
             const showDist = session.distribution && session.distribution_qid === session.current_question_id;
             const total = session.distribution_total || 1;
             const cnt = session.distribution?.[opt] ?? 0;

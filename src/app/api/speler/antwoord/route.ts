@@ -100,8 +100,8 @@ export async function POST(req: NextRequest) {
     estimate_max?: number;
   };
 
-  // Open vraag: los type "open" óf media-vraag met answer_mode "open"
-  const isOpen = question.type === "open" || question.answer_mode === "open";
+  // Open vraag: los type "open", de tekst-types, óf media-vraag met answer_mode "open"
+  const isOpen = ["open", "anagram", "gatentekst", "four_pics", "clues"].includes(question.type) || question.answer_mode === "open";
 
   // Genormaliseerde vergelijking voor open vragen
   const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
   let points = 0;
 
   let matchCorrect = false;
+  let multiCorrect = false;
   if (question.type === "estimate") {
     const correct = parseFloat(question.correct_answer);
     const given = parseFloat(answer);
@@ -139,6 +140,17 @@ export async function POST(req: NextRequest) {
       points = Math.floor(question.base_points / 10) + Math.floor(50 * ratio);
       if (question.is_double_points) points *= 2;
     }
+  } else if (question.type === "multi_select") {
+    try {
+      const given = (JSON.parse(answer) as string[]).map((s) => String(s).trim()).sort();
+      const corr = (JSON.parse(question.correct_answer) as string[]).map((s) => String(s).trim()).sort();
+      multiCorrect = given.length === corr.length && given.every((v, i) => v === corr[i]);
+    } catch { multiCorrect = false; }
+    if (multiCorrect) {
+      const ratio = Math.max(0, 1 - response_time_ms / (question.time_limit_seconds * 1000));
+      points = Math.floor(question.base_points / 10) + Math.floor(50 * ratio);
+      if (question.is_double_points) points *= 2;
+    }
   } else if (isCorrect) {
     const ratio = Math.max(
       0,
@@ -151,7 +163,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Write answer doc
-  const isCorrectForRecord = question.type === "estimate" ? points > 0 : question.type === "match" ? matchCorrect : isCorrect;
+  const isCorrectForRecord = question.type === "estimate" ? points > 0 : question.type === "match" ? matchCorrect : question.type === "multi_select" ? multiCorrect : isCorrect;
 
   await adminDb
     .collection("sessions")

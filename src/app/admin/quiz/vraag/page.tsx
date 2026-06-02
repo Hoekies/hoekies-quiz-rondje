@@ -6,6 +6,7 @@ import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { compressImage, uploadMedia } from "@/lib/media";
+import { scramble } from "@/lib/text";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Suspense } from "react";
@@ -54,6 +55,13 @@ interface QuestionForm {
   match_a: string; // welk right-index hoort bij left_1 (0/1/2)
   match_b: string;
   match_c: string;
+  // multi_select — welke optie-indices juist zijn (bv. "0,2")
+  multi_idx: string;
+  // clues — tot 4 hints
+  clue_1: string;
+  clue_2: string;
+  clue_3: string;
+  clue_4: string;
 }
 
 const DEFAULT_FORM: QuestionForm = {
@@ -94,6 +102,11 @@ const DEFAULT_FORM: QuestionForm = {
   match_a: "0",
   match_b: "1",
   match_c: "2",
+  multi_idx: "",
+  clue_1: "",
+  clue_2: "",
+  clue_3: "",
+  clue_4: "",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -104,6 +117,13 @@ const TYPE_LABELS: Record<string, string> = {
   video: "Video als vraag",
   estimate: "Schatting (slider)",
   match: "Koppelen (A→1, B→2, C→3)",
+  multi_select: "Meerdere juiste antwoorden",
+  anagram: "Anagram (ontwar het woord)",
+  gatentekst: "Gatentekst (vul aan)",
+  clues: "Wie ben ik? (hints)",
+  zoom_reveal: "Inzoomende afbeelding",
+  tile_reveal: "Puzzelafbeelding",
+  four_pics: "Vier foto's, één antwoord",
 };
 
 function VraagForm() {
@@ -173,6 +193,11 @@ function VraagForm() {
           match_a: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[0] ?? "0"); } catch { return "0"; } })(),
           match_b: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[1] ?? "1"); } catch { return "1"; } })(),
           match_c: (() => { try { return String(JSON.parse(d.correct_answer ?? "{}")[2] ?? "2"); } catch { return "2"; } })(),
+          multi_idx: (() => { if (d.type !== "multi_select") return ""; try { const set: string[] = JSON.parse(d.correct_answer ?? "[]"); return opts.map((o, i) => (set.includes(o) ? String(i) : "")).filter(Boolean).join(","); } catch { return ""; } })(),
+          clue_1: (d.clues ?? [])[0] ?? "",
+          clue_2: (d.clues ?? [])[1] ?? "",
+          clue_3: (d.clues ?? [])[2] ?? "",
+          clue_4: (d.clues ?? [])[3] ?? "",
         });
       }
       setLoading(false);
@@ -289,7 +314,7 @@ function VraagForm() {
     if (!user) { router.push("/admin/login"); return; }
     const token = await user.getIdToken();
 
-    const mediaTypeUsesToggle = ["image", "blur_reveal", "video", "audio"].includes(form.type);
+    const mediaTypeUsesToggle = ["image", "blur_reveal", "video", "audio", "zoom_reveal", "tile_reveal"].includes(form.type);
     let options = activeOptions();
     if (mediaTypeUsesToggle && form.answer_mode === "true_false") {
       options = ["Waar", "Niet waar"];
@@ -303,7 +328,7 @@ function VraagForm() {
       quiz_id: quizId,
       question_text: form.question_text.trim(),
       type: form.type,
-      options: ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal"].includes(form.type) && options.length > 0 ? options : null,
+      options: ["multiple_choice", "true_false", "image", "audio", "video", "blur_reveal", "zoom_reveal", "tile_reveal", "multi_select"].includes(form.type) && options.length > 0 ? options : null,
       correct_answer: form.correct_answer,
       time_limit_seconds: form.time_limit_seconds,
       base_points: form.base_points,
@@ -340,6 +365,19 @@ function VraagForm() {
       payload.correct_answer = JSON.stringify({ 0: Number(form.match_a), 1: Number(form.match_b), 2: Number(form.match_c) });
       payload.options = null;
     }
+    if (form.type === "multi_select") {
+      const idxs = form.multi_idx.split(",").map((s) => Number(s)).filter((n) => !Number.isNaN(n));
+      const correctVals = idxs.map((i) => options[i]).filter(Boolean);
+      payload.correct_answer = JSON.stringify(correctVals.slice().sort());
+    }
+    if (form.type === "four_pics") {
+      payload.image_options = imageOptions;
+      payload.options = null;
+    }
+    if (form.type === "clues") {
+      payload.clues = [form.clue_1, form.clue_2, form.clue_3, form.clue_4].filter(Boolean);
+      payload.options = null;
+    }
 
     const url = isEdit ? `/api/host/vragen/${questionId}` : "/api/host/vragen";
     const method = isEdit ? "PATCH" : "POST";
@@ -362,7 +400,7 @@ function VraagForm() {
   if (loading) return null;
 
   const isTrueFalse = form.type === "true_false";
-  const usesToggle = ["image", "blur_reveal", "video", "audio"].includes(form.type);
+  const usesToggle = ["image", "blur_reveal", "video", "audio", "zoom_reveal", "tile_reveal"].includes(form.type);
   const toggleIsTF = usesToggle && form.answer_mode === "true_false";
   // 4-keuze tekstvelden tonen: zuivere keuze-typen + media-typen in 4-keuze modus
   const hasTextOptions = ["multiple_choice", "true_false"].includes(form.type) || (usesToggle && form.answer_mode === "multiple_choice");
@@ -390,8 +428,8 @@ function VraagForm() {
             </select>
           </div>
 
-          {/* Afbeelding / vervagend beeld / koppelvraag: upload + crop + compress, of URL */}
-          {(form.type === "image" || form.type === "blur_reveal" || form.type === "match") && (
+          {/* Afbeelding / vervagend beeld / koppelvraag / zoom / puzzel: upload + crop + compress, of URL */}
+          {(form.type === "image" || form.type === "blur_reveal" || form.type === "match" || form.type === "zoom_reveal" || form.type === "tile_reveal") && (
             <div style={F}>
               <label style={L}>Afbeelding{form.type === "match" ? " (optioneel)" : ""}</label>
               {form.media_url && !cropSrc && (
@@ -588,14 +626,90 @@ function VraagForm() {
             </>
           )}
 
-          {/* Open vraag — vrij typen (los type of media-antwoordtype) */}
-          {(form.type === "open" || (usesToggle && form.answer_mode === "open")) && (
+          {/* Open vraag — vrij typen (los type, media-antwoordtype, anagram of gatentekst) */}
+          {(form.type === "open" || form.type === "anagram" || form.type === "gatentekst" || (usesToggle && form.answer_mode === "open")) && (
             <div style={F}>
-              <label style={L}>Correct antwoord</label>
+              <label style={L}>Correct antwoord{form.type === "anagram" ? " (het woord dat door elkaar geschud wordt)" : ""}</label>
               <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Het juiste antwoord" className="glass-input" />
+              {form.type === "gatentekst" && <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Gebruik <strong>___</strong> in de vraagtekst voor het gat.</span>}
+              {form.type === "anagram" && form.correct_answer && <span style={{ color: "var(--cyan)", fontSize: "0.82rem" }}>Speler ziet bijv.: <strong>{scramble(form.correct_answer, "preview")}</strong></span>}
               <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Speler typt zelf. Hoofdletters/spaties tellen niet mee.</span>
             </div>
           )}
+
+          {/* Wie ben ik? — hints + correct antwoord */}
+          {form.type === "clues" && (
+            <>
+              <div style={F}>
+                <label style={L}>Hints (verschijnen één voor één)</label>
+                {(["clue_1", "clue_2", "clue_3", "clue_4"] as const).map((k, i) => (
+                  <input key={k} value={form[k]} onChange={(e) => set(k, e.target.value)}
+                    placeholder={`Hint ${i + 1}${i < 2 ? "" : " (optioneel)"}`} required={i < 2} className="glass-input" />
+                ))}
+              </div>
+              <div style={F}>
+                <label style={L}>Correct antwoord</label>
+                <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Wie of wat is het?" className="glass-input" />
+                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Speler typt zelf. Hoofdletters/spaties tellen niet mee.</span>
+              </div>
+            </>
+          )}
+
+          {/* Vier foto's, één antwoord */}
+          {form.type === "four_pics" && (
+            <>
+              <div style={F}>
+                <label style={L}>Vier afbeeldingen (URL's)</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
+                    <input key={key} type="url" value={form[key]} onChange={(e) => set(key, e.target.value)}
+                      placeholder={`Afbeelding ${i + 1} URL`} required className="glass-input" />
+                  ))}
+                </div>
+              </div>
+              <div style={F}>
+                <label style={L}>Correct antwoord (het verbindende woord)</label>
+                <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Het woord dat de 4 foto's verbindt" className="glass-input" />
+                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Speler typt zelf. Hoofdletters/spaties tellen niet mee.</span>
+              </div>
+            </>
+          )}
+
+          {/* Meerdere juiste antwoorden — vink álle juiste aan */}
+          {form.type === "multi_select" && (() => {
+            const selected = form.multi_idx.split(",").filter(Boolean);
+            const toggle = (i: number) => {
+              const s = new Set(selected);
+              const key = String(i);
+              if (s.has(key)) s.delete(key); else s.add(key);
+              set("multi_idx", [...s].sort().join(","));
+            };
+            return (
+              <div style={F}>
+                <label style={L}>Antwoordopties — vink álle juiste antwoorden aan</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => {
+                    const val = form[key];
+                    const isCorrect = !!val && selected.includes(String(i));
+                    return (
+                      <div key={key} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <button type="button" title="Markeer als juist antwoord" onClick={() => { if (val) toggle(i); }}
+                          style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "8px", cursor: val ? "pointer" : "not-allowed",
+                            border: `2px solid ${isCorrect ? "var(--green)" : "rgba(255,255,255,0.2)"}`,
+                            background: isCorrect ? "var(--green)" : "transparent",
+                            color: "#fff", fontWeight: 900, fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {isCorrect ? "✓" : ""}
+                        </button>
+                        <input value={val} onChange={(e) => set(key, e.target.value)}
+                          placeholder={`Optie ${["A", "B", "C", "D"][i]}`} required={i < 2} className="glass-input" style={{ flex: 1 }} />
+                      </div>
+                    );
+                  })}
+                </div>
+                {selected.length === 0 && <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Vink minstens één juist antwoord aan (meerdere mag).</span>}
+              </div>
+            );
+          })()}
 
           {/* Match koppelen */}
           {form.type === "match" && (

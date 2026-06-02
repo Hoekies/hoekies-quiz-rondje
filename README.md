@@ -21,8 +21,8 @@ Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live qu
 ## Functies
 
 - **Real-time synchronisatie** — vragen verschijnen direct op alle telefoons via Firestore listeners
-- **7 vraagtypen** — afbeelding, audio (raad het lied), vervagend beeld, afbeelding-als-antwoord, video, schatting (slider) en koppelen (match)
-- **Flexibel antwoordtype** — per afbeelding-, audio-, beeld- of videovraag kies je het antwoordtype: 4 keuzes, waar/niet-waar of open vraag (vrij typen)
+- **14 vraagtypen** — afbeelding, audio (raad het lied), vervagend beeld, afbeelding-als-antwoord, video, schatting (slider), koppelen (match), anagram, gatentekst, "wie ben ik?" (hints), meerdere juiste antwoorden, inzoomende afbeelding, puzzelafbeelding en vier-foto's-één-antwoord
+- **Flexibel antwoordtype** — per afbeelding-, audio-, beeld-, video-, inzoom- of puzzelvraag kies je het antwoordtype: 4 keuzes, waar/niet-waar of open vraag (vrij typen)
 - **Juiste antwoord aanvinken** — markeer het correcte antwoord met een groen vinkje naast de optie
 - **Video met of zonder geluid** — per videovraag instelbaar; de video speelt op het presentatiescherm, op de telefoon zie je "kijk naar het grote scherm"
 - **Afteltimer & geluidseffecten** — synchrone countdown per vraag plus WebAudio-effecten (tik, goed/fout, fanfare)
