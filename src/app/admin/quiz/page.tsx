@@ -390,7 +390,7 @@ export default function QuizBeheerPage() {
         {/* Standaard quizzen */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
           <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>Standaard quizzen</p>
-          <p style={{ color: "var(--text)", fontSize: "0.85rem" }}>Laad 3 kant-en-klare quizzen: Sport, Algemene Kennis en Muziek (alle jaren 90/2000, 20 vragen elk).</p>
+          <p style={{ color: "var(--text)", fontSize: "0.85rem" }}>Laad 5 kant-en-klare rondes: Sport, Muziek, Algemeen, Weer en TV (5 vragen elk, antwoorden in willekeurige volgorde).</p>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button onClick={handleSeed}
               style={{ fontSize: "0.88rem", fontWeight: 700, padding: "10px 18px", borderRadius: "10px", border: "1px solid rgba(13,180,171,0.35)", background: "rgba(13,180,171,0.07)", color: "var(--cyan)", cursor: "pointer" }}>

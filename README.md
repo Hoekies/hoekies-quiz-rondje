@@ -32,7 +32,7 @@ Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live qu
 - **Sessiebeheer** — meerdere sessies in concept, één tegelijk actief, activeren/deactiveren via toggle
 - **QR-code & WhatsApp** — spelers uitnodigen via QR of een instelbaar WhatsApp-bericht
 - **Thema** — eigen vierkant logo (met crop) en achtergrondafbeelding uploaden
-- **Standaard quizzen** — 3 kant-en-klare quizzen (Sport, Algemene Kennis, Muziek — jaren 90/2000)
+- **Standaard quizzen** — 5 kant-en-klare rondes (Sport, Muziek, Algemeen, Weer, TV — 5 vragen elk, antwoorden in willekeurige volgorde)
 - **CSV import/export** — vragen in bulk beheren via Excel
 - **Live leaderboard** op het admin-dashboard, plus presentatiescherm voor een beamer
 - **Winnaarsscherm** met confetti
