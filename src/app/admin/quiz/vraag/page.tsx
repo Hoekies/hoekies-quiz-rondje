@@ -126,6 +126,14 @@ const TYPE_LABELS: Record<string, string> = {
   four_pics: "Vier foto's, één antwoord",
 };
 
+// Zet een geplakte afbeeldings-URL om naar een direct bruikbare link.
+// Wikipedia/Wikimedia "File:"-pagina's (HTML) → Special:FilePath (de echte afbeelding).
+function normalizeImageUrl(url: string): string {
+  const m = url.match(/^(https?:\/\/[^/]*\.?wik(?:ipedia|imedia|tionary)\.org)\/wiki\/(?:File|Bestand|Image):(.+)$/i);
+  if (m) return `${m[1]}/wiki/Special:FilePath/${m[2].split("#")[0]}`;
+  return url.trim();
+}
+
 function VraagForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -438,7 +446,7 @@ function VraagForm() {
               )}
               <input type="file" accept="image/*" onChange={onImageFile} className="glass-input" style={{ padding: "8px" }} />
               <label style={{ ...L, marginTop: "4px" }}>Of plak een afbeelding-URL</label>
-              <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)} placeholder="https://..." className="glass-input" />
+              <input type="url" value={form.media_url} onChange={(e) => set("media_url", normalizeImageUrl(e.target.value))} placeholder="https://..." className="glass-input" />
               {cropSrc && (
                 <div style={{ ...F, gap: "10px" }}>
                   <label style={L}>Zoom</label>
@@ -586,7 +594,7 @@ function VraagForm() {
               <label style={L}>Afbeelding URLs als antwoorden</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                 {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                  <input key={key} type="url" value={form[key]} onChange={(e) => set(key, e.target.value)}
+                  <input key={key} type="url" value={form[key]} onChange={(e) => set(key, normalizeImageUrl(e.target.value))}
                     placeholder={`Afbeelding ${["A","B","C","D"][i]} URL`} required={i < 2} className="glass-input" />
                 ))}
               </div>
@@ -662,7 +670,7 @@ function VraagForm() {
                 <label style={L}>Vier afbeeldingen (URL's)</label>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                    <input key={key} type="url" value={form[key]} onChange={(e) => set(key, e.target.value)}
+                    <input key={key} type="url" value={form[key]} onChange={(e) => set(key, normalizeImageUrl(e.target.value))}
                       placeholder={`Afbeelding ${i + 1} URL`} required className="glass-input" />
                   ))}
                 </div>
