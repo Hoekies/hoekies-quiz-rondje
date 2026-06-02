@@ -70,6 +70,7 @@ type Step =
   | "inactive"
   | "lobby"
   | "laatste_vraag"
+  | "finale"
   | "ronde_klaar"
   | "question"
   | "answered"
@@ -430,7 +431,7 @@ export default function SpeelPage() {
         setStep("ronde_klaar");
         break;
       case "finale":
-        setStep("lobby");
+        setStep("finale");
         break;
       case "paused":
         setStep("paused");
@@ -689,6 +690,20 @@ export default function SpeelPage() {
               </button>
             </form>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── FINALE / BONUSVRAAG ──────────────────────────────────────────────────
+  if (step === "finale") {
+    return (
+      <div className="speler-shell" style={themeBg ? { backgroundImage: `linear-gradient(rgba(6,14,26,0.65), rgba(6,14,26,0.78)), url(${themeBg})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "16px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
+          <p style={{ color: "var(--muted)", fontWeight: 800, fontSize: "clamp(1rem, 4vw, 1.3rem)", letterSpacing: "0.12em" }}>BONUSVRAAG</p>
+          <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(4rem, 22vw, 7rem)", lineHeight: 1, textShadow: "0 0 30px rgba(255,217,59,0.5)" }}>×2</p>
+          <p style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1rem, 4.5vw, 1.4rem)", textAlign: "center" }}>🔥 Dubbele punten!</p>
+          <p style={{ color: "var(--muted)", fontSize: "0.9rem", textAlign: "center" }}>Maak je klaar…</p>
         </div>
       </div>
     );
