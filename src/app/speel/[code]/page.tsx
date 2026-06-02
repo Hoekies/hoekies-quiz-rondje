@@ -397,6 +397,7 @@ export default function SpeelPage() {
   }, [code, playerId]);
 
   // Subscribe to players — keeps playerCount, ranks and myScore always fresh
+  const wasPresentRef = useRef(false);
   useEffect(() => {
     const unsub = onSnapshot(
       collection(db, "sessions", code, "players"),
@@ -410,7 +411,19 @@ export default function SpeelPage() {
         setRanks(ps.slice(0, 3));
         if (playerId) {
           const me = ps.find((p) => p.id === playerId);
-          if (me) setMyScore(me.score);
+          if (me) {
+            setMyScore(me.score);
+            wasPresentRef.current = true;
+          } else if (wasPresentRef.current) {
+            // We waren ingelogd maar zijn uit de sessie verwijderd (reset/kick) → uitloggen
+            wasPresentRef.current = false;
+            localStorage.removeItem(`quiz_player_id_${code}`);
+            setPlayerId(null);
+            setStep("join");
+            setSelectedAnswer(null);
+            setAnswerResult(null);
+            setMyScore(0);
+          }
         }
       }
     );
