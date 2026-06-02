@@ -270,6 +270,27 @@ export default function SpeelPage() {
       if (!snap.exists()) return;
       const data = snap.data() as SessionDoc;
       setSession(data);
+
+      // Haal de open vraag meteen direct op vanuit de session-callback (zelfde
+      // bewezen aanpak als de presentatiepagina). De bulk-getDocs + lazy fallback
+      // hieronder blijven als extra vangnet, maar dit garandeert dat het
+      // vraagscherm verschijnt zodra de host een vraag opent — ook als de bulk
+      // load (nog) leeg is of een long-poll hikt.
+      if (data.current_question_id && data.quiz_id) {
+        const qid = data.current_question_id;
+        const quizId = data.quiz_id;
+        getDoc(doc(db, "quizzes", quizId, "questions", qid))
+          .then((qSnap) => {
+            if (qSnap.exists()) {
+              setQuestionsMap((prev) =>
+                prev[qid]
+                  ? prev
+                  : { ...prev, [qid]: { id: qSnap.id, ...(qSnap.data() as Omit<QuestionDoc, "id">) } }
+              );
+            }
+          })
+          .catch(() => {});
+      }
     });
     return unsub;
   }, [code]);
@@ -317,6 +338,12 @@ export default function SpeelPage() {
     if (fetchingQidRef.current.has(qid)) return; // al onderweg
     fetchingQidRef.current.add(qid);
     let cancelled = false;
+    // Blijf doorproberen zolang de vraag openstaat maar nog niet beschikbaar is.
+    // Belangrijk: de guard (fetchingQidRef) wordt vrijgegeven zodra een poging
+    // mislukt of de vraag (nog) niet bestaat, zodat een volgende render/snapshot
+    // het opnieuw probeert. Anders bleef de speler na één mislukte fetch voorgoed
+    // op "Vraag laden…" hangen (de regressie).
+    const release = () => { fetchingQidRef.current.delete(qid); };
     const load = (attempt: number) => {
       getDoc(doc(db, "quizzes", quizId, "questions", qid))
         .then((snap) => {
@@ -327,17 +354,23 @@ export default function SpeelPage() {
                 ? prev
                 : { ...prev, [qid]: { id: snap.id, ...(snap.data() as Omit<QuestionDoc, "id">) } }
             );
-          } else if (attempt < 4) {
-            setTimeout(() => load(attempt + 1), 500 * (attempt + 1));
+          } else if (attempt < 8) {
+            setTimeout(() => load(attempt + 1), Math.min(2000, 400 * (attempt + 1)));
+          } else {
+            release(); // geef op voor nu, maar laat een latere render opnieuw proberen
           }
         })
         .catch(() => {
-          if (cancelled || attempt >= 4) return;
-          setTimeout(() => load(attempt + 1), 500 * (attempt + 1));
+          if (cancelled) return;
+          if (attempt < 8) {
+            setTimeout(() => load(attempt + 1), Math.min(2000, 400 * (attempt + 1)));
+          } else {
+            release();
+          }
         });
     };
     load(0);
-    return () => { cancelled = true; };
+    return () => { cancelled = true; release(); };
   }, [session?.current_question_id, session?.quiz_id, questionsMap]);
 
   // Subscribe to all answers for this player (fast, parallel with session update)
