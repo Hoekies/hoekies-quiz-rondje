@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1000);
+    return () => clearTimeout(t);
+  }, []);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -19,6 +25,21 @@ export default function LandingPage() {
     setLoading(true);
     setError("");
     router.push(`/speel/${trimmed}`);
+  }
+
+  if (showSplash) {
+    return (
+      <main className="h-dvh flex flex-col items-center justify-center px-5 overflow-hidden" style={{ background: "var(--game-gradient)" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px", width: "100%", maxWidth: "300px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-vierkant.png" alt="Hoekies Quiz Rondje" style={{ width: "clamp(140px, 50vw, 200px)", height: "clamp(140px, 50vw, 200px)", objectFit: "contain", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ width: "100%", height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: "3px", background: "var(--cyan)", animation: "splashbar 1s linear forwards" }} />
+          </div>
+        </div>
+        <style>{`@keyframes splashbar { from { width: 0% } to { width: 100% } }`}</style>
+      </main>
+    );
   }
 
   return (
