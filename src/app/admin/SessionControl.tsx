@@ -295,17 +295,35 @@ export default function SessionControl({ code }: { code: string }) {
     setActionLoading(false);
   }
 
+  // Start een ronde: wis eerst eventuele oude antwoorden van deze vragen (zodat
+  // spelers opnieuw kunnen kiezen en de score niet dubbel telt), dan vraag openen.
+  async function startRound() {
+    const order = [...questionOrder];
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        await fetch(`/api/host/sessie/${code}/clear-round`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ question_ids: order }),
+        });
+      }
+    } catch { /* niet blokkeren */ }
+    patchSession("question_open", {
+      current_question_id: order[0] ?? null,
+      question_index: 0,
+      question_opened_at: serverTimestamp(),
+    });
+  }
+
   function handleAction() {
     if (!session) return;
     switch (session.state) {
       case "lobby":
       case "ronde_intro":
       case "ronde_klaar":
-        patchSession("question_open", {
-          current_question_id: questionOrder[0] ?? null,
-          question_index: 0,
-          question_opened_at: serverTimestamp(),
-        });
+        startRound();
         break;
       case "question_open":
         patchSession("answer_reveal");
