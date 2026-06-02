@@ -848,6 +848,13 @@ export default function SpeelPage() {
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
+          {/* match — optionele afbeelding bij de vraag, vierkant */}
+          {question.type === "match" && question.media_url && (
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(70vw, 26vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          )}
           {/* audio: verborgen, speelt segment automatisch */}
           {question.type === "audio" && question.media_url && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", flexShrink: 0 }}>

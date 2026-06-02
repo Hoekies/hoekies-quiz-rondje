@@ -58,7 +58,7 @@ interface QuestionForm {
 
 const DEFAULT_FORM: QuestionForm = {
   question_text: "",
-  type: "multiple_choice",
+  type: "image",
   option_a: "",
   option_b: "",
   option_c: "",
@@ -97,8 +97,6 @@ const DEFAULT_FORM: QuestionForm = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  multiple_choice: "Multiple choice",
-  true_false: "Waar / Niet waar",
   image: "Afbeelding als vraag",
   audio: "Audio / raad het lied",
   blur_reveal: "Vervagend beeld",
@@ -291,7 +289,7 @@ function VraagForm() {
     if (!user) { router.push("/admin/login"); return; }
     const token = await user.getIdToken();
 
-    const mediaTypeUsesToggle = ["image", "blur_reveal", "video"].includes(form.type);
+    const mediaTypeUsesToggle = ["image", "blur_reveal", "video", "audio"].includes(form.type);
     let options = activeOptions();
     if (mediaTypeUsesToggle && form.answer_mode === "true_false") {
       options = ["Waar", "Niet waar"];
@@ -364,10 +362,10 @@ function VraagForm() {
   if (loading) return null;
 
   const isTrueFalse = form.type === "true_false";
-  const usesToggle = ["image", "blur_reveal", "video"].includes(form.type);
+  const usesToggle = ["image", "blur_reveal", "video", "audio"].includes(form.type);
   const toggleIsTF = usesToggle && form.answer_mode === "true_false";
   // 4-keuze tekstvelden tonen: zuivere keuze-typen + media-typen in 4-keuze modus
-  const hasTextOptions = ["multiple_choice", "true_false", "audio"].includes(form.type) || (usesToggle && form.answer_mode === "multiple_choice");
+  const hasTextOptions = ["multiple_choice", "true_false"].includes(form.type) || (usesToggle && form.answer_mode === "multiple_choice");
   const isMatch = form.type === "match";
   const F = { display: "flex", flexDirection: "column" as const, gap: "6px" };
   const L = { color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700 };
@@ -392,10 +390,10 @@ function VraagForm() {
             </select>
           </div>
 
-          {/* Afbeelding / vervagend beeld: upload + crop + compress, of URL */}
-          {(form.type === "image" || form.type === "blur_reveal") && (
+          {/* Afbeelding / vervagend beeld / koppelvraag: upload + crop + compress, of URL */}
+          {(form.type === "image" || form.type === "blur_reveal" || form.type === "match") && (
             <div style={F}>
-              <label style={L}>Afbeelding</label>
+              <label style={L}>Afbeelding{form.type === "match" ? " (optioneel)" : ""}</label>
               {form.media_url && !cropSrc && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={form.media_url} alt="Preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />

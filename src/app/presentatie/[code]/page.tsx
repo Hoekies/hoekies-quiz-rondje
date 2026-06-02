@@ -286,8 +286,8 @@ export default function PresentatiePage() {
           </span>
         </div>
 
-        {/* Afbeelding / vervagend beeld */}
-        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (() => {
+        {/* Afbeelding / vervagend beeld / koppelvraag */}
+        {(question.type === "image" || question.type === "blur_reveal" || question.type === "match") && question.media_url && (() => {
           const blurPx = question.type === "blur_reveal" && question.time_limit_seconds
             ? Math.max(0, (timeLeft / question.time_limit_seconds) * 26)
             : 0;
@@ -331,7 +331,7 @@ export default function PresentatiePage() {
         )}
 
         {/* Question text */}
-        <div className={`${(question.type === "image" || question.type === "blur_reveal" || question.type === "video") ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+        <div className={`${(question.type === "image" || question.type === "blur_reveal" || question.type === "video" || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p
             className="text-white font-black text-4xl text-center leading-tight"
             style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
@@ -364,7 +364,7 @@ export default function PresentatiePage() {
         <p className="text-white/50 text-xl text-center font-bold">Antwoord</p>
 
         {/* Afbeelding (scherp) bij reveal — vierkant */}
-        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (
+        {(question.type === "image" || question.type === "blur_reveal" || question.type === "match") && question.media_url && (
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -373,7 +373,7 @@ export default function PresentatiePage() {
           </div>
         )}
 
-        <div className={`${(question.type === "image" || question.type === "blur_reveal") ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+        <div className={`${(question.type === "image" || question.type === "blur_reveal" || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p className="text-white font-black text-3xl text-center leading-tight">
             {question.question_text}
           </p>
