@@ -223,17 +223,29 @@ function VraagForm() {
   }
 
   async function saveCroppedImage() {
-    if (!imgRef.current || !completedCrop || !quizId) { setError("Maak eerst een uitsnede"); return; }
+    if (!imgRef.current || !quizId) { setError("Geen afbeelding"); return; }
     setUploading(true); setError("");
     try {
-      const sx = imgRef.current.naturalWidth / imgRef.current.width;
-      const sy = imgRef.current.naturalHeight / imgRef.current.height;
-      const canvas = document.createElement("canvas");
-      canvas.width = completedCrop.width * sx;
-      canvas.height = completedCrop.height * sy;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(imgRef.current, completedCrop.x * sx, completedCrop.y * sy, completedCrop.width * sx, completedCrop.height * sy, 0, 0, canvas.width, canvas.height);
-      const blob: Blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/jpeg", 0.9));
+      let blob: Blob;
+      if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0) {
+        // Uitsnede gemaakt → croppen
+        const sx = imgRef.current.naturalWidth / imgRef.current.width;
+        const sy = imgRef.current.naturalHeight / imgRef.current.height;
+        const canvas = document.createElement("canvas");
+        canvas.width = completedCrop.width * sx;
+        canvas.height = completedCrop.height * sy;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(imgRef.current, completedCrop.x * sx, completedCrop.y * sy, completedCrop.width * sx, completedCrop.height * sy, 0, 0, canvas.width, canvas.height);
+        blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/jpeg", 0.9));
+      } else {
+        // Geen uitsnede → hele afbeelding gebruiken
+        const canvas = document.createElement("canvas");
+        canvas.width = imgRef.current.naturalWidth;
+        canvas.height = imgRef.current.naturalHeight;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(imgRef.current, 0, 0);
+        blob = await new Promise((r) => canvas.toBlob((b) => r(b!), "image/jpeg", 0.9));
+      }
       const compressed = await compressImage(blob, 1280, 0.82);
       const url = await uploadMedia(compressed, "image");
       setForm((f) => ({ ...f, media_url: url }));
@@ -373,7 +385,7 @@ function VraagForm() {
             </select>
           </div>
 
-          {/* Afbeelding / vervagend beeld: upload + crop + compress */}
+          {/* Afbeelding / vervagend beeld: upload + crop + compress, of URL */}
           {(form.type === "image" || form.type === "blur_reveal") && (
             <div style={F}>
               <label style={L}>Afbeelding</label>
@@ -382,6 +394,8 @@ function VraagForm() {
                 <img src={form.media_url} alt="Preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />
               )}
               <input type="file" accept="image/*" onChange={onImageFile} className="glass-input" style={{ padding: "8px" }} />
+              <label style={{ ...L, marginTop: "4px" }}>Of plak een afbeelding-URL</label>
+              <input type="url" value={form.media_url} onChange={(e) => set("media_url", e.target.value)} placeholder="https://..." className="glass-input" />
               {cropSrc && (
                 <div style={{ ...F, gap: "10px" }}>
                   <label style={L}>Zoom</label>
