@@ -517,14 +517,28 @@ function VraagForm() {
             </div>
           )}
 
-          {/* Waar/Onjuist correct-antwoord keuze voor media-toggle */}
+          {/* Waar/Niet waar — vink het juiste antwoord aan (groen vinkje) */}
           {toggleIsTF && (
             <div style={F}>
-              <label style={L}>Correct antwoord</label>
-              <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
-                <option value="">— Kies —</option>
-                {tfWaardes.map((w) => <option key={w} value={w}>{w}</option>)}
-              </select>
+              <label style={L}>Juiste antwoord — vink aan</label>
+              <div style={{ display: "flex", gap: "10px" }}>
+                {tfWaardes.map((w) => {
+                  const isCorrect = form.correct_answer === w;
+                  return (
+                    <button type="button" key={w} onClick={() => set("correct_answer", w)}
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px",
+                        borderRadius: "10px", cursor: "pointer", fontWeight: 700, fontSize: "1rem", color: "#fff",
+                        border: `2px solid ${isCorrect ? "var(--green)" : "rgba(255,255,255,0.2)"}`,
+                        background: isCorrect ? "rgba(34,197,94,0.15)" : "transparent" }}>
+                      <span style={{ width: "22px", height: "22px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center",
+                        border: `2px solid ${isCorrect ? "var(--green)" : "rgba(255,255,255,0.3)"}`, background: isCorrect ? "var(--green)" : "transparent", fontWeight: 900 }}>
+                        {isCorrect ? "✓" : ""}
+                      </span>
+                      {w}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -617,28 +631,34 @@ function VraagForm() {
             </div>
           )}
 
-          {/* Tekst antwoordopties (niet voor estimate en image_answer) */}
+          {/* Tekst antwoordopties met aanvinkbaar juist antwoord (groen vinkje) */}
           {hasTextOptions && (
-            <>
-              <div style={F}>
-                <label style={L}>Antwoordopties</label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => (
-                    <input key={key} value={form[key]} onChange={(e) => set(key, e.target.value)}
-                      placeholder={`Optie ${["A","B","C","D"][i]}`} disabled={isTrueFalse} required={i < 2}
-                      className="glass-input" style={isTrueFalse ? { opacity: 0.5 } : undefined} />
-                  ))}
-                </div>
+            <div style={F}>
+              <label style={L}>Antwoordopties — vink het juiste antwoord aan</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {(["option_a", "option_b", "option_c", "option_d"] as const).map((key, i) => {
+                  const val = form[key];
+                  const isCorrect = !!val && val === form.correct_answer;
+                  return (
+                    <div key={key} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button type="button" title="Markeer als juist antwoord"
+                        onClick={() => { if (val) set("correct_answer", val); }}
+                        style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "8px", cursor: val ? "pointer" : "not-allowed",
+                          border: `2px solid ${isCorrect ? "var(--green)" : "rgba(255,255,255,0.2)"}`,
+                          background: isCorrect ? "var(--green)" : "transparent",
+                          color: "#fff", fontWeight: 900, fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {isCorrect ? "✓" : ""}
+                      </button>
+                      <input value={val}
+                        onChange={(e) => { const nv = e.target.value; setForm((f) => ({ ...f, [key]: nv, ...(isCorrect ? { correct_answer: nv } : {}) })); }}
+                        placeholder={`Optie ${["A", "B", "C", "D"][i]}`} disabled={isTrueFalse} required={i < 2}
+                        className="glass-input" style={{ flex: 1, ...(isTrueFalse ? { opacity: 0.5 } : {}) }} />
+                    </div>
+                  );
+                })}
               </div>
-
-              <div style={F}>
-                <label style={L}>Correct antwoord</label>
-                <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
-                  <option value="">— Kies het juiste antwoord —</option>
-                  {activeOptions().map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
-            </>
+              {!form.correct_answer && <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Tik het groene vakje aan bij het juiste antwoord.</span>}
+            </div>
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
