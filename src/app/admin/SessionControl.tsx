@@ -155,6 +155,9 @@ export default function SessionControl({ code }: { code: string }) {
     countedQidRef.current = null;
     if (!session?.current_question_id) return;
     const qid = session.current_question_id;
+    // Alleen antwoorden meetellen die ná het openen van deze vraag zijn ingediend,
+    // zodat oude antwoorden (bv. bij het opnieuw spelen) de vraag niet meteen sluiten.
+    const openedSec = session.question_opened_at?.seconds ?? 0;
 
     const q = query(
       collection(db, "sessions", code, "answers"),
@@ -163,11 +166,15 @@ export default function SessionControl({ code }: { code: string }) {
 
     const unsub = onSnapshot(q, (snap) => {
       countedQidRef.current = qid;
-      setAnswerCount(snap.size);
-      answersValuesRef.current = snap.docs.map((d) => (d.data().answer as string) ?? "");
+      const fresh = snap.docs.filter((d) => {
+        const t = (d.data().submitted_at as { seconds?: number } | undefined)?.seconds ?? 0;
+        return openedSec === 0 || t >= openedSec - 2; // 2s marge
+      });
+      setAnswerCount(fresh.length);
+      answersValuesRef.current = fresh.map((d) => (d.data().answer as string) ?? "");
     });
     return unsub;
-  }, [code, session?.current_question_id]);
+  }, [code, session?.current_question_id, session?.question_opened_at?.seconds]);
 
   // Auto-sluit: zodra alle spelers geantwoord hebben → answer_reveal
   const autoClosedRef = useRef<string | null>(null);

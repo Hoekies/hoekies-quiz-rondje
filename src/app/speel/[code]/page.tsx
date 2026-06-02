@@ -490,9 +490,10 @@ export default function SpeelPage() {
     }
   }, [session?.state, session?.current_question_id, playerId]);
 
-  // Reset selected answer when question changes
+  // Reset selected answer + resultaat when question changes
   useEffect(() => {
     setSelectedAnswer(null);
+    setAnswerResult(null);
   }, [session?.current_question_id]);
 
   // 10-seconden aftelling bij resuming
@@ -871,8 +872,13 @@ export default function SpeelPage() {
               const idMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
               const vid = idMatch?.[1] ?? "";
               const start = question.video_start ?? 0;
-              const embed = `https://www.youtube.com/embed/${vid}?start=${start}&autoplay=1&controls=0&modestbranding=1`;
-              return <iframe src={embed} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", border: "none", flexShrink: 0 }} allow="autoplay; encrypted-media" />;
+              const embed = `https://www.youtube-nocookie.com/embed/${vid}?start=${start}&autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`;
+              // Crop top/bottom van de iframe zodat YouTube-titel en knoppen buiten beeld vallen
+              return (
+                <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", flexShrink: 0, position: "relative" }}>
+                  <iframe src={embed} style={{ position: "absolute", top: "-60px", left: "-2%", width: "104%", height: "calc(100% + 120px)", border: "none" }} allow="autoplay; encrypted-media" />
+                </div>
+              );
             }
             return <video id="clip-video" src={url} playsInline style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
           })()}
