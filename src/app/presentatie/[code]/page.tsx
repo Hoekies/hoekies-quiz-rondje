@@ -69,7 +69,15 @@ export default function PresentatiePage() {
   const [answerCount, setAnswerCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [themeLogo, setThemeLogo] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Thema-logo laden (zelfde bron als speler/leaderboard)
+  useEffect(() => {
+    getDoc(doc(db, "settings", "theme")).then((snap) => {
+      if (snap.exists() && snap.data().logo_url) setThemeLogo(snap.data().logo_url as string);
+    }).catch(() => {});
+  }, []);
 
   // Generate QR code
   useEffect(() => {
@@ -460,7 +468,7 @@ export default function PresentatiePage() {
           </div>
         )}
 
-        <div className={`${(["image", "blur_reveal", "zoom_reveal", "tile_reveal", "four_pics"].includes(question.type) || (question.type === "match" && question.media_url)) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+        <div className={`${(["image", "blur_reveal", "zoom_reveal", "tile_reveal", "four_pics"].includes(question.type) || (question.type === "match" && question.media_url) || options.length > 0) ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p className="text-white font-black text-3xl text-center leading-tight">
             {question.question_text}
           </p>
@@ -476,7 +484,7 @@ export default function PresentatiePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4" style={options.length > 0 ? { flex: 1, gridAutoRows: "1fr", minHeight: 0 } : undefined}>
           {options.map((opt: string, i: number) => {
             const correctSet = (() => { try { const a = JSON.parse(question.correct_answer); return Array.isArray(a) ? a : null; } catch { return null; } })();
             const isCorrect = correctSet ? correctSet.includes(opt) : opt === question.correct_answer;
@@ -488,11 +496,12 @@ export default function PresentatiePage() {
               <div
                 key={i}
                 className={`answer-block ${BLOCK_CLASS[i] ?? ""} ${isCorrect ? "correct" : "wrong"}`}
+                style={{ height: "100%", minHeight: "clamp(90px, 16vh, 240px)" }}
               >
-                <span className="text-2xl font-black opacity-60">{LABEL[i]}</span>
-                <span className="text-xl">{opt}</span>
-                {pct !== null && <span className="ml-auto text-xl font-black">{pct}%</span>}
-                {isCorrect && <span className="ml-2 text-2xl">✓</span>}
+                <span className="text-4xl font-black opacity-60">{LABEL[i]}</span>
+                <span className="text-3xl">{opt}</span>
+                {pct !== null && <span className="ml-auto text-3xl font-black">{pct}%</span>}
+                {isCorrect && <span className="ml-2 text-4xl">✓</span>}
               </div>
             );
           })}
@@ -528,11 +537,14 @@ export default function PresentatiePage() {
         className="min-h-screen flex flex-col items-center justify-center scanlines p-8 gap-6"
         style={{ background: "var(--game-gradient)" }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo"
+          style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain" }} />
         <h2
           className="text-white font-black text-4xl"
           style={{ textShadow: "var(--crt-glow)" }}
         >
-          {session.state === "ronde_klaar" ? "Ronde klaar 🏁" : "Tussenstand 🏆"}
+          {session.state === "ronde_klaar" ? "Ronde klaar" : "Tussenstand"}
         </h2>
         <div className="w-full max-w-xl flex flex-col gap-3">
           {top5.map((p, i) => (
@@ -599,7 +611,7 @@ export default function PresentatiePage() {
         style={{ background: "var(--game-gradient)" }}
       >
         <div className="text-center">
-          <p className="text-white/50 text-xl mb-2">RetroKampioen 🏆</p>
+          <p className="mb-2" style={{ fontSize: "clamp(4rem, 12vw, 8rem)", lineHeight: 1 }}>🏆</p>
           {winner && (
             <p
               className="text-white font-black text-6xl"
