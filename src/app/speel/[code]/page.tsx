@@ -785,7 +785,7 @@ export default function SpeelPage() {
 
           {/* image — vierkant */}
           {question.type === "image" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 60vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
@@ -803,7 +803,7 @@ export default function SpeelPage() {
           )}
           {/* blur_reveal — vierkant */}
           {question.type === "blur_reveal" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 60vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurLevel}px)`, transform: "scale(1.1)", transition: "filter 0.8s ease" }} />
             </div>
