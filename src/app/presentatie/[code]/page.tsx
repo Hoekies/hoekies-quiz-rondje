@@ -284,15 +284,26 @@ export default function PresentatiePage() {
           </span>
         </div>
 
-        {/* Image */}
-        {question.type === "image" && question.media_url && (
-          <div className="flex-shrink-0 flex justify-center">
+        {/* Afbeelding / vervagend beeld */}
+        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={question.media_url}
               alt="Afbeelding"
-              className="max-h-48 rounded-xl object-contain"
+              className="max-h-full max-w-full rounded-xl object-contain"
             />
+          </div>
+        )}
+
+        {/* Video */}
+        {question.type === "video" && question.media_url && (
+          <div className="flex-1 min-h-0 flex justify-center items-center">
+            {/youtube|youtu\.be/.test(question.media_url) ? (
+              <iframe src={`https://www.youtube.com/embed/${(question.media_url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]) ?? ""}?autoplay=1&controls=0`} className="w-full max-w-3xl aspect-video rounded-xl border-0" allow="autoplay; encrypted-media" />
+            ) : (
+              <video src={question.media_url} autoPlay className="max-h-full rounded-xl" />
+            )}
           </div>
         )}
 
@@ -305,7 +316,7 @@ export default function PresentatiePage() {
         )}
 
         {/* Question text */}
-        <div className="flex-1 flex items-center justify-center px-4">
+        <div className={`${(question.type === "image" || question.type === "blur_reveal" || question.type === "video") ? "" : "flex-1 "}flex items-center justify-center px-4`}>
           <p
             className="text-white font-black text-4xl text-center leading-tight"
             style={{ textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
@@ -337,8 +348,16 @@ export default function PresentatiePage() {
       >
         <p className="text-white/50 text-xl text-center font-bold">Antwoord</p>
 
-        <div className="flex-1 flex items-center justify-center px-4">
-          <p className="text-white font-black text-4xl text-center leading-tight">
+        {/* Afbeelding (scherp) bij reveal */}
+        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={question.media_url} alt="Afbeelding" className="max-h-full max-w-full rounded-xl object-contain" />
+          </div>
+        )}
+
+        <div className={`${(question.type === "image" || question.type === "blur_reveal") ? "" : "flex-1 "}flex items-center justify-center px-4`}>
+          <p className="text-white font-black text-3xl text-center leading-tight">
             {question.question_text}
           </p>
         </div>

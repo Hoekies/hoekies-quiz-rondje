@@ -785,8 +785,10 @@ export default function SpeelPage() {
 
           {/* image */}
           {question.type === "image" && question.media_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px" }} />
+            <div style={{ flex: 1, minHeight: "clamp(140px, 30vh, 320px)", borderRadius: "12px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            </div>
           )}
           {/* audio: verborgen, speelt segment automatisch */}
           {question.type === "audio" && question.media_url && (
