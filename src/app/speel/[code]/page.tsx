@@ -876,7 +876,7 @@ export default function SpeelPage() {
               // Crop top/bottom van de iframe zodat YouTube-titel en knoppen buiten beeld vallen
               return (
                 <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", flexShrink: 0, position: "relative" }}>
-                  <iframe src={embed} style={{ position: "absolute", top: "-16%", left: "-4%", width: "108%", height: "132%", border: "none" }} allow="autoplay; encrypted-media" />
+                  <iframe src={embed} style={{ position: "absolute", top: "-25%", left: "-9%", width: "118%", height: "150%", border: "none", pointerEvents: "none" }} allow="autoplay; encrypted-media" />
                 </div>
               );
             }
