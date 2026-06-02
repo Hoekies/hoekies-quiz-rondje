@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { compressImage, uploadMedia } from "@/lib/media";
 import { scramble } from "@/lib/text";
+import QuestionPreview, { PreviewQuestion } from "./QuestionPreview";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Suspense } from "react";
@@ -134,6 +135,41 @@ function normalizeImageUrl(url: string): string {
   return url.trim();
 }
 
+// Bouwt uit het formulier een vraag-object voor de interactieve voorbeeldweergave
+// (zelfde opties/correct_answer-logica als handleSubmit).
+function buildPreview(form: QuestionForm): PreviewQuestion {
+  const mediaToggle = ["image", "blur_reveal", "video", "audio", "zoom_reveal", "tile_reveal"].includes(form.type);
+  let options = [form.option_a, form.option_b, form.option_c, form.option_d].filter(Boolean);
+  if (mediaToggle && form.answer_mode === "true_false") options = ["Waar", "Niet waar"];
+  if (mediaToggle && form.answer_mode === "open") options = [];
+
+  let correct = form.correct_answer;
+  if (form.type === "match") correct = JSON.stringify({ 0: Number(form.match_a), 1: Number(form.match_b), 2: Number(form.match_c) });
+  if (form.type === "multi_select") {
+    const idxs = form.multi_idx.split(",").map((s) => Number(s)).filter((n) => !Number.isNaN(n));
+    correct = JSON.stringify(idxs.map((i) => options[i]).filter(Boolean).slice().sort());
+  }
+
+  return {
+    id: "preview",
+    type: form.type,
+    question_text: form.question_text,
+    options,
+    correct_answer: correct,
+    media_url: form.media_url,
+    image_options: [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d],
+    clues: [form.clue_1, form.clue_2, form.clue_3, form.clue_4].filter(Boolean),
+    answer_mode: mediaToggle ? form.answer_mode : undefined,
+    estimate_min: form.estimate_min,
+    estimate_max: form.estimate_max,
+    estimate_unit: form.estimate_unit,
+    blur_steps: form.blur_steps,
+    time_limit_seconds: form.time_limit_seconds,
+    base_points: form.base_points,
+    is_double_points: form.is_double_points,
+  };
+}
+
 function VraagForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -146,6 +182,7 @@ function VraagForm() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -799,6 +836,13 @@ function VraagForm() {
           </label>
 
           {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
+
+          <button type="button" onClick={() => setShowPreview((v) => !v)}
+            style={{ color: "var(--cyan)", background: "none", border: "1px solid rgba(13,180,171,0.4)", borderRadius: "10px", padding: "12px", cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>
+            {showPreview ? "▲ Verberg voorbeeld" : "🧪 Test deze vraag"}
+          </button>
+
+          {showPreview && <QuestionPreview q={buildPreview(form)} />}
 
           <button type="submit" disabled={saving} className="btn-game">
             {saving ? "Opslaan..." : isEdit ? "Wijzigingen opslaan" : "Vraag toevoegen"}
