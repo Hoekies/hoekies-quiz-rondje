@@ -12,7 +12,7 @@ interface SessionInfo { code: string; status: string; is_active?: boolean; }
 export default function InstellingenPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
+  const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/?code={code}\n\nGebruik code: {code}");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [sessions, setSessions] = useState<SessionInfo[]>([]);

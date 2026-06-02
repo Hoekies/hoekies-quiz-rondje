@@ -61,7 +61,7 @@ export default function SessionControl({ code }: { code: string }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
-  const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
+  const [waTemplate, setWaTemplate] = useState("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/?code={code}\n\nGebruik code: {code}");
   const [roundNames, setRoundNames] = useState<Record<string, string>>({});
 
   // Auth guard
@@ -78,7 +78,7 @@ export default function SessionControl({ code }: { code: string }) {
       if (snap.exists() && snap.data().template) {
         setWaTemplate(snap.data().template as string);
       } else {
-        setWaTemplate("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/speel/{code}\n\nGebruik code: {code}");
+        setWaTemplate("Doe mee aan Hoekies Quiz Rondje! 🎮\n\nhttps://hoekies-quiz-rondje.vercel.app/?code={code}\n\nGebruik code: {code}");
       }
     });
   }, []);

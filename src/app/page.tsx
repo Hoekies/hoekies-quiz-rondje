@@ -15,6 +15,13 @@ export default function LandingPage() {
     return () => clearTimeout(t);
   }, []);
 
+  // Code voorvullen vanuit ?code= (bijv. via WhatsApp-link)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const c = new URLSearchParams(window.location.search).get("code");
+    if (c) setCode(c.toUpperCase().slice(0, 6));
+  }, []);
+
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = code.trim().toUpperCase();
