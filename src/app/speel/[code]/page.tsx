@@ -801,8 +801,10 @@ export default function SpeelPage() {
           )}
           {/* blur_reveal */}
           {question.type === "blur_reveal" && question.media_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", flexShrink: 0, objectFit: "contain", maxHeight: "28%", borderRadius: "12px", filter: `blur(${blurLevel}px)`, transition: "filter 0.8s ease" }} />
+            <div style={{ flex: 1, minHeight: "clamp(140px, 30vh, 320px)", borderRadius: "12px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurLevel}px)`, transform: "scale(1.1)", transition: "filter 0.8s ease" }} />
+            </div>
           )}
           {/* video */}
           {question.type === "video" && question.media_url && (() => {
@@ -970,14 +972,14 @@ export default function SpeelPage() {
       <div className="speler-shell" style={bg}>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(120px, 30vw, 170px)", height: "clamp(120px, 30vw, 170px)", objectFit: "contain", flexShrink: 0 }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(120px, 30vw, 170px)", height: "clamp(120px, 30vw, 170px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(16px, 4vh, 32px)" }} />
           <p style={{ fontSize: "clamp(2rem, 9vw, 3rem)" }}>🏁</p>
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5.5vw, 1.6rem)", textAlign: "center" }}>Ronde klaar!</h2>
           <p style={{ color: "var(--muted)", fontSize: "0.9rem", textAlign: "center" }}>Wacht op de host voor de volgende ronde…</p>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`} style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
-                <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontSize: "1.65rem", width: "32px", textAlign: "center" }}>{emoji[i]}</span>
                 <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}{p.id === playerId ? " (jij)" : ""}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
@@ -1078,12 +1080,12 @@ export default function SpeelPage() {
       <div className="speler-shell" style={lbBgStyle}>
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px) clamp(16px, 3vh, 24px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0 }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(16px, 4vh, 32px)" }} />
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}>
-                <span style={{ fontSize: "1.2rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontSize: "1.8rem", width: "32px", textAlign: "center" }}>{emoji[i]}</span>
                 <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
@@ -1113,7 +1115,7 @@ export default function SpeelPage() {
         <Confetti active={true} duration={10000} />
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0 }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(16px, 4vh, 32px)" }} />
 
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.3rem, 6vw, 1.8rem)", textAlign: "center" }}>Quiz voorbij!</h2>
 
@@ -1121,7 +1123,7 @@ export default function SpeelPage() {
           {winner && (
             <div className="glass-card" style={{ width: "100%", padding: "16px 20px", textAlign: "center", borderColor: "var(--gold)", background: "rgba(255,217,59,0.08)" }}>
               <p style={{ color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, marginBottom: "6px" }}>Winnaar</p>
-              <p style={{ fontSize: "clamp(2rem, 10vw, 3rem)", lineHeight: 1 }}>🏆</p>
+              <p style={{ fontSize: "clamp(4rem, 20vw, 6rem)", lineHeight: 1 }}>🏆</p>
               <p style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.2rem, 5vw, 1.6rem)", marginTop: "4px" }}>{winner.avatar ? `${winner.avatar} ` : ""}{winner.name}</p>
               <p style={{ color: "var(--gold)", fontWeight: 900, fontSize: "clamp(1rem, 4vw, 1.3rem)" }}>{winner.score} punten</p>
             </div>
@@ -1134,7 +1136,7 @@ export default function SpeelPage() {
             {ranks.map((p, i) => (
               <div key={p.id} className={`leaderboard-row ${medals[i] ?? ""}`}
                 style={p.id === playerId ? { outline: "2px solid var(--cyan)", outlineOffset: "2px" } : {}}>
-                <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center" }}>{emoji[i]}</span>
+                <span style={{ fontSize: "1.65rem", width: "32px", textAlign: "center" }}>{emoji[i]}</span>
                 <span style={{ fontWeight: 700, flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}{p.id === playerId ? " (jij)" : ""}</span>
                 <span style={{ fontWeight: 900, color: "var(--cyan)" }}>{p.score}</span>
               </div>
@@ -1159,7 +1161,7 @@ export default function SpeelPage() {
           <p style={{ fontSize: "clamp(3rem, 14vw, 5rem)", lineHeight: 1 }}>🍺</p>
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.5rem, 7vw, 2rem)", textAlign: "center" }}>Pauze!</h2>
           <div className="glass-card" style={{ padding: "16px 28px", textAlign: "center" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Pak een drankje en wacht op de host...</p>
+            <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Er is iemand plassen, pak een drankje en wacht op de zeikers..</p>
           </div>
         </div>
       </div>

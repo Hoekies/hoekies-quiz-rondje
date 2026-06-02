@@ -315,15 +315,13 @@ export default function SessionControl({ code }: { code: string }) {
       case "answer_reveal":
         patchSession("leaderboard");
         break;
-      case "leaderboard":
-        if (session?.force_end) {
-          patchSession("endscreen");
-        } else if (isLastQuestion) {
-          // Markeer de zojuist gespeelde ronde als gespeeld
+      case "leaderboard": {
+        // "Stop na deze vraag" (force_end) of laatste vraag van de ronde → einde ronde + tussenstand
+        if (session?.force_end || isLastQuestion) {
           const justPlayedRound = currentQuestion?.round ?? (typeof selectedRound === "number" ? selectedRound : undefined);
           const played = new Set(session?.played_rounds ?? []);
           if (justPlayedRound !== undefined) played.add(justPlayedRound);
-          patchSession("ronde_klaar", { current_question_id: null, played_rounds: [...played].sort((a, b) => a - b) });
+          patchSession("ronde_klaar", { current_question_id: null, force_end: false, played_rounds: [...played].sort((a, b) => a - b) });
         } else if (nextQuestion?.is_double_points) {
           patchSession("finale", {
             current_question_id: nextQuestion.id,
@@ -343,6 +341,7 @@ export default function SessionControl({ code }: { code: string }) {
           });
         }
         break;
+      }
       case "laatste_vraag":
         patchSession("question_open", {
           current_question_id: session.current_question_id,
@@ -372,7 +371,7 @@ export default function SessionControl({ code }: { code: string }) {
   }
 
   const nextLabel = session?.force_end
-    ? "🏁 Eindscherm"
+    ? "✅ Ronde afronden"
     : isLastQuestion
     ? "✅ Ronde afronden"
     : nextQuestion?.is_double_points

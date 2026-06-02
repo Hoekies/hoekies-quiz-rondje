@@ -258,7 +258,7 @@ export default function PresentatiePage() {
     const options = question.options ?? [];
     return (
       <div
-        className="min-h-screen flex flex-col scanlines p-8 gap-6"
+        className="h-screen overflow-hidden flex flex-col scanlines px-8 pt-8 pb-14 gap-5"
         style={{ background: "var(--game-gradient)" }}
       >
         {/* Timer bar */}
@@ -332,7 +332,7 @@ export default function PresentatiePage() {
     const options = question.options ?? [];
     return (
       <div
-        className="min-h-screen flex flex-col scanlines p-8 gap-6"
+        className="h-screen overflow-hidden flex flex-col scanlines px-8 pt-8 pb-14 gap-5"
         style={{ background: "var(--game-gradient)" }}
       >
         <p className="text-white/50 text-xl text-center font-bold">Antwoord</p>
