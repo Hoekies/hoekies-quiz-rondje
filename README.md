@@ -21,7 +21,13 @@ Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live qu
 ## Functies
 
 - **Real-time synchronisatie** — vragen verschijnen direct op alle telefoons via Firestore listeners
-- **10 vraagtypen** — meerkeuze, waar/niet-waar, afbeelding, audio, video, raad-het-lied, vervagend beeld, afbeelding-als-antwoord, schatting (slider) en koppelen (match)
+- **7 vraagtypen** — afbeelding, audio (raad het lied), vervagend beeld, afbeelding-als-antwoord, video, schatting (slider) en koppelen (match)
+- **Flexibel antwoordtype** — per afbeelding-, audio-, beeld- of videovraag kies je het antwoordtype: 4 keuzes, waar/niet-waar of open vraag (vrij typen)
+- **Juiste antwoord aanvinken** — markeer het correcte antwoord met een groen vinkje naast de optie
+- **Video met of zonder geluid** — per videovraag instelbaar; de video speelt op het presentatiescherm, op de telefoon zie je "kijk naar het grote scherm"
+- **Afteltimer & geluidseffecten** — synchrone countdown per vraag plus WebAudio-effecten (tik, goed/fout, fanfare)
+- **Antwoordverdeling** — bij het tonen van het antwoord zie je per optie het percentage stemmen, met het juiste antwoord groen
+- **Speler-avatars** — kies een emoji bij het meedoen
 - **Snelheidsgebaseerde punten** — sneller antwoorden levert meer punten op, met bonusvragen voor dubbele punten
 - **Sessiebeheer** — meerdere sessies in concept, één tegelijk actief, activeren/deactiveren via toggle
 - **QR-code & WhatsApp** — spelers uitnodigen via QR of een instelbaar WhatsApp-bericht
@@ -39,9 +45,10 @@ Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live qu
 | UI | React 19, CSS (glass-morphism) |
 | Database | Firebase Firestore (regio `eur3`) |
 | Auth | Firebase Authentication |
-| Opslag | Firebase Storage (logo + achtergrond) |
+| Media-opslag | Cloudinary (unsigned upload — logo, achtergrond, afbeeldingen, audio, video) |
 | Hosting | Vercel |
 | Beeldbewerking | react-image-crop |
+| Geluid | WebAudio API (synth, geen bestanden) |
 | QR-codes | qrcode |
 
 ## Aan de slag
@@ -49,7 +56,8 @@ Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live qu
 ### Vereisten
 
 - Node.js 20+
-- Een Firebase-project met Firestore, Authentication en Storage ingeschakeld
+- Een Firebase-project met Firestore en Authentication ingeschakeld
+- Een Cloudinary-account met een unsigned upload-preset (voor media; Firebase Storage is niet nodig)
 
 ### Installatie
 
@@ -87,7 +95,7 @@ FIREBASE_PRIVATE_KEY=
 ### Firebase rules deployen
 
 ```bash
-firebase deploy --only firestore:rules,storage --project <jouw-project-id>
+firebase deploy --only firestore:rules --project <jouw-project-id>
 ```
 
 ### Admin-rol toekennen
