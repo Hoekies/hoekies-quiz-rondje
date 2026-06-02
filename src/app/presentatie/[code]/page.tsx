@@ -285,16 +285,22 @@ export default function PresentatiePage() {
         </div>
 
         {/* Afbeelding / vervagend beeld */}
-        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (
-          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={question.media_url}
-              alt="Afbeelding"
-              className="max-h-full max-w-full rounded-xl object-contain"
-            />
-          </div>
-        )}
+        {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (() => {
+          const blurPx = question.type === "blur_reveal" && question.time_limit_seconds
+            ? Math.max(0, (timeLeft / question.time_limit_seconds) * 26)
+            : 0;
+          return (
+            <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={question.media_url}
+                alt="Afbeelding"
+                className="max-h-full max-w-full rounded-xl object-contain"
+                style={{ filter: `blur(${blurPx}px)`, transform: blurPx > 0 ? "scale(1.06)" : "none", transition: "filter 0.8s ease" }}
+              />
+            </div>
+          );
+        })()}
 
         {/* Video */}
         {question.type === "video" && question.media_url && (
