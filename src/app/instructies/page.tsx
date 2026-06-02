@@ -13,8 +13,8 @@ const STAPPEN = [
   },
   {
     nr: "2",
-    titel: "Voer je naam in",
-    tekst: "Kies een naam (maximaal 24 tekens). De naam mag maar één keer voorkomen per quiz. Klik op 'Meedoen' en wacht tot de quiz begint.",
+    titel: "Kies een avatar en je naam",
+    tekst: "Kies een emoji-avatar en voer je naam in (uniek per quiz). Klik op 'Meedoen' en wacht tot de quiz begint.",
   },
   {
     nr: "3",
@@ -34,16 +34,20 @@ const STAPPEN = [
 ];
 
 const VRAAGTYPES = [
-  { icon: "🔤", naam: "Meerkeuze", uitleg: "Tik op de juiste optie (A, B, C of D)." },
-  { icon: "✔️", naam: "Waar/Niet waar", uitleg: "Kies Waar of Niet waar." },
-  { icon: "🖼️", naam: "Afbeelding als vraag", uitleg: "Bekijk de foto en kies het juiste tekstantwoord." },
-  { icon: "🎵", naam: "Audio als vraag", uitleg: "Luister naar het geluidsfragment en kies het juiste antwoord." },
-  { icon: "🎶", naam: "Raad het lied", uitleg: "De muziek speelt automatisch een paar seconden. Raad welk nummer of artiest het is!" },
-  { icon: "🎬", naam: "Video als vraag", uitleg: "Bekijk de videoclip en beantwoord de vraag." },
-  { icon: "🌫️", naam: "Vervagend beeld", uitleg: "Een afbeelding wordt steeds scherper. Raad het zo vroeg mogelijk — hoe eerder hoe meer punten!" },
-  { icon: "🖼️🖼️", naam: "Afbeelding als antwoord", uitleg: "Kies één van vier afbeeldingen als antwoord." },
-  { icon: "🎚️", naam: "Schatting", uitleg: "Schuif de slider naar jouw schatting. Hoe dichter bij het goede antwoord, hoe meer punten." },
-  { icon: "🔗", naam: "Koppelen", uitleg: "Koppel drie items links (A, B, C) aan drie items rechts. Tik eerst een item links aan, dan het bijpassende item rechts. Bevestig als alle koppelingen gemaakt zijn." },
+  { icon: "🖼️", naam: "Afbeelding", uitleg: "Bekijk de foto en kies of typ het antwoord." },
+  { icon: "🎶", naam: "Raad het lied", uitleg: "De muziek speelt een paar seconden. Raad het nummer of de artiest!" },
+  { icon: "🌫️", naam: "Vervagend beeld", uitleg: "Het beeld wordt steeds scherper — raad het zo vroeg mogelijk." },
+  { icon: "🔍", naam: "Inzoomende afbeelding", uitleg: "Het beeld zoomt langzaam uit — raad het snel." },
+  { icon: "🧩", naam: "Puzzelafbeelding", uitleg: "Het beeld komt tegel voor tegel tevoorschijn." },
+  { icon: "🎬", naam: "Video", uitleg: "De video speelt op het grote scherm; beantwoord de vraag op je telefoon." },
+  { icon: "🖼️🖼️", naam: "Afbeelding als antwoord", uitleg: "Kies één van vier afbeeldingen." },
+  { icon: "🖼️🔤", naam: "Vier foto's, één antwoord", uitleg: "Vier foto's hebben één woord gemeen — typ dat woord." },
+  { icon: "🔀", naam: "Anagram", uitleg: "Ontwar de geschudde letters en typ het woord." },
+  { icon: "✏️", naam: "Gatentekst", uitleg: "Typ het ontbrekende woord in de zin." },
+  { icon: "🕵️", naam: "Wie ben ik?", uitleg: "Hints verschijnen één voor één — raad snel voor meer punten." },
+  { icon: "🎚️", naam: "Schatting", uitleg: "Schuif de slider naar jouw schatting; dichterbij = meer punten." },
+  { icon: "✅", naam: "Meerdere juiste antwoorden", uitleg: "Tik álle juiste opties aan en bevestig." },
+  { icon: "🔗", naam: "Koppelen", uitleg: "Tik een item links aan, dan het bijpassende rechts. Bevestig als alles gekoppeld is." },
 ];
 
 export default function InstructiesPage() {

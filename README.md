@@ -14,27 +14,29 @@
 
 ## Over het project
 
-Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live quizzen leidt en spelers via hun telefoon meedoen. Spelers scannen een QR-code of openen een link, voeren hun naam in, en beantwoorden vragen in real-time. Hoe sneller je antwoordt, hoe meer punten — met een live leaderboard en een feestelijk winnaarsscherm.
+Hoekies Quiz Rondje is een zelf-gehoste quizapp waarmee een host (admin) live quizzen leidt en spelers via hun telefoon meedoen. Spelers scannen een QR-code of openen een link, kiezen een avatar en naam, en beantwoorden vragen in real-time. Hoe sneller je antwoordt, hoe meer punten — met een live leaderboard, antwoordverdeling en een feestelijk winnaarsscherm.
 
 **Live:** [hoekies-quiz-rondje.vercel.app](https://hoekies-quiz-rondje.vercel.app)
 
 ## Functies
 
 - **Real-time synchronisatie** — vragen verschijnen direct op alle telefoons via Firestore listeners
-- **14 vraagtypen** — afbeelding, audio (raad het lied), vervagend beeld, afbeelding-als-antwoord, video, schatting (slider), koppelen (match), anagram, gatentekst, "wie ben ik?" (hints), meerdere juiste antwoorden, inzoomende afbeelding, puzzelafbeelding en vier-foto's-één-antwoord
-- **Flexibel antwoordtype** — per afbeelding-, audio-, beeld-, video-, inzoom- of puzzelvraag kies je het antwoordtype: 4 keuzes, waar/niet-waar of open vraag (vrij typen)
-- **Juiste antwoord aanvinken** — markeer het correcte antwoord met een groen vinkje naast de optie
-- **Video met of zonder geluid** — per videovraag instelbaar; de video speelt op het presentatiescherm, op de telefoon zie je "kijk naar het grote scherm"
-- **Afteltimer & geluidseffecten** — synchrone countdown per vraag plus WebAudio-effecten (tik, goed/fout, fanfare)
-- **Antwoordverdeling** — bij het tonen van het antwoord zie je per optie het percentage stemmen, met het juiste antwoord groen
+- **14 vraagtypen** — afbeelding, audio (raad het lied), vervagend beeld, inzoomende afbeelding, puzzelafbeelding, video, afbeelding-als-antwoord, vier-foto's-één-antwoord, anagram, gatentekst, "wie ben ik?" (hints), schatting (slider), meerdere juiste antwoorden en koppelen (match)
+- **Flexibel antwoordtype** — bij elke media-vraag (afbeelding, audio, beeld, video, inzoom, puzzel) kies je: 4 keuzes, waar/niet-waar of open vraag (vrij typen)
+- **Juiste antwoord aanvinken** — markeer het correcte antwoord met een groen vinkje (meerdere bij "meerdere juiste antwoorden")
+- **Croppen & inzoomen** — elke afbeelding (upload óf geplakte URL) is vierkant bij te snijden en in te zoomen; Wikipedia `File:`-pagina's worden automatisch omgezet
+- **Test deze vraag** — speel een vraag interactief na in het formulier (antwoorden + scoring) zonder sessie
+- **Video met of zonder geluid** — per videovraag instelbaar; de video speelt op het presentatiescherm
+- **Afteltimer & geluidseffecten** — synchrone countdown plus WebAudio-effecten (tik, goed/fout, fanfare)
+- **Antwoordverdeling & juiste antwoord** — bij het tonen van het antwoord per optie het percentage stemmen, met het juiste antwoord groen
+- **Rondes** — vragen in rondes, met hernoemen en per-ronde verwijderen
 - **Speler-avatars** — kies een emoji bij het meedoen
 - **Snelheidsgebaseerde punten** — sneller antwoorden levert meer punten op, met bonusvragen voor dubbele punten
-- **Sessiebeheer** — meerdere sessies in concept, één tegelijk actief, activeren/deactiveren via toggle
-- **QR-code & WhatsApp** — spelers uitnodigen via QR of een instelbaar WhatsApp-bericht
-- **Thema** — eigen vierkant logo (met crop) en achtergrondafbeelding uploaden
+- **Sessiebeheer** — meerdere sessies in concept, activeren/deactiveren via toggle, live leiden vanaf het dashboard
+- **QR-code, presentatiescherm & WhatsApp** — spelers uitnodigen en het spel op een beamer tonen
+- **Thema** — eigen vierkant logo (met crop) en achtergrondafbeelding
 - **Standaard quizzen** — 5 kant-en-klare rondes (Sport, Muziek, Algemeen, Weer, TV — 5 vragen elk, antwoorden in willekeurige volgorde)
 - **CSV import/export** — vragen in bulk beheren via Excel
-- **Live leaderboard** op het admin-dashboard, plus presentatiescherm voor een beamer
 - **Winnaarsscherm** met confetti
 
 ## Tech stack
@@ -90,7 +92,7 @@ FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
 ```
 
-> De `FIREBASE_PRIVATE_KEY` haal je uit een Firebase service-account JSON. Houd deze geheim.
+> De `FIREBASE_PRIVATE_KEY` haal je uit een Firebase service-account JSON. Houd deze geheim. De Cloudinary cloud-naam en upload-preset staan in `lib/media.ts`.
 
 ### Firebase rules deployen
 
@@ -118,13 +120,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Route | Beschrijving |
 |---|---|
-| `/admin` | Dashboard — sessies beheren, live leaderboard |
+| `/admin` | Dashboard — sessies beheren en live leiden, leaderboard |
 | `/admin/login` | Inloggen voor de host |
-| `/admin/quiz` | Vragen beheren (CRUD + CSV) |
-| `/admin/quiz/vraag` | Vraag aanmaken/bewerken |
+| `/admin/quiz` | Vragen beheren (CRUD, CSV, rondes) |
+| `/admin/quiz/vraag` | Vraag aanmaken/bewerken (met crop + test) |
 | `/admin/thema` | Logo + achtergrond uploaden |
-| `/admin/instellingen` | WhatsApp-uitnodigingstekst |
-| `/admin/handleiding` | Online handleiding |
+| `/admin/handleiding` | Online handleiding ("Hulp") |
 | `/admin/sessie/[code]` | Live sessiebesturing |
 | `/speel/[code]` | Spelerscherm |
 | `/presentatie/[code]` | Presentatiescherm (beamer) |
@@ -142,8 +143,10 @@ Open [http://localhost:3000](http://localhost:3000).
 |---|---|
 | Goed antwoord (basis) | 100 |
 | Snelheidsbonus (max) | +50 |
-| Bonusvraag (dubbele punten) | × 2 |
+| Bonusvraag (2×) | × 2 |
 | Schatting | naar nabijheid van het juiste getal |
+| Waar / Onjuist | geen snelheidsbonus |
+| Meerdere juiste antwoorden | hele juiste set = punten, anders 0 |
 | Fout antwoord | 0 |
 
 ## Projectstructuur
@@ -151,16 +154,17 @@ Open [http://localhost:3000](http://localhost:3000).
 ```
 src/app/
 ├── admin/              # Beheerpaneel (host)
-│   ├── sessie/[code]/  # Live sessiebesturing
 │   ├── quiz/           # Vraagbeheer
+│   │   └── vraag/      # Vraagformulier + interactief voorbeeld
 │   ├── thema/          # Logo + achtergrond
-│   └── instellingen/   # WhatsApp-tekst
+│   ├── handleiding/    # Online hulp
+│   └── sessie/[code]/  # Live sessiebesturing
 ├── speel/[code]/       # Spelerscherm
 ├── presentatie/[code]/ # Beamerscherm
 ├── qr/[code]/          # QR fullscreen
 ├── instructies/        # Speler-uitleg
 └── api/                # Server-side routes (host + speler)
-lib/                    # Firebase client + admin config
+lib/                    # Firebase config, Cloudinary-upload, geluid, tekst-helpers
 types/                  # TypeScript types
 ```
 

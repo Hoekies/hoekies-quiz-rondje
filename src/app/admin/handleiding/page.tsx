@@ -12,47 +12,54 @@ const SECTIES: Section[] = [
   {
     title: "1. Quiz voorbereiden",
     steps: [
-      { icon: "📝", title: "Vragen aanmaken of importeren", body: "Ga naar 'Vragen beheren' in het menu. Maak nieuwe vragen aan via de knop '+&nbsp;Nieuwe vraag'. Je kunt ook standaard quizzen importeren via de dashboard-knop 'Standaard quizzen importeren' (sport, kennis, muziek — jaren 90/2000, 20 vragen elk). CSV-import is ook beschikbaar voor bulk-import." },
-      { icon: "🎨", title: "Thema instellen", body: "Ga naar 'Instellingen' in het menu. Upload een vierkant logo (er is een crop-functie). Upload een thema-achtergrond. Stel de WhatsApp-uitnodigingstekst in." },
-      { icon: "➕", title: "Sessie aanmaken", body: "Klik op '+ Nieuwe sessie' op het dashboard. De sessie staat standaard op Inactief. Activeer de sessie via de toggle zodra je klaar bent om spelers toe te laten." },
+      { icon: "📝", title: "Vragen aanmaken of importeren", body: "Ga naar 'Vragen beheren'. Maak vragen via '+&nbsp;Nieuwe vraag' (14 vraagtypen, zie onder). Onderaan kun je de standaard quizzen laden: 5 rondes (Sport, Muziek, Algemeen, Weer, TV) met 5 vragen elk en antwoorden in willekeurige volgorde. CSV-import (⬆️) en -export (⬇️) zijn ook beschikbaar." },
+      { icon: "🖼️", title: "Afbeeldingen & test", body: "Elke afbeelding kun je uploaden of als URL plakken, en daarna vierkant bijsnijden/inzoomen met ✂️. Een geplakte Wikipedia 'File:'-pagina wordt automatisch een directe afbeelding. Met '🧪 Test deze vraag' speel je de vraag interactief na — inclusief goed/fout en punten — zonder sessie." },
+      { icon: "🗂️", title: "Rondes beheren", body: "In 'Vragen beheren' kies je een ronde-tab. Daar hernoem je de ronde of verwijder je de hele ronde (🗑️ Ronde verwijderen)." },
+      { icon: "🎨", title: "Thema instellen", body: "Ga naar 'Thema quiz'. Upload een vierkant logo (met zoom + crop) en een achtergrondfoto voor het leaderboard en de inlogpagina." },
+      { icon: "➕", title: "Sessie aanmaken", body: "Klik op '+ Nieuwe sessie' op het dashboard. De sessie staat op Inactief. Zet de toggle op Actief zodra spelers mogen joinen." },
     ],
   },
   {
     title: "2. Sessie starten",
     steps: [
-      { icon: "🔛", title: "Sessie activeren", body: "Zet de toggle 'Actief' aan op het dashboard. Er verschijnt een QR-code. Spelers kunnen nu joinen via de QR-code of via hoekies-quiz-rondje.vercel.app/speel/CODE." },
-      { icon: "📱", title: "Spelers uitnodigen", body: "Klik op de groene 'Uitnodigen via WhatsApp' knop in de sessiepagina om een bericht te sturen met de directe link. De ontvanger klikt de link aan en kan direct meedoen." },
-      { icon: "🚀", title: "Quiz starten", body: "Klik op 'Beheren' bij je sessie. Wacht totdat alle spelers ingelogd zijn (je ziet het aantal spelers live). Klik op 'Start quiz' als iedereen er is." },
+      { icon: "🔛", title: "Sessie activeren", body: "Zet de toggle 'Actief' aan. Bij de sessie staan de links QR ↗, Presentatie ↗ en een WhatsApp-deelknop. Spelers joinen via de QR of via hoekies-quiz-rondje.vercel.app/speel/CODE." },
+      { icon: "📺", title: "Presentatiescherm", body: "Open 'Presentatie ↗' op een beamer of groot scherm. Daar zien de gasten de vragen, media (video met geluid!), antwoorden en de tussenstand." },
+      { icon: "🚀", title: "Quiz starten", body: "Wacht tot alle spelers ingelogd zijn (je ziet het aantal live) en klik op '🚀 Start quiz'." },
     ],
   },
   {
     title: "3. Tijdens de quiz",
     steps: [
-      { icon: "❓", title: "Vragen doorlopen", body: "Na elke vraag sluit je de antwoorden door op '🔒 Sluit antwoorden' te klikken. Daarna klik je 'Leaderboard' en vervolgens 'Volgende vraag'. De app begeleidt je stap voor stap." },
-      { icon: "🍺", title: "Pauzeren", body: "Tijdens een openstaande vraag kun je pauzeren via de 'Pauzeer' knop. Na 10 seconden aftelling gaat de vraag automatisch verder." },
-      { icon: "🏁", title: "Laatste vraag markeren", body: "Wil je de quiz eerder stoppen? Klik op 'Stop na deze vraag'. De knop wordt oranje en de quiz eindigt na het volgende leaderboard." },
+      { icon: "❓", title: "Vragen doorlopen", body: "Eén knop beweegt mee: Start quiz → 🔒 Sluit antwoorden → 📊 Leaderboard → ➡ Volgende vraag. Bij sluiten zien speler en presentatie het juiste antwoord en de antwoordverdeling. De vraag sluit ook automatisch op tijd of als iedereen geantwoord heeft." },
+      { icon: "🍺", title: "Pauzeren", body: "Pauzeer tussen vragen met '🍺 Pauzeer'. Bij hervatten volgt een aftelling van 10 seconden." },
+      { icon: "🏁", title: "Eerder stoppen", body: "'⏸ Stop na deze vraag' beëindigt de quiz na het eerstvolgende leaderboard. '🏁 Beëindig spel' toont direct de eindstand zonder de sessie te sluiten." },
     ],
   },
   {
     title: "4. Afsluiten",
     steps: [
-      { icon: "🏆", title: "Eindscherm", body: "Na de laatste vraag verschijnt het eindscherm automatisch bij alle spelers met de winnaar en top 3." },
-      { icon: "🔄", title: "Sessie resetten", body: "Wil je de quiz opnieuw spelen? Klik op 'Sessie resetten' in de sessiepagina. Alle scores worden op 0 gezet en spelers worden uitgelogd. Ze moeten opnieuw joinen." },
+      { icon: "🏆", title: "Eindscherm", body: "Het eindscherm verschijnt bij alle spelers met de winnaar en top 3. De sessie blijft open — sluit hem zelf via de toggle of verwijder hem." },
+      { icon: "🔄", title: "Sessie resetten", body: "'🗑 Resetten' zet alle scores op 0, wist alle antwoorden en logt alle spelers uit. Ze moeten opnieuw joinen." },
       { icon: "🗑️", title: "Sessie verwijderen", body: "Verwijder een sessie via het ✕ icoontje op het dashboard. Dit kan niet ongedaan worden gemaakt." },
     ],
   },
 ];
 
 const VRAAGTYPES = [
-  { type: "Multiple choice", icon: "🔤", uitleg: "4 tekstopties (A, B, C, D). Standaard vraagtype." },
-  { type: "Waar / Niet waar", icon: "✔️", uitleg: "Twee opties. Geen snelheidsbonus." },
-  { type: "Afbeelding als vraag", icon: "🖼️", uitleg: "Upload + bijsnijden. Antwoord: 4 keuzes of waar/onjuist." },
-  { type: "Audio / raad het lied", icon: "🎵", uitleg: "Upload MP3, kies startpunt + duur (5/10s). Speelt automatisch dat segment." },
-  { type: "Video als vraag", icon: "🎬", uitleg: "YouTube (startpunt + 5/10s) of MP4-upload. Antwoord: 4 keuzes of waar/onjuist." },
-  { type: "Vervagend beeld", icon: "🌫️", uitleg: "Upload + bijsnijden. Begint wazig, wordt scherper. Antwoord: 4 keuzes of waar/onjuist." },
-  { type: "Afbeelding als antwoord", icon: "🖼️🖼️", uitleg: "4 afbeeldingen als antwoordopties in een 2×2 grid." },
-  { type: "Schatting (slider)", icon: "🎚️", uitleg: "Speler schuift een slider naar een getal. Hoe dichter bij het correcte antwoord, hoe meer punten." },
-  { type: "Koppelen (match)", icon: "🔗", uitleg: "3 linker items (A/B/C) koppelen aan 3 rechter items. Kleurcode per paar. Alle 3 correct = volle punten." },
+  { type: "Afbeelding als vraag", icon: "🖼️", uitleg: "Toon een foto. Antwoordtype: 4 keuzes, waar/onjuist of open." },
+  { type: "Audio / raad het lied", icon: "🎵", uitleg: "Upload MP3, kies startpunt + duur (5/10s). Speelt dat segment." },
+  { type: "Vervagend beeld", icon: "🌫️", uitleg: "Begint wazig en wordt scherper tijdens het aftellen." },
+  { type: "Inzoomende afbeelding", icon: "🔍", uitleg: "Begint sterk ingezoomd en zoomt langzaam uit." },
+  { type: "Puzzelafbeelding", icon: "🧩", uitleg: "Beeld wordt tegel voor tegel zichtbaar." },
+  { type: "Video als vraag", icon: "🎬", uitleg: "YouTube of MP4. Geluid aan/uit instelbaar; speelt op het presentatiescherm." },
+  { type: "Afbeelding als antwoord", icon: "🖼️🖼️", uitleg: "4 afbeeldingen als antwoordopties (2×2)." },
+  { type: "Vier foto's, één antwoord", icon: "🖼️🔤", uitleg: "4 foto's; speler typt het verbindende woord." },
+  { type: "Anagram", icon: "🔀", uitleg: "Geschudde letters; speler typt het woord." },
+  { type: "Gatentekst", icon: "✏️", uitleg: "Zin met ___; speler typt het ontbrekende woord." },
+  { type: "Wie ben ik? (hints)", icon: "🕵️", uitleg: "Hints verschijnen één voor één; sneller = meer punten." },
+  { type: "Schatting (slider)", icon: "🎚️", uitleg: "Getal raden; punten op basis van nabijheid." },
+  { type: "Meerdere juiste antwoorden", icon: "✅", uitleg: "Speler kiest álle juiste opties. Hele set goed = punten." },
+  { type: "Koppelen (match)", icon: "🔗", uitleg: "3 items links koppelen aan 3 rechts. Optioneel met afbeelding." },
 ];
 
 export default function HandleidingPage() {
@@ -93,6 +100,11 @@ export default function HandleidingPage() {
         {/* Vraagtypen overzicht */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <p style={L}>Beschikbare vraagtypen</p>
+          <div style={{ ...card, borderColor: "rgba(13,180,171,0.25)", background: "rgba(13,180,171,0.05)" }}>
+            <p style={{ color: "var(--text)", fontSize: "0.82rem", lineHeight: 1.55 }}>
+              Bij media-vragen (afbeelding, audio, vervagend beeld, video, inzoomende afbeelding, puzzelafbeelding) kies je het <strong style={{ color: "#fff" }}>antwoordtype</strong>: 4&nbsp;keuzes, Waar/Onjuist of Open vraag (vrij typen). Het juiste antwoord markeer je met het groene vinkje naast de optie.
+            </p>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "10px" }}>
             {VRAAGTYPES.map((vt) => (
               <div key={vt.type} style={{ ...card }}>
@@ -110,9 +122,11 @@ export default function HandleidingPage() {
             <p style={{ color: "var(--text)", fontSize: "0.875rem", lineHeight: 1.7 }}>
               <strong style={{ color: "#fff" }}>Basis:</strong> Goed antwoord = base_points ÷ 10 punten (standaard 100 punten).<br />
               <strong style={{ color: "#fff" }}>Snelheidsbonus:</strong> Tot 50 extra punten als je snel antwoordt (hoe sneller, hoe meer).<br />
-              <strong style={{ color: "#fff" }}>Dubbele punten:</strong> Markeer een vraag als 'finale vraag' voor 2× punten.<br />
+              <strong style={{ color: "#fff" }}>Bonus (2×):</strong> Zet de Bonus-knop aan bij het maken van de vraag voor dubbele punten.<br />
               <strong style={{ color: "#fff" }}>Schatting:</strong> Punten op basis van hoe dicht bij het correcte getal (max bij exact goed, 0 bij grote afwijking).<br />
-              <strong style={{ color: "#fff" }}>Waar/Niet waar:</strong> Geen snelheidsbonus.
+              <strong style={{ color: "#fff" }}>Waar/Onjuist:</strong> Geen snelheidsbonus.<br />
+              <strong style={{ color: "#fff" }}>Meerdere juiste antwoorden:</strong> De hele juiste set goed = punten, anders 0.<br />
+              <strong style={{ color: "#fff" }}>Open vragen:</strong> Hoofdletters en spaties tellen niet mee.
             </p>
           </div>
         </div>

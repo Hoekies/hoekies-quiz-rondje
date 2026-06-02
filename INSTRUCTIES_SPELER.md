@@ -2,15 +2,13 @@
 
 ## Hoe doe je mee?
 
-Je hebt een telefoon nodig met een internetbrowser. Geen app vereist.
+Je hebt alleen een telefoon met internetbrowser nodig. Geen app.
 
 ---
 
-## Stap 1 — Open de link
+## Stap 1 — Open de link of scan de QR
 
-Je krijgt een link via WhatsApp van de host. Tik erop en de quiz opent direct in je browser.
-
-Of ga zelf naar:
+Je krijgt een link via WhatsApp van de host, of je scant de QR-code op het scherm. Of ga zelf naar:
 ```
 https://hoekies-quiz-rondje.vercel.app/speel/CODE
 ```
@@ -18,19 +16,18 @@ https://hoekies-quiz-rondje.vercel.app/speel/CODE
 
 ---
 
-## Stap 2 — Voer je naam in
+## Stap 2 — Kies een avatar en je naam
 
-- Kies een naam (maximaal 24 tekens)
-- De naam mag maar één keer voorkomen — kies iets unieks!
-- Tik op **Meedoen** en wacht tot de quiz begint
+- Kies een **emoji-avatar** en voer je **naam** in (uniek per quiz).
+- Tik op **Meedoen** en wacht tot de quiz begint.
 
 ---
 
 ## Stap 3 — Beantwoord de vragen
 
-Als de vraag verschijnt, tik je zo snel mogelijk op het juiste antwoord.
+Er loopt een **afteltimer**. Hoe sneller je het goede antwoord geeft, hoe meer punten.
 
-> **Tip:** Hoe sneller je antwoordt, hoe meer punten je krijgt!
+> **Tip:** lees kort wat het scherm vraagt — niet elke vraag is een simpele keuze.
 
 ---
 
@@ -38,16 +35,22 @@ Als de vraag verschijnt, tik je zo snel mogelijk op het juiste antwoord.
 
 | Type | Wat moet je doen? |
 |---|---|
-| **Multiple choice** | Tik op A, B, C of D |
-| **Waar / Niet waar** | Kies Waar of Niet waar |
-| **Afbeelding als vraag** | Bekijk de foto en kies het tekstantwoord |
-| **Audio als vraag** | Luister naar het fragment en kies je antwoord |
-| **Raad het lied** | Muziek speelt automatisch een paar seconden — raad het nummer! |
-| **Video als vraag** | Bekijk de clip en beantwoord de vraag |
-| **Vervagend beeld** | Een afbeelding wordt steeds scherper — raad het zo vroeg mogelijk |
-| **Afbeelding als antwoord** | Kies één van vier plaatjes |
-| **Schatting** | Schuif de slider naar jouw getal — dichterbij = meer punten |
-| **Koppelen** | Tik een item links aan (A/B/C), dan het bijpassende antwoord rechts. Bevestig als alle koppelingen gemaakt zijn |
+| 🖼️ Afbeelding | Bekijk de foto en kies/typ het antwoord |
+| 🎵 Raad het lied | Muziek speelt een paar seconden — raad het nummer/artiest |
+| 🌫️ Vervagend beeld | Het beeld wordt scherper — raad het zo vroeg mogelijk |
+| 🔍 Inzoomende afbeelding | Het beeld zoomt langzaam uit — raad het snel |
+| 🧩 Puzzelafbeelding | Het beeld komt tegel voor tegel tevoorschijn |
+| 🎬 Video | De video speelt op het **grote scherm**; beantwoord de vraag op je telefoon |
+| 🖼️🖼️ Afbeelding als antwoord | Kies één van vier plaatjes |
+| 🧩 Vier foto's, één antwoord | Vier foto's hebben één woord gemeen — typ dat woord |
+| 🔀 Anagram | Ontwar de geschudde letters en typ het woord |
+| ✏️ Gatentekst | Typ het ontbrekende woord (`___`) in de zin |
+| 🕵️ Wie ben ik? | Hints verschijnen één voor één — raad snel voor meer punten |
+| 🎚️ Schatting | Schuif de slider; dichterbij = meer punten |
+| ✅ Meerdere juiste antwoorden | Tik álle juiste opties aan en bevestig |
+| 🔗 Koppelen | Tik een item links aan, dan het bijpassende rechts; bevestig |
+
+Antwoordtypes bij media-vragen kunnen **4 keuzes**, **Waar/Onjuist** of **open typen** zijn. Bij open vragen tellen hoofdletters en spaties niet mee.
 
 ---
 
@@ -55,51 +58,35 @@ Als de vraag verschijnt, tik je zo snel mogelijk op het juiste antwoord.
 
 | Situatie | Punten |
 |---|---|
-| Goed antwoord | 100 punten |
-| Snelheidsbonus | Tot 50 extra punten |
-| Dubbele punten (finale vraag) | Alles × 2 |
-| Schatting dichtbij | Gedeeltelijke punten |
-| Fout antwoord | 0 punten |
+| Goed antwoord | 100 |
+| Snelheidsbonus | tot +50 |
+| Bonusvraag (2×) | alles × 2 |
+| Schatting dichtbij | gedeeltelijke punten |
+| Fout antwoord | 0 |
 
 ---
 
-## Tussenstand
+## Na elke vraag
 
-Na elke vraag zie je:
-- Of je antwoord goed of fout was
-- Hoeveel punten je hebt verdiend
-- De huidige top 3
+Je ziet of je goed zat, hoeveel punten je verdiende, het **juiste antwoord** en de **antwoordverdeling**. Daarna verschijnt de tussenstand met de top 3.
 
 ---
 
-## Laatste vraag
+## Laatste vraag & eindstand
 
-Vlak voor de laatste vraag verschijnt een motivatiescherm met jouw huidige positie en een aanmoediging. Geef alles! 💪
-
----
-
-## Eindstand
-
-Na de laatste vraag:
-- De **winnaar** wordt groot in beeld getoond 🏆
-- De top 3 krijgt goud, zilver en brons
-- Je ziet je eigen eindstand en totaal aantal punten
+Vlak voor de laatste vraag verschijnt een motivatiescherm met je positie. Na de laatste vraag komt de eindstand: de **winnaar** groot in beeld 🏆, top 3 met goud/zilver/brons, en je eigen totaal.
 
 ---
 
 ## Problemen?
 
-**"Sessie is momenteel niet actief"**
-De host heeft de sessie nog niet geactiveerd. Wacht even en probeer opnieuw.
+**"Sessie is momenteel niet actief"** — de host heeft de sessie nog niet geactiveerd. Wacht even.
 
-**"Deze naam is al bezet"**
-Kies een andere naam — iemand anders heeft die naam al.
+**"Deze naam is al bezet"** — kies een andere naam.
 
-**"Sessie niet gevonden"**
-Controleer de code en probeer opnieuw. Vraag de host om de juiste code.
+**"Sessie niet gevonden"** — controleer de code bij de host.
 
-**Pagina ververst / je bent uitgelogd**
-Dit kan gebeuren als je lang weg bent. Ga terug naar de link en vul je naam opnieuw in.
+**Pagina ververst / uitgelogd** — ga terug naar de link en doe opnieuw mee. Na een reset moet iedereen opnieuw joinen.
 
 ---
 
