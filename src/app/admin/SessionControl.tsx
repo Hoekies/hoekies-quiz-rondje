@@ -187,18 +187,22 @@ export default function SessionControl({ code }: { code: string }) {
     updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
   }, [answerCount, players.length, session?.state, session?.current_question_id, code]);
 
-  // Auto-sluit op tijd: question_opened_at + time_limit verstreken → answer_reveal
+  // Auto-sluit op tijd: question_opened_at + time_limit verstreken → answer_reveal (geldt ook voor bonusvragen)
   useEffect(() => {
     if (session?.state !== "question_open" || !session.current_question_id || !session.question_opened_at?.seconds) return;
     const limit = currentQuestion?.time_limit_seconds ?? 20;
-    const iv = setInterval(() => {
+    const closeIfOverdue = () => {
       const elapsed = (Date.now() - session.question_opened_at!.seconds * 1000) / 1000;
       if (elapsed >= limit && autoClosedRef.current !== session.current_question_id) {
-        autoClosedRef.current = session.current_question_id;
+        autoClosedRef.current = session.current_question_id!;
         updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
       }
-    }, 500);
-    return () => clearInterval(iv);
+    };
+    const iv = setInterval(closeIfOverdue, 500);
+    // Ook sluiten zodra het tabblad weer zichtbaar wordt (interval wordt op de achtergrond afgeknepen)
+    const onVis = () => { if (!document.hidden) closeIfOverdue(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
   }, [session?.state, session?.current_question_id, session?.question_opened_at?.seconds, code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Schrijf antwoordverdeling bij answer_reveal

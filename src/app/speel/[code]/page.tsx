@@ -783,11 +783,11 @@ export default function SpeelPage() {
             </p>
           </div>
 
-          {/* image */}
+          {/* image — vierkant */}
           {question.type === "image" && question.media_url && (
-            <div style={{ flex: 1, minHeight: "clamp(140px, 30vh, 320px)", borderRadius: "12px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 60vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
           {/* audio: verborgen, speelt segment automatisch */}
@@ -801,9 +801,9 @@ export default function SpeelPage() {
               </div>
             </div>
           )}
-          {/* blur_reveal */}
+          {/* blur_reveal — vierkant */}
           {question.type === "blur_reveal" && question.media_url && (
-            <div style={{ flex: 1, minHeight: "clamp(140px, 30vh, 320px)", borderRadius: "12px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(100%, 60vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurLevel}px)`, transform: "scale(1.1)", transition: "filter 0.8s ease" }} />
             </div>

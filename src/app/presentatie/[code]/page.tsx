@@ -291,13 +291,14 @@ export default function PresentatiePage() {
             : 0;
           return (
             <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={question.media_url}
-                alt="Afbeelding"
-                className="max-h-full max-w-full rounded-xl object-contain"
-                style={{ filter: `blur(${blurPx}px)`, transform: blurPx > 0 ? "scale(1.06)" : "none", transition: "filter 0.8s ease" }}
-              />
+              <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={question.media_url}
+                  alt="Afbeelding"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurPx}px)`, transform: blurPx > 0 ? "scale(1.06)" : "none", transition: "filter 0.8s ease" }}
+                />
+              </div>
             </div>
           );
         })()}
@@ -354,11 +355,13 @@ export default function PresentatiePage() {
       >
         <p className="text-white/50 text-xl text-center font-bold">Antwoord</p>
 
-        {/* Afbeelding (scherp) bij reveal */}
+        {/* Afbeelding (scherp) bij reveal — vierkant */}
         {(question.type === "image" || question.type === "blur_reveal") && question.media_url && (
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={question.media_url} alt="Afbeelding" className="max-h-full max-w-full rounded-xl object-contain" />
+            <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
           </div>
         )}
 

@@ -219,7 +219,8 @@ function VraagForm() {
 
   function onCropImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-    setCrop(centerCrop(makeAspectCrop({ unit: "%", width: 90 }, w / h, w, h), w, h));
+    // Vierkante uitsnede (1:1)
+    setCrop(centerCrop(makeAspectCrop({ unit: "%", width: 90 }, 1, w, h), w, h));
   }
 
   async function saveCroppedImage() {
@@ -401,7 +402,7 @@ function VraagForm() {
                   <label style={L}>Zoom</label>
                   <input type="range" min={0.5} max={3} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
                   <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px" }}>
-                    <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)}>
+                    <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)} aspect={1}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img ref={imgRef} src={cropSrc} alt="Crop" onLoad={onCropImgLoad} style={{ transform: `scale(${scale})`, transformOrigin: "top left", maxWidth: "100%" }} />
                     </ReactCrop>
