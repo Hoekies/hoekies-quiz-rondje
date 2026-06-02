@@ -233,6 +233,11 @@ export default function SpeelPage() {
     if (typeof window === "undefined") return;
     const stored = localStorage.getItem(`quiz_player_id_${code}`);
     if (stored) setPlayerId(stored);
+    // Naam + avatar onthouden zodat ze ingevuld blijven (ook na reset)
+    const savedName = localStorage.getItem(`quiz_name_${code}`);
+    if (savedName) setName(savedName);
+    const savedAvatar = localStorage.getItem(`quiz_avatar_${code}`);
+    if (savedAvatar) setAvatar(savedAvatar);
   }, [code]);
 
   // Disable iOS "Shake to Undo" — shaking the phone must not trigger anything.
@@ -408,9 +413,16 @@ export default function SpeelPage() {
     return () => clearInterval(iv);
   }, [step, session?.resume_at?.seconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detecteer sessie-reset: speler uitloggen zodat niemand er nog in zit
+  // Detecteer sessie-reset: speler terug naar het invulscherm (naam + avatar blijven bewaard)
+  const lastResetRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!session?.reset_at || !playerId) return;
+    const cur = session?.reset_at?.seconds ?? null;
+    if (cur === null) return;
+    // Eerste waarde onthouden zonder uit te loggen (anders logt een oude reset je meteen uit)
+    if (lastResetRef.current === null) { lastResetRef.current = cur; return; }
+    if (cur === lastResetRef.current) return;
+    lastResetRef.current = cur;
+    // Nieuwe reset → terug naar join, maar naam/avatar laten staan
     localStorage.removeItem(`quiz_player_id_${code}`);
     setPlayerId(null);
     setStep("join");
@@ -418,7 +430,7 @@ export default function SpeelPage() {
     setAnswerResult(null);
     setMyScore(0);
     setRanks([]);
-  }, [session?.reset_at?.seconds]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.reset_at?.seconds, code]);
 
   // Shuffle antwoorden eenmalig als nieuwe vraag laadt
   // Huidige vraag direct uit de map — geen aparte subscription, altijd meteen beschikbaar
@@ -521,6 +533,8 @@ export default function SpeelPage() {
     }
 
     localStorage.setItem(`quiz_player_id_${code}`, json.player_id);
+    localStorage.setItem(`quiz_name_${code}`, name.trim());
+    localStorage.setItem(`quiz_avatar_${code}`, avatar);
     setPlayerId(json.player_id);
     setStep("lobby");
   }
