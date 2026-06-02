@@ -130,7 +130,7 @@ interface QuestionDoc {
   audio_start?: number;
   video_start?: number;
   clip_duration?: 5 | 10;
-  answer_mode?: "multiple_choice" | "true_false";
+  answer_mode?: "multiple_choice" | "true_false" | "open";
   video_muted?: boolean;
 }
 
@@ -800,6 +800,7 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = question.options ?? []; // vaste volgorde = zelfde als presentatie (kleur/letter komt overeen)
+    const isOpenMode = question.type === "open" || question.answer_mode === "open";
     const timeUp = timeLeft !== null && timeLeft <= 0;
     const timePct = timeLeft !== null && question.time_limit_seconds ? (timeLeft / question.time_limit_seconds) * 100 : 100;
     return (
@@ -865,27 +866,15 @@ export default function SpeelPage() {
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurLevel}px)`, transform: "scale(1.1)", transition: "filter 0.8s ease" }} />
             </div>
           )}
-          {/* video */}
-          {question.type === "video" && question.media_url && (() => {
-            const url = question.media_url;
-            const isYT = /youtube|youtu\.be/.test(url);
-            if (isYT) {
-              const idMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
-              const vid = idMatch?.[1] ?? "";
-              const start = question.video_start ?? 0;
-              const embed = `https://www.youtube-nocookie.com/embed/${vid}?start=${start}&autoplay=1&mute=${question.video_muted ? 1 : 0}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`;
-              // Crop top/bottom van de iframe zodat YouTube-titel en knoppen buiten beeld vallen
-              return (
-                <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", flexShrink: 0, position: "relative" }}>
-                  <iframe src={embed} style={{ position: "absolute", top: "-25%", left: "-9%", width: "118%", height: "150%", border: "none", pointerEvents: "none" }} allow="autoplay; encrypted-media" />
-                </div>
-              );
-            }
-            return <video id="clip-video" src={url} autoPlay playsInline muted={!!question.video_muted} style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
-          })()}
+          {/* video — speelt alleen op het presentatiescherm, niet op de telefoon */}
+          {question.type === "video" && (
+            <div className="glass-card" style={{ flexShrink: 0, alignSelf: "center", padding: "10px 18px", textAlign: "center" }}>
+              <p style={{ color: "var(--cyan)", fontSize: "0.85rem" }}>📺 Kijk naar het grote scherm</p>
+            </div>
+          )}
 
           {/* Tekst antwoordknoppen */}
-          {question.type !== "image_answer" && question.type !== "estimate" && question.type !== "open" && (
+          {question.type !== "image_answer" && question.type !== "estimate" && !isOpenMode && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
@@ -934,8 +923,8 @@ export default function SpeelPage() {
             </div>
           )}
 
-          {/* Open vraag — vrij typen */}
-          {question.type === "open" && (
+          {/* Open vraag — vrij typen (los type of media-antwoordtype open) */}
+          {isOpenMode && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "12px", padding: "0 4px" }}>
               <input type="text" value={openText} onChange={(e) => setOpenText(e.target.value)}
                 disabled={!!selectedAnswer || timeUp} placeholder="Typ je antwoord..." maxLength={80}
@@ -1124,6 +1113,13 @@ export default function SpeelPage() {
               </div>
             );
           })()}
+          {/* Juiste antwoord tonen (niet bij beeld-antwoorden of koppelvragen) */}
+          {question && question.type !== "image_answer" && question.type !== "match" && question.correct_answer && (
+            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.10)" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.78rem", marginBottom: "2px" }}>Juiste antwoord</p>
+              <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{question.correct_answer}</p>
+            </div>
+          )}
           <div style={{ textAlign: "center" }}>
             {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{selectedAnswer}</span></p>}
             <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Totaal: <strong style={{ color: "var(--cyan)" }}>{myScore} punten</strong></p>

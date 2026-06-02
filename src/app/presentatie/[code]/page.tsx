@@ -379,6 +379,16 @@ export default function PresentatiePage() {
           </p>
         </div>
 
+        {/* Open / schatting: geen opties → toon het juiste antwoord groot */}
+        {options.length === 0 && question.type !== "match" && question.correct_answer && (
+          <div className="flex justify-center px-4">
+            <div className="rounded-2xl px-10 py-6 text-center" style={{ background: "rgba(34,197,94,0.14)", border: "2px solid rgba(34,197,94,0.5)" }}>
+              <p className="text-white/60 text-lg mb-1">Juiste antwoord</p>
+              <p className="text-green-400 font-black text-5xl">{question.correct_answer}</p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           {options.map((opt: string, i: number) => {
             const isCorrect = opt === question.correct_answer;

@@ -41,7 +41,7 @@ interface QuestionForm {
   audio_start: number;
   video_start: number;
   clip_duration: 5 | 10;
-  answer_mode: "multiple_choice" | "true_false";
+  answer_mode: "multiple_choice" | "true_false" | "open";
   video_source: "youtube" | "upload";
   video_muted: boolean;
   // match
@@ -105,7 +105,6 @@ const TYPE_LABELS: Record<string, string> = {
   image_answer: "Afbeelding als antwoord",
   video: "Video als vraag",
   estimate: "Schatting (slider)",
-  open: "Open vraag (typen)",
   match: "Koppelen (A→1, B→2, C→3)",
 };
 
@@ -164,7 +163,7 @@ function VraagForm() {
           audio_start: d.audio_start ?? 0,
           video_start: d.video_start ?? 0,
           clip_duration: ((d.clip_duration ?? d.guess_duration) === 10 ? 10 : 5) as 5 | 10,
-          answer_mode: d.answer_mode === "true_false" ? "true_false" : "multiple_choice",
+          answer_mode: d.answer_mode === "true_false" ? "true_false" : d.answer_mode === "open" ? "open" : "multiple_choice",
           video_source: (d.type === "video" && d.media_url && !/youtube|youtu\.be/.test(d.media_url)) ? "upload" : "youtube",
           video_muted: !!d.video_muted,
           left_1: (d.left_items ?? [])[0] ?? "",
@@ -296,6 +295,9 @@ function VraagForm() {
     let options = activeOptions();
     if (mediaTypeUsesToggle && form.answer_mode === "true_false") {
       options = ["Waar", "Niet waar"];
+    }
+    if (mediaTypeUsesToggle && form.answer_mode === "open") {
+      options = [];
     }
     const imageOptions = [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean);
 
@@ -507,7 +509,7 @@ function VraagForm() {
             <div style={F}>
               <label style={L}>Antwoordtype</label>
               <div style={{ display: "flex", gap: "16px" }}>
-                {([["multiple_choice", "4 keuzes"], ["true_false", "Waar / Onjuist"]] as const).map(([mode, lbl]) => (
+                {([["multiple_choice", "4 keuzes"], ["true_false", "Waar / Onjuist"], ["open", "Open vraag"]] as const).map(([mode, lbl]) => (
                   <label key={mode} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                     <input type="radio" name="answer_mode" checked={form.answer_mode === mode} onChange={() => set("answer_mode", mode)} style={{ accentColor: "var(--cyan)" }} />
                     <span style={{ color: form.answer_mode === mode ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{lbl}</span>
@@ -574,8 +576,8 @@ function VraagForm() {
             </>
           )}
 
-          {/* Open vraag — vrij typen */}
-          {form.type === "open" && (
+          {/* Open vraag — vrij typen (los type of media-antwoordtype) */}
+          {(form.type === "open" || (usesToggle && form.answer_mode === "open")) && (
             <div style={F}>
               <label style={L}>Correct antwoord</label>
               <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Het juiste antwoord" className="glass-input" />

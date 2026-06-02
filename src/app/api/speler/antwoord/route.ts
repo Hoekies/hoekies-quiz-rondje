@@ -95,13 +95,17 @@ export async function POST(req: NextRequest) {
     time_limit_seconds: number;
     type: string;
     is_double_points: boolean;
+    answer_mode?: string;
     estimate_min?: number;
     estimate_max?: number;
   };
 
+  // Open vraag: los type "open" óf media-vraag met answer_mode "open"
+  const isOpen = question.type === "open" || question.answer_mode === "open";
+
   // Genormaliseerde vergelijking voor open vragen
   const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
-  const openCorrect = question.type === "open" && norm(answer) === norm(question.correct_answer);
+  const openCorrect = isOpen && norm(answer) === norm(question.correct_answer);
 
   // Exacte vergelijking voor keuze-/media-/true_false-vragen. We trimmen beide
   // kanten zodat onbedoelde spaties in de opgeslagen optie of het correcte
@@ -110,7 +114,7 @@ export async function POST(req: NextRequest) {
   const exactCorrect = (answer ?? "").trim() === (question.correct_answer ?? "").trim();
 
   // Calculate points
-  const isCorrect = question.type === "open" ? openCorrect : exactCorrect;
+  const isCorrect = isOpen ? openCorrect : exactCorrect;
   let points = 0;
 
   let matchCorrect = false;

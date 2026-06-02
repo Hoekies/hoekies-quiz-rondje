@@ -56,7 +56,7 @@ export interface Question {
   audio_start?: number;
   video_start?: number;
   clip_duration?: 5 | 10;
-  answer_mode?: "multiple_choice" | "true_false";
+  answer_mode?: "multiple_choice" | "true_false" | "open";
   video_muted?: boolean;
 }
 
