@@ -134,13 +134,7 @@ export default function SessionControl({ code }: { code: string }) {
     return unsub;
   }, [code]);
 
-  // Na endscreen: terug naar dashboard
-  useEffect(() => {
-    if (session?.state === "endscreen") {
-      const t = setTimeout(() => router.push("/admin"), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [session?.state, router]);
+  // Na endscreen: sessie blijft open; de admin sluit/deactiveert zelf (geen auto-redirect).
 
   // Na resuming: automatisch terug naar de vorige toestand na 10,5 seconden
   useEffect(() => {
@@ -513,9 +507,9 @@ export default function SessionControl({ code }: { code: string }) {
 
       {/* Primaire actie */}
       {session.state === "endscreen" ? (
-        <div className="card" style={{ textAlign: "center", padding: "24px 0" }}>
+        <div className="card" style={{ textAlign: "center", padding: "20px" }}>
           <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
-          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Je wordt doorgestuurd naar het dashboard...</p>
+          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>De eindstand staat bij de spelers. Sluit de sessie zelf via de toggle (inactief) of verwijderen — of herstart voor een nieuwe ronde.</p>
         </div>
       ) : session.state === "resuming" ? (
         <button disabled className="btn-game" style={{ fontSize: "1.15rem", opacity: 0.7, width: "100%" }}>
@@ -578,7 +572,7 @@ export default function SessionControl({ code }: { code: string }) {
 
             {/* Beëindig spel — volle breedte, prominent */}
             {showActieveBeheer && (
-              <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers.")) patchSession("endscreen"); }}
+              <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers. De sessie blijft open — je sluit hem zelf via de toggle of verwijderen.")) updateDoc(doc(db, "sessions", code), { state: "endscreen", status: "active", force_end: false }).catch(() => {}); }}
                 disabled={actionLoading}
                 style={{ ...beheerBtn, gridColumn: "1 / -1", minHeight: "48px", fontSize: "0.95rem",
                   border: "2px solid var(--red)", background: "rgba(255,59,92,0.14)", color: "var(--red)" }}>
