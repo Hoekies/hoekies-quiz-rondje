@@ -277,14 +277,25 @@ function VraagForm() {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [scale, setScale] = useState(1);
   const [uploading, setUploading] = useState(false);
+  // Naar welk formulierveld het bijgesneden resultaat geschreven wordt
+  const [cropTarget, setCropTarget] = useState<keyof QuestionForm>("media_url");
   const imgRef = useRef<HTMLImageElement>(null);
 
-  function onImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function onImageFile(e: React.ChangeEvent<HTMLInputElement>, target: keyof QuestionForm = "media_url") {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCropTarget(target);
     const reader = new FileReader();
-    reader.onload = (ev) => { setCropSrc(ev.target?.result as string); setCrop(undefined); setScale(1); };
+    reader.onload = (ev) => { setCropSrc(ev.target?.result as string); setCrop(undefined); setScale(1); setCompletedCrop(undefined); };
     reader.readAsDataURL(file);
+  }
+
+  // Open de bijsnij-/inzoom-editor op een bestaande (geplakte of geüploade) URL
+  function cropFromUrl(url: string, target: keyof QuestionForm) {
+    if (!url) return;
+    setCropTarget(target);
+    setCrop(undefined); setScale(1); setCompletedCrop(undefined);
+    setCropSrc(url);
   }
 
   function onCropImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
@@ -319,10 +330,10 @@ function VraagForm() {
       }
       const compressed = await compressImage(blob, 1280, 0.82);
       const url = await uploadMedia(compressed, "image");
-      setForm((f) => ({ ...f, media_url: url }));
+      setForm((f) => ({ ...f, [cropTarget]: url }));
       setCropSrc(null);
     } catch (err) {
-      setError("Upload mislukt: " + (err as Error).message);
+      setError("Bijsnijden mislukt (mogelijk staat de bron geen bewerking toe): " + (err as Error).message);
     }
     setUploading(false);
   }
@@ -454,6 +465,32 @@ function VraagForm() {
   const L = { color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700 };
   const tfWaardes = ["Waar", "Niet waar"];
 
+  // Afbeelding-slot met vierkante preview, URL, upload én bijsnijden/inzoomen
+  const imageSlot = (key: keyof QuestionForm, placeholder: string, required: boolean) => {
+    const val = form[key] as string;
+    return (
+      <div key={key} style={{ ...F, gap: "6px" }}>
+        {val && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={val} alt="" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "8px", background: "rgba(255,255,255,0.05)" }} />
+        )}
+        <input type="url" value={val} onChange={(e) => set(key, normalizeImageUrl(e.target.value))} placeholder={placeholder} required={required} className="glass-input" />
+        <div style={{ display: "flex", gap: "6px" }}>
+          <label style={{ flex: 1, textAlign: "center", color: "var(--muted)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "6px", cursor: "pointer", fontSize: "0.78rem" }}>
+            📁 Upload
+            <input type="file" accept="image/*" onChange={(e) => onImageFile(e, key)} style={{ display: "none" }} />
+          </label>
+          {val && (
+            <button type="button" onClick={() => cropFromUrl(val, key)}
+              style={{ color: "var(--cyan)", background: "none", border: "1px solid rgba(13,180,171,0.4)", borderRadius: "8px", padding: "6px 12px", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600 }}>
+              ✂️ Bijsnijden
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <AdminLayout title={isEdit ? "Vraag bewerken" : "Nieuwe vraag"}>
       <div style={{ maxWidth: "560px" }}>
@@ -473,32 +510,40 @@ function VraagForm() {
             </select>
           </div>
 
+          {/* Bijsnij-/inzoom-editor (vierkant) — werkt voor elke afbeelding */}
+          {cropSrc && (
+            <div style={{ ...F, gap: "10px", padding: "12px", borderRadius: "12px", background: "rgba(13,180,171,0.06)", border: "1px solid rgba(13,180,171,0.3)" }}>
+              <label style={L}>Bijsnijden / inzoomen (vierkant)</label>
+              <input type="range" min={0.5} max={3} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
+              <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px" }}>
+                <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)} aspect={1}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img ref={imgRef} src={cropSrc} crossOrigin="anonymous" alt="Crop" onLoad={onCropImgLoad} style={{ transform: `scale(${scale})`, transformOrigin: "top left", maxWidth: "100%" }} />
+                </ReactCrop>
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button type="button" onClick={saveCroppedImage} disabled={uploading} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{uploading ? "Uploaden..." : "Bijsnijden + opslaan"}</button>
+                <button type="button" onClick={() => setCropSrc(null)} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Annuleren</button>
+              </div>
+            </div>
+          )}
+
           {/* Afbeelding / vervagend beeld / koppelvraag / zoom / puzzel: upload + crop + compress, of URL */}
           {(form.type === "image" || form.type === "blur_reveal" || form.type === "match" || form.type === "zoom_reveal" || form.type === "tile_reveal") && (
             <div style={F}>
               <label style={L}>Afbeelding{form.type === "match" ? " (optioneel)" : ""}</label>
               {form.media_url && !cropSrc && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.media_url} alt="Preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />
+                <img src={form.media_url} alt="Preview" style={{ width: "min(100%, 220px)", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />
               )}
-              <input type="file" accept="image/*" onChange={onImageFile} className="glass-input" style={{ padding: "8px" }} />
+              <input type="file" accept="image/*" onChange={(e) => onImageFile(e, "media_url")} className="glass-input" style={{ padding: "8px" }} />
               <label style={{ ...L, marginTop: "4px" }}>Of plak een afbeelding-URL</label>
               <input type="url" value={form.media_url} onChange={(e) => set("media_url", normalizeImageUrl(e.target.value))} placeholder="https://..." className="glass-input" />
-              {cropSrc && (
-                <div style={{ ...F, gap: "10px" }}>
-                  <label style={L}>Zoom</label>
-                  <input type="range" min={0.5} max={3} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} style={{ accentColor: "var(--cyan)" }} />
-                  <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px" }}>
-                    <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)} aspect={1}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img ref={imgRef} src={cropSrc} alt="Crop" onLoad={onCropImgLoad} style={{ transform: `scale(${scale})`, transformOrigin: "top left", maxWidth: "100%" }} />
-                    </ReactCrop>
-                  </div>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button type="button" onClick={saveCroppedImage} disabled={uploading} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{uploading ? "Uploaden..." : "Bijsnijden + opslaan"}</button>
-                    <button type="button" onClick={() => setCropSrc(null)} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Annuleren</button>
-                  </div>
-                </div>
+              {form.media_url && !cropSrc && (
+                <button type="button" onClick={() => cropFromUrl(form.media_url, "media_url")}
+                  style={{ alignSelf: "flex-start", color: "var(--cyan)", background: "none", border: "1px solid rgba(13,180,171,0.4)", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}>
+                  ✂️ Bijsnijden / inzoomen
+                </button>
               )}
             </div>
           )}
@@ -588,14 +633,19 @@ function VraagForm() {
           {/* Antwoordtype-toggle voor image/blur/video */}
           {usesToggle && (
             <div style={F}>
-              <label style={L}>Antwoordtype</label>
-              <div style={{ display: "flex", gap: "16px" }}>
-                {([["multiple_choice", "4 keuzes"], ["true_false", "Waar / Onjuist"], ["open", "Open vraag"]] as const).map(([mode, lbl]) => (
-                  <label key={mode} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                    <input type="radio" name="answer_mode" checked={form.answer_mode === mode} onChange={() => set("answer_mode", mode)} style={{ accentColor: "var(--cyan)" }} />
-                    <span style={{ color: form.answer_mode === mode ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{lbl}</span>
-                  </label>
-                ))}
+              <label style={{ ...L, textAlign: "center" }}>Antwoordtype</label>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                {([["multiple_choice", "4 keuzes"], ["true_false", "Waar / Onjuist"], ["open", "Open vraag"]] as const).map(([mode, lbl]) => {
+                  const active = form.answer_mode === mode;
+                  return (
+                    <button type="button" key={mode} onClick={() => set("answer_mode", mode)}
+                      style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", padding: "8px 16px", borderRadius: "10px",
+                        border: `2px solid ${active ? "var(--cyan)" : "rgba(255,255,255,0.2)"}`, background: active ? "rgba(13,180,171,0.15)" : "transparent" }}>
+                      <input type="radio" name="answer_mode" checked={active} readOnly style={{ accentColor: "var(--cyan)", pointerEvents: "none" }} />
+                      <span style={{ color: active ? "var(--cyan)" : "var(--text)", fontWeight: 600 }}>{lbl}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -628,11 +678,10 @@ function VraagForm() {
           {/* Afbeelding-opties voor image_answer */}
           {form.type === "image_answer" && (
             <div style={F}>
-              <label style={L}>Afbeelding URLs als antwoorden</label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <label style={L}>Afbeeldingen als antwoorden (vierkant)</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                  <input key={key} type="url" value={form[key]} onChange={(e) => set(key, normalizeImageUrl(e.target.value))}
-                    placeholder={`Afbeelding ${["A","B","C","D"][i]} URL`} required={i < 2} className="glass-input" />
+                  imageSlot(key, `Afbeelding ${["A", "B", "C", "D"][i]}`, i < 2)
                 ))}
               </div>
               <div style={F}>
@@ -704,11 +753,10 @@ function VraagForm() {
           {form.type === "four_pics" && (
             <>
               <div style={F}>
-                <label style={L}>Vier afbeeldingen (URL's)</label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <label style={L}>Vier afbeeldingen (vierkant)</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                    <input key={key} type="url" value={form[key]} onChange={(e) => set(key, normalizeImageUrl(e.target.value))}
-                      placeholder={`Afbeelding ${i + 1} URL`} required className="glass-input" />
+                    imageSlot(key, `Afbeelding ${i + 1}`, true)
                   ))}
                 </div>
               </div>
@@ -820,20 +868,25 @@ function VraagForm() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            {([["Tijdslimiet (sec)", "time_limit_seconds", 5, 120], ["Punten", "base_points", 0, 9999], ["Ronde", "round", 1, 99], ["Volgorde", "order", 0, 999]] as const).map(([label, field, min, max]) => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "8px", alignItems: "end" }}>
+            {([["Tijd (sec)", "time_limit_seconds", 5, 120], ["Punten", "base_points", 0, 9999], ["Ronde", "round", 1, 99], ["Volgorde", "order", 0, 999]] as const).map(([label, field, min, max]) => (
               <div key={field} style={F}>
                 <label style={L}>{label}</label>
                 <input type="number" min={min} max={max} value={form[field] as number}
-                  onChange={(e) => set(field, Number(e.target.value))} className="glass-input form-input" />
+                  onChange={(e) => set(field, Number(e.target.value))} className="glass-input form-input" style={{ width: "100%" }} />
               </div>
             ))}
+            <div style={F}>
+              <label style={L}>Bonus</label>
+              <button type="button" onClick={() => set("is_double_points", !form.is_double_points)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "10px 4px", borderRadius: "8px", cursor: "pointer", fontWeight: 800, fontSize: "0.95rem",
+                  border: `2px solid ${form.is_double_points ? "var(--gold)" : "rgba(255,255,255,0.2)"}`,
+                  background: form.is_double_points ? "rgba(255,217,59,0.15)" : "transparent",
+                  color: form.is_double_points ? "var(--gold)" : "var(--text)" }}>
+                {form.is_double_points ? "✓ 2×" : "2×"}
+              </button>
+            </div>
           </div>
-
-          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.is_double_points} onChange={(e) => set("is_double_points", e.target.checked)} style={{ width: "18px", height: "18px", accentColor: "var(--cyan)" }} />
-            <span style={{ color: "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>Bonusvraag (dubbele punten)</span>
-          </label>
 
           {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
 
