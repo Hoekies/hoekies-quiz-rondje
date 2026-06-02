@@ -133,6 +133,29 @@ export default function QuizBeheerPage() {
     if (n > 0) await batch.commit();
   }
 
+  async function handleDeleteRound(round: number) {
+    if (!quizId) return;
+    const inRound = questions.filter((q) => q.round === round);
+    if (inRound.length === 0) return;
+    const label = roundNames[String(round)] ?? `Ronde ${round}`;
+    if (!window.confirm(`${label} verwijderen met ${inRound.length} vraag/vragen? Dit kan niet ongedaan worden gemaakt.`)) return;
+    setActionError("");
+    let batch = writeBatch(db);
+    let n = 0;
+    for (const q of inRound) {
+      batch.delete(doc(db, "quizzes", quizId, "questions", q.id));
+      if (++n >= 400) { await batch.commit(); batch = writeBatch(db); n = 0; }
+    }
+    if (n > 0) await batch.commit();
+    // Rondenaam opruimen
+    if (roundNames[String(round)] !== undefined) {
+      const updated = { ...roundNames };
+      delete updated[String(round)];
+      await updateDoc(doc(db, "quizzes", quizId), { round_names: updated });
+      setRoundNames(updated);
+    }
+  }
+
   async function handleSeed() {
     const user = auth.currentUser;
     if (!user) return;
@@ -327,6 +350,10 @@ export default function QuizBeheerPage() {
             <button onClick={() => saveRoundName(activeRound as number, renameValue)} disabled={renaming}
               className="btn btn-cyan" style={{ fontSize: "0.82rem", padding: "8px 14px" }}>
               {renaming ? "..." : "Opslaan"}
+            </button>
+            <button onClick={() => handleDeleteRound(activeRound as number)} title="Hele ronde verwijderen"
+              style={{ fontSize: "0.82rem", padding: "8px 14px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.4)", background: "rgba(255,59,92,0.06)", color: "var(--red)", cursor: "pointer", fontWeight: 700 }}>
+              🗑️ Ronde verwijderen
             </button>
           </div>
         )}
