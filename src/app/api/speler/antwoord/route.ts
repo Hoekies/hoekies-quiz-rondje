@@ -59,8 +59,20 @@ export async function POST(req: NextRequest) {
     .get();
 
   if (existingSnap.exists) {
+    // Speler heeft al geantwoord (bv. na een reload of dubbele tik). Geef het
+    // reeds opgeslagen resultaat terug i.p.v. een kale fout, zodat het
+    // reveal-scherm goed/fout + punten correct kan tonen. De rules verbieden de
+    // speler om de answers-collectie zelf te lezen, dus dit is de enige manier
+    // waarop de telefoon na een reload zijn eigen uitkomst terugkrijgt.
+    const ex = existingSnap.data() as { is_correct: boolean; points_awarded: number; answer: string };
     return NextResponse.json(
-      { error: "Al een antwoord ingediend" },
+      {
+        error: "Al een antwoord ingediend",
+        already_answered: true,
+        is_correct: ex.is_correct,
+        points_awarded: ex.points_awarded,
+        answer: ex.answer,
+      },
       { status: 409 }
     );
   }
@@ -91,8 +103,14 @@ export async function POST(req: NextRequest) {
   const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
   const openCorrect = question.type === "open" && norm(answer) === norm(question.correct_answer);
 
+  // Exacte vergelijking voor keuze-/media-/true_false-vragen. We trimmen beide
+  // kanten zodat onbedoelde spaties in de opgeslagen optie of het correcte
+  // antwoord geen vals-negatief geven (de optiestring en correct_answer komen
+  // uit dezelfde bron, maar trimmen is een veilige extra zekerheid).
+  const exactCorrect = (answer ?? "").trim() === (question.correct_answer ?? "").trim();
+
   // Calculate points
-  const isCorrect = question.type === "open" ? openCorrect : answer === question.correct_answer;
+  const isCorrect = question.type === "open" ? openCorrect : exactCorrect;
   let points = 0;
 
   let matchCorrect = false;

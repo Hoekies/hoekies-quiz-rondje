@@ -42,8 +42,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
   }
 
-  const { quiz_id, question_text, type, options, correct_answer,
-    time_limit_seconds, base_points, is_double_points, round, order } = body;
+  // quiz_id is een routing-veld en hoort niet in het question-document.
+  // Alle overige velden (incl. type-specifieke velden zoals media_url,
+  // answer_mode, estimate_min/max, image_options, left_items/right_items,
+  // audio_start, clip_duration, video_start, blur_steps) worden 1-op-1
+  // opgeslagen, net als bij PATCH. Voorheen werden ze hier weggegooid waardoor
+  // nieuw aangemaakte vragen (estimate/image_answer/match/media) kapot of fout
+  // gescoord werden.
+  const { quiz_id, ...fields } = body;
+  const { question_text, type, correct_answer } = fields as {
+    question_text?: string;
+    type?: string;
+    correct_answer?: string;
+  };
 
   if (!quiz_id || !question_text || !type || !correct_answer) {
     return NextResponse.json({ error: "Verplichte velden ontbreken" }, { status: 400 });
@@ -51,17 +62,15 @@ export async function POST(req: NextRequest) {
 
   const ref = adminDb.collection("quizzes").doc(quiz_id).collection("questions").doc();
   await ref.set({
-    question_text,
-    type,
-    options: options ?? null,
-    correct_answer,
-    media_url: null,
     explanation: null,
-    time_limit_seconds: time_limit_seconds ?? 20,
-    base_points: base_points ?? 1000,
-    is_double_points: is_double_points ?? false,
-    round: round ?? 1,
-    order: order ?? 0,
+    time_limit_seconds: 20,
+    base_points: 1000,
+    is_double_points: false,
+    round: 1,
+    order: 0,
+    media_url: null,
+    options: null,
+    ...fields,
     created_at: FieldValue.serverTimestamp(),
   });
 

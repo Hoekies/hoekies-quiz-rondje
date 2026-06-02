@@ -633,9 +633,13 @@ export default function SpeelPage() {
       }),
     });
     const json = await res.json();
-    if (res.ok) {
-      setAnswerResult(json as AnswerResult);
-      // Score updates via subscription (players collection), not here
+    if (res.ok || json?.already_answered) {
+      // Bij een dubbel antwoord (409 na reload/dubbele tik) geeft de API het
+      // reeds opgeslagen resultaat terug; dat is gezaghebbend voor goed/fout +
+      // punten. De speler kan de answers-collectie zelf niet lezen (rules), dus
+      // dit is de enige bron voor het reveal-scherm na een reload.
+      setAnswerResult({ is_correct: json.is_correct, points_awarded: json.points_awarded ?? 0 });
+      if (typeof json.answer === "string" && json.answer) setSelectedAnswer(json.answer);
     }
     setSubmitting(false);
   }
