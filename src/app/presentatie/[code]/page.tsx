@@ -309,8 +309,8 @@ export default function PresentatiePage() {
             {/youtube|youtu\.be/.test(question.media_url) ? (
               <div className="w-full max-w-3xl aspect-video rounded-xl overflow-hidden relative">
                 <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${(question.media_url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]) ?? ""}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0`}
-                  style={{ position: "absolute", top: "-70px", left: "-2%", width: "104%", height: "calc(100% + 140px)", border: "none" }}
+                  src={`https://www.youtube-nocookie.com/embed/${(question.media_url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1]) ?? ""}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0`}
+                  style={{ position: "absolute", top: "-16%", left: "-4%", width: "108%", height: "132%", border: "none" }}
                   allow="autoplay; encrypted-media"
                 />
               </div>

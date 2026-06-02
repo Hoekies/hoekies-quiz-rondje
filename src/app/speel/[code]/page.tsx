@@ -876,11 +876,11 @@ export default function SpeelPage() {
               // Crop top/bottom van de iframe zodat YouTube-titel en knoppen buiten beeld vallen
               return (
                 <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", flexShrink: 0, position: "relative" }}>
-                  <iframe src={embed} style={{ position: "absolute", top: "-60px", left: "-2%", width: "104%", height: "calc(100% + 120px)", border: "none" }} allow="autoplay; encrypted-media" />
+                  <iframe src={embed} style={{ position: "absolute", top: "-16%", left: "-4%", width: "108%", height: "132%", border: "none" }} allow="autoplay; encrypted-media" />
                 </div>
               );
             }
-            return <video id="clip-video" src={url} playsInline style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
+            return <video id="clip-video" src={url} autoPlay playsInline style={{ width: "100%", flexShrink: 0, borderRadius: "12px", maxHeight: "30%" }} />;
           })()}
 
           {/* Tekst antwoordknoppen */}
