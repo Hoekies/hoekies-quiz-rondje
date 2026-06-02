@@ -148,7 +148,6 @@ export default function SpeelPage() {
   const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [blurLevel, setBlurLevel] = useState(20);
   const [estimateValue, setEstimateValue] = useState(0);
   const [openText, setOpenText] = useState("");
@@ -522,15 +521,6 @@ export default function SpeelPage() {
     : null;
 
 
-  useEffect(() => {
-    if (!question?.options) { setShuffledOptions([]); return; }
-    const opts = [...question.options];
-    for (let i = opts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [opts[i], opts[j]] = [opts[j], opts[i]];
-    }
-    setShuffledOptions(opts);
-  }, [question?.id]);
 
   // Blur-reveal: stapsgewijs onscherp verminderen
   useEffect(() => {
@@ -790,7 +780,7 @@ export default function SpeelPage() {
 
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
-    const options = shuffledOptions.length > 0 ? shuffledOptions : (question.options ?? []);
+    const options = question.options ?? []; // vaste volgorde = zelfde als presentatie (kleur/letter komt overeen)
     const timeUp = timeLeft !== null && timeLeft <= 0;
     const timePct = timeLeft !== null && question.time_limit_seconds ? (timeLeft / question.time_limit_seconds) * 100 : 100;
     return (
