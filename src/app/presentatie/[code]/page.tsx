@@ -454,16 +454,20 @@ export default function PresentatiePage() {
           </div>
         )}
 
-        {/* Vier foto's bij reveal — 2x2 */}
-        {question.type === "four_pics" && question.image_options && (
+        {/* Vier foto's / afbeelding-als-antwoord bij reveal — 2x2, juiste groen */}
+        {(question.type === "four_pics" || question.type === "image_answer") && question.image_options && (
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {question.image_options.slice(0, 4).map((url, i) => (
-                <div key={i} style={{ borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ))}
+              {question.image_options.slice(0, 4).map((url, i) => {
+                const ok = url === question.correct_answer;
+                return (
+                  <div key={i} style={{ borderRadius: "12px", overflow: "hidden", position: "relative", background: "rgba(0,0,0,0.25)", border: ok ? "4px solid #22c55e" : "4px solid transparent", opacity: ok ? 1 : 0.45 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {ok && <span style={{ position: "absolute", top: 6, right: 8, fontSize: "2rem" }}>✓</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -474,8 +478,8 @@ export default function PresentatiePage() {
           </p>
         </div>
 
-        {/* Open / schatting: geen opties → toon het juiste antwoord groot */}
-        {options.length === 0 && question.type !== "match" && question.correct_answer && (
+        {/* Open / schatting: geen opties → toon het juiste antwoord groot (niet bij beeld-antwoorden) */}
+        {options.length === 0 && question.type !== "match" && question.type !== "four_pics" && question.type !== "image_answer" && question.correct_answer && (
           <div className="flex justify-center px-4">
             <div className="rounded-2xl px-10 py-6 text-center" style={{ background: "rgba(34,197,94,0.14)", border: "2px solid rgba(34,197,94,0.5)" }}>
               <p className="text-white/60 text-lg mb-1">Juiste antwoord</p>

@@ -41,7 +41,7 @@ const VRAAGTYPES = [
   { icon: "🧩", naam: "Puzzelafbeelding", uitleg: "Het beeld komt tegel voor tegel tevoorschijn." },
   { icon: "🎬", naam: "Video", uitleg: "De video speelt op het grote scherm; beantwoord de vraag op je telefoon." },
   { icon: "🖼️🖼️", naam: "Afbeelding als antwoord", uitleg: "Kies één van vier afbeeldingen." },
-  { icon: "🖼️🔤", naam: "Vier foto's, één antwoord", uitleg: "Vier foto's hebben één woord gemeen — typ dat woord." },
+  { icon: "🖼️🔤", naam: "Vier foto's, één antwoord", uitleg: "Vier foto's, één is het juiste antwoord — tik de juiste foto aan." },
   { icon: "🔀", naam: "Anagram", uitleg: "Ontwar de geschudde letters en typ het woord." },
   { icon: "✏️", naam: "Gatentekst", uitleg: "Typ het ontbrekende woord in de zin." },
   { icon: "🕵️", naam: "Wie ben ik?", uitleg: "Hints verschijnen één voor één — raad snel voor meer punten." },

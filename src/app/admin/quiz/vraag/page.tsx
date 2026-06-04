@@ -799,9 +799,14 @@ function VraagForm() {
                 </div>
               </div>
               <div style={F}>
-                <label style={L}>Correct antwoord (het verbindende woord)</label>
-                <input type="text" value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required placeholder="Het woord dat de 4 foto's verbindt" className="glass-input" />
-                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Speler typt zelf. Hoofdletters/spaties tellen niet mee.</span>
+                <label style={L}>Correct antwoord (welke foto is juist?)</label>
+                <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
+                  <option value="">— Kies de juiste foto —</option>
+                  {[form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean).map((url, i) => (
+                    <option key={url} value={url}>Foto {i + 1}</option>
+                  ))}
+                </select>
+                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>De speler tikt één van de vier foto's aan.</span>
               </div>
             </>
           )}

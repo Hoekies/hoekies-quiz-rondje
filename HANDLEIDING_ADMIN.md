@@ -46,7 +46,7 @@ Ga naar **Vragen beheren → + Nieuwe vraag**. Er zijn **14 vraagtypen**:
 | 🧩 Puzzelafbeelding | Beeld wordt tegel voor tegel zichtbaar |
 | 🎬 Video als vraag | YouTube (startpunt + 5/10s) of MP4. Geluid aan/uit instelbaar; speelt op het presentatiescherm |
 | 🖼️🖼️ Afbeelding als antwoord | 4 afbeeldingen als antwoordopties (2×2) |
-| 🧩 Vier foto's, één antwoord | 4 foto's; speler typt het verbindende woord |
+| 🧩 Vier foto's, één antwoord | 4 foto's; speler tikt de juiste foto aan (jij kiest welke juist is) |
 | 🔀 Anagram | Geschudde letters; speler typt het woord |
 | ✏️ Gatentekst | Zin met `___`; speler typt het ontbrekende woord |
 | 🕵️ Wie ben ik? | Hints verschijnen één voor één; sneller antwoorden = meer punten |

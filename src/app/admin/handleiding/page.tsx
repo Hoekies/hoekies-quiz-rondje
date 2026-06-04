@@ -53,7 +53,7 @@ const VRAAGTYPES = [
   { type: "Puzzelafbeelding", icon: "🧩", uitleg: "Beeld wordt tegel voor tegel zichtbaar." },
   { type: "Video als vraag", icon: "🎬", uitleg: "YouTube of MP4. Geluid aan/uit instelbaar; speelt op het presentatiescherm." },
   { type: "Afbeelding als antwoord", icon: "🖼️🖼️", uitleg: "4 afbeeldingen als antwoordopties (2×2)." },
-  { type: "Vier foto's, één antwoord", icon: "🖼️🔤", uitleg: "4 foto's; speler typt het verbindende woord." },
+  { type: "Vier foto's, één antwoord", icon: "🖼️🔤", uitleg: "4 foto's; speler tikt de juiste foto aan (kies welke juist is)." },
   { type: "Anagram", icon: "🔀", uitleg: "Geschudde letters; speler typt het woord." },
   { type: "Gatentekst", icon: "✏️", uitleg: "Zin met ___; speler typt het ontbrekende woord." },
   { type: "Wie ben ik? (hints)", icon: "🕵️", uitleg: "Hints verschijnen één voor één; sneller = meer punten." },

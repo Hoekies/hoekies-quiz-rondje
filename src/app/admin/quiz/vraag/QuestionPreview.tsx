@@ -29,7 +29,7 @@ export interface PreviewQuestion {
 
 const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
 const isOpenType = (q: PreviewQuestion) =>
-  ["open", "anagram", "gatentekst", "four_pics", "clues"].includes(q.type) || q.answer_mode === "open";
+  ["open", "anagram", "gatentekst", "clues"].includes(q.type) || q.answer_mode === "open";
 
 // Lokale scoring — spiegelt src/app/api/speler/antwoord/route.ts
 function score(q: PreviewQuestion, answer: string): { correct: boolean; points: number } {
@@ -141,13 +141,6 @@ export default function QuestionPreview({ q }: { q: PreviewQuestion }) {
           ))}
         </div>
       )}
-      {q.type === "four_pics" && (
-        <div style={{ ...sq, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", background: "transparent" }}>
-          {q.image_options.slice(0, 4).map((u, i) => (
-            <div key={i} style={{ borderRadius: "8px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>{u && /* eslint-disable-next-line @next/next/no-img-element */ <img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}</div>
-          ))}
-        </div>
-      )}
       {q.type === "audio" && q.media_url && <audio controls src={q.media_url} style={{ width: "100%" }} />}
       {q.type === "video" && <p style={{ color: "var(--muted)", fontSize: "0.85rem", textAlign: "center" }}>📺 Video speelt op het presentatiescherm</p>}
 
@@ -182,8 +175,8 @@ export default function QuestionPreview({ q }: { q: PreviewQuestion }) {
             </div>
           )}
 
-          {/* Afbeelding als antwoord */}
-          {q.type === "image_answer" && (
+          {/* Afbeelding als antwoord / vier foto's, één antwoord */}
+          {(q.type === "image_answer" || q.type === "four_pics") && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               {q.image_options.filter(Boolean).map((u, i) => (
                 <button key={i} type="button" onClick={() => submit(u)} style={{ ...card, padding: "4px", cursor: "pointer", aspectRatio: "1/1", overflow: "hidden" }}>

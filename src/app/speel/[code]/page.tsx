@@ -857,7 +857,7 @@ export default function SpeelPage() {
   // ── QUESTION ─────────────────────────────────────────────────────────────
   if (step === "question" && question && question.id === session?.current_question_id) {
     const options = question.options ?? []; // vaste volgorde = zelfde als presentatie (kleur/letter komt overeen)
-    const isOpenMode = ["open", "anagram", "gatentekst", "four_pics", "clues"].includes(question.type) || question.answer_mode === "open";
+    const isOpenMode = ["open", "anagram", "gatentekst", "clues"].includes(question.type) || question.answer_mode === "open";
     // Hints van "Wie ben ik?" verschijnen één voor één op basis van de resterende tijd
     const clueList = question.clues ?? [];
     const cluesVisible = (() => {
@@ -972,17 +972,6 @@ export default function SpeelPage() {
               </p>
             </div>
           )}
-          {/* four_pics — 2x2 raster */}
-          {question.type === "four_pics" && question.image_options && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-              {question.image_options.slice(0, 4).map((url: string, i: number) => (
-                <div key={i} style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ))}
-            </div>
-          )}
           {/* clues — hints verschijnen één voor één */}
           {question.type === "clues" && (
             <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -995,7 +984,7 @@ export default function SpeelPage() {
           )}
 
           {/* Tekst antwoordknoppen */}
-          {question.type !== "image_answer" && question.type !== "estimate" && question.type !== "multi_select" && !isOpenMode && (
+          {question.type !== "image_answer" && question.type !== "four_pics" && question.type !== "estimate" && question.type !== "multi_select" && !isOpenMode && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
@@ -1007,8 +996,8 @@ export default function SpeelPage() {
             </div>
           )}
 
-          {/* Afbeelding als antwoord */}
-          {question.type === "image_answer" && question.image_options && (
+          {/* Afbeelding als antwoord / vier foto's, één antwoord — tik een foto aan */}
+          {(question.type === "image_answer" || question.type === "four_pics") && question.image_options && (
             <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", minHeight: 0 }}>
               {question.image_options.map((url: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer || timeUp}
@@ -1260,7 +1249,7 @@ export default function SpeelPage() {
             );
           })()}
           {/* Juiste antwoord tonen (niet bij beeld-antwoorden of koppelvragen) */}
-          {question && question.type !== "image_answer" && question.type !== "match" && question.correct_answer && (
+          {question && question.type !== "image_answer" && question.type !== "four_pics" && question.type !== "match" && question.correct_answer && (
             <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.10)" }}>
               <p style={{ color: "var(--muted)", fontSize: "0.78rem", marginBottom: "2px" }}>Juiste antwoord</p>
               <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{fmtAns(question.correct_answer)}</p>

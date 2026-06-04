@@ -42,7 +42,7 @@ Er loopt een **afteltimer**. Hoe sneller je het goede antwoord geeft, hoe meer p
 | 🧩 Puzzelafbeelding | Het beeld komt tegel voor tegel tevoorschijn |
 | 🎬 Video | De video speelt op het **grote scherm**; beantwoord de vraag op je telefoon |
 | 🖼️🖼️ Afbeelding als antwoord | Kies één van vier plaatjes |
-| 🧩 Vier foto's, één antwoord | Vier foto's hebben één woord gemeen — typ dat woord |
+| 🧩 Vier foto's, één antwoord | Vier foto's — tik de juiste foto aan |
 | 🔀 Anagram | Ontwar de geschudde letters en typ het woord |
 | ✏️ Gatentekst | Typ het ontbrekende woord (`___`) in de zin |
 | 🕵️ Wie ben ik? | Hints verschijnen één voor één — raad snel voor meer punten |

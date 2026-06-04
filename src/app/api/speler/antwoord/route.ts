@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   };
 
   // Open vraag: los type "open", de tekst-types, óf media-vraag met answer_mode "open"
-  const isOpen = ["open", "anagram", "gatentekst", "four_pics", "clues"].includes(question.type) || question.answer_mode === "open";
+  const isOpen = ["open", "anagram", "gatentekst", "clues"].includes(question.type) || question.answer_mode === "open";
 
   // Genormaliseerde vergelijking voor open vragen
   const norm = (s: string) => s.toLowerCase().trim().replace(/[.,!?;:'"()]/g, "").replace(/\s+/g, " ");
