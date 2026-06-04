@@ -16,6 +16,7 @@ export interface PreviewQuestion {
   correct_answer: string; // match/multi_select: JSON
   media_url: string;
   image_options: string[];
+  image_labels: string[];
   clues: string[];
   answer_mode?: string;
   estimate_min: number;
@@ -117,7 +118,7 @@ export default function QuestionPreview({ q }: { q: PreviewQuestion }) {
         <div style={sq}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={q.media_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${(1 - reveal) * 20}px)`, transform: "scale(1.1)" }} /></div>
       )}
       {q.type === "zoom_reveal" && q.media_url && (
-        <div style={sq}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={q.media_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${3.5 - 2.5 * reveal})`, transition: "transform 0.1s linear" }} /></div>
+        <div style={sq}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={q.media_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${6 - 5 * reveal})`, transition: "transform 0.1s linear" }} /></div>
       )}
       {q.type === "tile_reveal" && q.media_url && (
         <div style={{ ...sq, position: "relative" }}>
@@ -178,11 +179,12 @@ export default function QuestionPreview({ q }: { q: PreviewQuestion }) {
           {/* Afbeelding als antwoord / vier foto's, één antwoord */}
           {(q.type === "image_answer" || q.type === "four_pics") && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {q.image_options.filter(Boolean).map((u, i) => (
-                <button key={i} type="button" onClick={() => submit(u)} style={{ ...card, padding: "4px", cursor: "pointer", aspectRatio: "1/1", overflow: "hidden" }}>
+              {q.image_options.map((u, i) => u ? (
+                <button key={i} type="button" onClick={() => submit(u)} style={{ ...card, padding: "4px", cursor: "pointer", aspectRatio: "1/1", overflow: "hidden", position: "relative" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}<img src={u} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }} />
+                  {q.image_labels[i] && <span style={{ position: "absolute", left: 4, right: 4, bottom: 4, background: "rgba(0,0,0,0.6)", borderRadius: "5px", padding: "1px 4px", fontSize: "0.72rem", fontWeight: 700, textAlign: "center" }}>{q.image_labels[i]}</span>}
                 </button>
-              ))}
+              ) : null)}
             </div>
           )}
 
@@ -232,7 +234,10 @@ export default function QuestionPreview({ q }: { q: PreviewQuestion }) {
         <div style={{ ...card, padding: "16px", textAlign: "center", borderColor: result.correct ? "rgba(34,197,94,0.5)" : "rgba(255,59,92,0.5)", background: result.correct ? "rgba(34,197,94,0.12)" : "rgba(255,59,92,0.12)" }}>
           <p style={{ fontSize: "2.4rem" }}>{result.correct ? "✅" : "❌"}</p>
           <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.2rem" }}>{result.correct ? "Goed!" : "Fout"} — {result.points} punten</p>
-          <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginTop: "4px" }}>Juiste antwoord: <strong style={{ color: "var(--green)" }}>{(() => { try { const a = JSON.parse(q.correct_answer); if (Array.isArray(a)) return a.join(", "); if (a && typeof a === "object") return Object.entries(a).map(([k, v]) => `${["A", "B", "C"][Number(k)]}→${Number(v) + 1}`).join(", "); } catch {} return q.correct_answer; })()}</strong></p>
+          <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginTop: "4px" }}>Juiste antwoord: <strong style={{ color: "var(--green)" }}>{(() => {
+            if (q.type === "image_answer" || q.type === "four_pics") { const idx = q.image_options.indexOf(q.correct_answer); if (idx >= 0 && q.image_labels[idx]) return q.image_labels[idx]; }
+            try { const a = JSON.parse(q.correct_answer); if (Array.isArray(a)) return a.join(", "); if (a && typeof a === "object") return Object.entries(a).map(([k, v]) => `${["A", "B", "C"][Number(k)]}→${Number(v) + 1}`).join(", "); } catch {} return q.correct_answer;
+          })()}</strong></p>
           <button type="button" onClick={() => { setResult(null); setOpenText(""); setMulti([]); setMatchSel({}); }} style={{ marginTop: "10px", color: "var(--cyan)", background: "none", border: "1px solid rgba(13,180,171,0.4)", borderRadius: "8px", padding: "8px 16px", cursor: "pointer", fontSize: "0.85rem" }}>Opnieuw testen</button>
         </div>
       )}

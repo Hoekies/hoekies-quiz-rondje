@@ -57,6 +57,7 @@ export interface Question {
   estimate_max?: number;
   estimate_unit?: string;
   image_options?: string[];
+  image_labels?: string[];
   left_items?: string[];
   right_items?: string[];
   guess_duration?: 5 | 10 | 15 | 20;

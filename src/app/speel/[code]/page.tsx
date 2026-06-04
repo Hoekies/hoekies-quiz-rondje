@@ -128,6 +128,7 @@ interface QuestionDoc {
   estimate_max?: number;
   estimate_unit?: string;
   image_options?: string[];
+  image_labels?: string[];
   left_items?: string[];
   right_items?: string[];
   guess_duration?: 5 | 10 | 15 | 20;
@@ -155,7 +156,7 @@ export default function SpeelPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [blurLevel, setBlurLevel] = useState(20);
-  const [zoomScale, setZoomScale] = useState(3.5);
+  const [zoomScale, setZoomScale] = useState(6);
   const [tileShown, setTileShown] = useState(0);
   const [estimateValue, setEstimateValue] = useState(0);
   const [openText, setOpenText] = useState("");
@@ -585,10 +586,10 @@ export default function SpeelPage() {
     if (question?.type !== "zoom_reveal" || step !== "question") return;
     const total = question.time_limit_seconds * 1000;
     const start = Date.now();
-    setZoomScale(3.5);
+    setZoomScale(6);
     const iv = setInterval(() => {
       const p = Math.min(1, (Date.now() - start) / total);
-      setZoomScale(3.5 - 2.5 * p);
+      setZoomScale(6 - 5 * p);
     }, 80);
     return () => clearInterval(iv);
   }, [question?.id, step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -999,14 +1000,18 @@ export default function SpeelPage() {
           {/* Afbeelding als antwoord / vier foto's, één antwoord — tik een foto aan */}
           {(question.type === "image_answer" || question.type === "four_pics") && question.image_options && (
             <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", minHeight: 0 }}>
-              {question.image_options.map((url: string, i: number) => (
-                <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer || timeUp}
-                  className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
-                  style={{ padding: "4px", overflow: "hidden", flexDirection: "column", gap: "4px" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Optie ${LABEL[i]}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
-                </button>
-              ))}
+              {question.image_options.map((url: string, i: number) => {
+                const naam = question.image_labels?.[i];
+                return (
+                  <button key={i} onClick={() => handleAnswer(url)} disabled={!!selectedAnswer || timeUp}
+                    className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
+                    style={{ padding: "4px", overflow: "hidden", flexDirection: "column", gap: "4px", position: "relative" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={naam ?? `Optie ${LABEL[i]}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+                    {naam && <span style={{ position: "absolute", left: "4px", right: "4px", bottom: "4px", background: "rgba(0,0,0,0.6)", borderRadius: "6px", padding: "2px 6px", fontSize: "0.8rem", fontWeight: 700, textAlign: "center" }}>{naam}</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -1216,6 +1221,15 @@ export default function SpeelPage() {
     // Toon JSON-antwoorden (multi_select) als leesbare lijst
     const fmtAns = (s: string) => { try { const a = JSON.parse(s); if (Array.isArray(a)) return a.join(", "); } catch {} return s; };
     const correctSet: string[] = (() => { try { const a = JSON.parse(question?.correct_answer ?? ""); return Array.isArray(a) ? a : []; } catch { return []; } })();
+    const imageType = question?.type === "image_answer" || question?.type === "four_pics";
+    // Toon bij beeld-antwoorden de bijnaam i.p.v. de URL
+    const showAns = (s: string) => {
+      if (imageType && question) {
+        const idx = (question.image_options ?? []).indexOf(s);
+        if (idx >= 0) return question.image_labels?.[idx] || s;
+      }
+      return fmtAns(s);
+    };
     return (
       <div className="speler-shell">
         <div className="speler-content" style={{ alignItems: "center", justifyContent: "center", gap: "20px", padding: "clamp(20px, 4vh, 32px) clamp(16px, 4vw, 20px)" }}>
@@ -1255,8 +1269,15 @@ export default function SpeelPage() {
               <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{fmtAns(question.correct_answer)}</p>
             </div>
           )}
+          {/* Beeld-antwoorden: toon de juiste bijnaam */}
+          {imageType && question?.correct_answer && (
+            <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", borderColor: "rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.10)" }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.78rem", marginBottom: "2px" }}>Juiste antwoord</p>
+              <p style={{ color: "var(--green)", fontWeight: 900, fontSize: "1.15rem" }}>{showAns(question.correct_answer)}</p>
+            </div>
+          )}
           <div style={{ textAlign: "center" }}>
-            {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{fmtAns(selectedAnswer)}</span></p>}
+            {selectedAnswer && <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Jouw antwoord: <span style={{ color: "var(--ink)" }}>{showAns(selectedAnswer)}</span></p>}
             <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>Totaal: <strong style={{ color: "var(--cyan)" }}>{myScore} punten</strong></p>
           </div>
         </div>

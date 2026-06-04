@@ -32,11 +32,15 @@ interface QuestionForm {
   estimate_min: number;
   estimate_max: number;
   estimate_unit: string;
-  // image_answer (4 image URLs)
+  // image_answer / four_pics (4 image URLs + bijnamen)
   img_opt_a: string;
   img_opt_b: string;
   img_opt_c: string;
   img_opt_d: string;
+  img_label_a: string;
+  img_label_b: string;
+  img_label_c: string;
+  img_label_d: string;
   // video / audio / image
   media_url: string;
   guess_duration: 5 | 10 | 15 | 20;
@@ -86,6 +90,10 @@ const DEFAULT_FORM: QuestionForm = {
   img_opt_b: "",
   img_opt_c: "",
   img_opt_d: "",
+  img_label_a: "",
+  img_label_b: "",
+  img_label_c: "",
+  img_label_d: "",
   media_url: "",
   guess_duration: 5,
   audio_start: 0,
@@ -158,6 +166,7 @@ function buildPreview(form: QuestionForm): PreviewQuestion {
     correct_answer: correct,
     media_url: form.media_url,
     image_options: [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d],
+    image_labels: [form.img_label_a, form.img_label_b, form.img_label_c, form.img_label_d],
     clues: [form.clue_1, form.clue_2, form.clue_3, form.clue_4].filter(Boolean),
     answer_mode: mediaToggle ? form.answer_mode : undefined,
     estimate_min: form.estimate_min,
@@ -202,6 +211,7 @@ function VraagForm() {
         const d = snap.data();
         const opts: string[] = d.options ?? [];
         const imgOpts: string[] = d.image_options ?? [];
+        const imgLabels: string[] = d.image_labels ?? [];
         setForm({
           question_text: d.question_text ?? "",
           type: d.type ?? "multiple_choice",
@@ -223,6 +233,10 @@ function VraagForm() {
           img_opt_b: imgOpts[1] ?? "",
           img_opt_c: imgOpts[2] ?? "",
           img_opt_d: imgOpts[3] ?? "",
+          img_label_a: imgLabels[0] ?? "",
+          img_label_b: imgLabels[1] ?? "",
+          img_label_c: imgLabels[2] ?? "",
+          img_label_d: imgLabels[3] ?? "",
           media_url: d.media_url ?? "",
           guess_duration: ([5, 10, 15, 20].includes(d.guess_duration) ? d.guess_duration : 5) as 5 | 10 | 15 | 20,
           audio_start: d.audio_start ?? 0,
@@ -413,7 +427,15 @@ function VraagForm() {
     if (mediaTypeUsesToggle && form.answer_mode === "open") {
       options = [];
     }
-    const imageOptions = [form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean);
+    // Houd URL en bijnaam per foto bij elkaar (alleen gevulde foto's)
+    const imgPairs = ([
+      [form.img_opt_a, form.img_label_a],
+      [form.img_opt_b, form.img_label_b],
+      [form.img_opt_c, form.img_label_c],
+      [form.img_opt_d, form.img_label_d],
+    ] as const).filter(([u]) => !!u);
+    const imageOptions = imgPairs.map(([u], i) => u || `Foto ${i + 1}`);
+    const imageLabels = imgPairs.map(([, l], i) => (l || `Foto ${i + 1}`));
 
     const payload: Record<string, unknown> = {
       quiz_id: quizId,
@@ -448,6 +470,7 @@ function VraagForm() {
     }
     if (form.type === "image_answer") {
       payload.image_options = imageOptions;
+      payload.image_labels = imageLabels;
       payload.options = null;
     }
     if (form.type === "match") {
@@ -463,6 +486,7 @@ function VraagForm() {
     }
     if (form.type === "four_pics") {
       payload.image_options = imageOptions;
+      payload.image_labels = imageLabels;
       payload.options = null;
     }
     if (form.type === "clues") {
@@ -500,8 +524,8 @@ function VraagForm() {
   const L = { color: "var(--muted)", fontSize: "0.75rem", fontWeight: 700 };
   const tfWaardes = ["Waar", "Niet waar"];
 
-  // Afbeelding-slot met vierkante preview, URL, upload én bijsnijden/inzoomen
-  const imageSlot = (key: keyof QuestionForm, placeholder: string, required: boolean) => {
+  // Afbeelding-slot met vierkante preview, URL, upload, bijsnijden én een bijnaam
+  const imageSlot = (key: keyof QuestionForm, placeholder: string, required: boolean, labelKey?: keyof QuestionForm) => {
     const val = form[key] as string;
     return (
       <div key={key} style={{ ...F, gap: "6px" }}>
@@ -510,6 +534,9 @@ function VraagForm() {
           <img src={val} alt="" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "8px", background: "rgba(255,255,255,0.05)" }} />
         )}
         <input type="url" value={val} onChange={(e) => set(key, normalizeImageUrl(e.target.value))} placeholder={placeholder} required={required} className="glass-input" />
+        {labelKey && (
+          <input type="text" value={form[labelKey] as string} onChange={(e) => set(labelKey, e.target.value)} placeholder="Bijnaam (bv. de naam)" className="glass-input" style={{ fontSize: "0.85rem" }} />
+        )}
         <div style={{ display: "flex", gap: "6px" }}>
           <label style={{ flex: 1, textAlign: "center", color: "var(--muted)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "6px", cursor: "pointer", fontSize: "0.78rem" }}>
             📁 Upload
@@ -718,16 +745,17 @@ function VraagForm() {
               <span style={{ color: "var(--cyan)", fontSize: "0.76rem" }}>📋 Ctrl+V plakt een schermknip in het eerste lege vak</span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                  imageSlot(key, `Afbeelding ${["A", "B", "C", "D"][i]}`, i < 2)
+                  imageSlot(key, `Afbeelding ${["A", "B", "C", "D"][i]}`, i < 2, (["img_label_a", "img_label_b", "img_label_c", "img_label_d"] as const)[i])
                 ))}
               </div>
               <div style={F}>
-                <label style={L}>Correct antwoord (URL van de juiste afbeelding)</label>
+                <label style={L}>Correct antwoord (kies de juiste foto)</label>
                 <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
-                  <option value="">— Kies het juiste antwoord —</option>
-                  {[form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean).map((url, i) => (
-                    <option key={url} value={url}>Afbeelding {["A","B","C","D"][i]}</option>
-                  ))}
+                  <option value="">— Kies de juiste foto —</option>
+                  {([["img_opt_a", "img_label_a"], ["img_opt_b", "img_label_b"], ["img_opt_c", "img_label_c"], ["img_opt_d", "img_label_d"]] as const)
+                    .filter(([u]) => form[u]).map(([u, l], i) => (
+                      <option key={form[u] as string} value={form[u] as string}>{(form[l] as string) || `Foto ${i + 1}`}</option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -794,7 +822,7 @@ function VraagForm() {
                 <span style={{ color: "var(--cyan)", fontSize: "0.76rem" }}>📋 Ctrl+V plakt een schermknip in het eerste lege vak</span>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
-                    imageSlot(key, `Afbeelding ${i + 1}`, true)
+                    imageSlot(key, `Afbeelding ${i + 1}`, true, (["img_label_a", "img_label_b", "img_label_c", "img_label_d"] as const)[i])
                   ))}
                 </div>
               </div>
@@ -802,11 +830,12 @@ function VraagForm() {
                 <label style={L}>Correct antwoord (welke foto is juist?)</label>
                 <select value={form.correct_answer} onChange={(e) => set("correct_answer", e.target.value)} required className="glass-input form-select">
                   <option value="">— Kies de juiste foto —</option>
-                  {[form.img_opt_a, form.img_opt_b, form.img_opt_c, form.img_opt_d].filter(Boolean).map((url, i) => (
-                    <option key={url} value={url}>Foto {i + 1}</option>
-                  ))}
+                  {([["img_opt_a", "img_label_a"], ["img_opt_b", "img_label_b"], ["img_opt_c", "img_label_c"], ["img_opt_d", "img_label_d"]] as const)
+                    .filter(([u]) => form[u]).map(([u, l], i) => (
+                      <option key={form[u] as string} value={form[u] as string}>{(form[l] as string) || `Foto ${i + 1}`}</option>
+                    ))}
                 </select>
-                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>De speler tikt één van de vier foto's aan.</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>De speler tikt één van de vier foto's aan. Vul per foto een bijnaam in om die te tonen i.p.v. de URL.</span>
               </div>
             </>
           )}

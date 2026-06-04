@@ -51,6 +51,7 @@ interface QuestionDoc {
   video_start?: number;
   video_muted?: boolean;
   image_options?: string[];
+  image_labels?: string[];
   clues?: string[];
 }
 
@@ -348,7 +349,7 @@ export default function PresentatiePage() {
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", borderRadius: "16px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${1 + 2.5 * Math.max(0, Math.min(1, timeLeft / (question.time_limit_seconds || 1)))})`, transition: "transform 0.3s linear" }} />
+              <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${1 + 5 * Math.max(0, Math.min(1, timeLeft / (question.time_limit_seconds || 1)))})`, transition: "transform 0.3s linear" }} />
             </div>
           </div>
         )}
@@ -375,12 +376,16 @@ export default function PresentatiePage() {
         {question.type === "four_pics" && question.image_options && (
           <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {question.image_options.slice(0, 4).map((url, i) => (
-                <div key={i} style={{ borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.25)" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ))}
+              {question.image_options.slice(0, 4).map((url, i) => {
+                const naam = question.image_labels?.[i];
+                return (
+                  <div key={i} style={{ borderRadius: "12px", overflow: "hidden", position: "relative", background: "rgba(0,0,0,0.25)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={naam ?? `Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {naam && <span style={{ position: "absolute", left: 8, right: 8, bottom: 8, background: "rgba(0,0,0,0.6)", borderRadius: "8px", padding: "4px 10px", color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>{naam}</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -460,11 +465,13 @@ export default function PresentatiePage() {
             <div style={{ height: "100%", aspectRatio: "1 / 1", maxWidth: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
               {question.image_options.slice(0, 4).map((url, i) => {
                 const ok = url === question.correct_answer;
+                const naam = question.image_labels?.[i];
                 return (
                   <div key={i} style={{ borderRadius: "12px", overflow: "hidden", position: "relative", background: "rgba(0,0,0,0.25)", border: ok ? "4px solid #22c55e" : "4px solid transparent", opacity: ok ? 1 : 0.45 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={url} alt={naam ?? `Foto ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     {ok && <span style={{ position: "absolute", top: 6, right: 8, fontSize: "2rem" }}>✓</span>}
+                    {naam && <span style={{ position: "absolute", left: 8, right: 8, bottom: 8, background: ok ? "rgba(34,197,94,0.85)" : "rgba(0,0,0,0.6)", borderRadius: "8px", padding: "4px 10px", color: "#fff", fontWeight: 700, fontSize: "1.4rem", textAlign: "center" }}>{naam}</span>}
                   </div>
                 );
               })}
