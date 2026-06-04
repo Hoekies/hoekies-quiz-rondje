@@ -179,6 +179,8 @@ function VraagForm() {
 
   const tokenRef = useRef<string | null>(null);
   const [form, setForm] = useState<QuestionForm>(DEFAULT_FORM);
+  const formRef = useRef(form);
+  formRef.current = form;
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -297,6 +299,39 @@ function VraagForm() {
     setCrop(undefined); setScale(1); setCompletedCrop(undefined);
     setCropSrc(url);
   }
+
+  // Plakken met Ctrl+V (bv. een schermknip uit het Windows Knipprogramma)
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      let imgFile: File | null = null;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) { imgFile = items[i].getAsFile(); break; }
+      }
+      if (!imgFile) return;
+      const f = formRef.current;
+      const single = ["image", "blur_reveal", "match", "zoom_reveal", "tile_reveal"];
+      const multi = ["image_answer", "four_pics"];
+      let target: keyof QuestionForm | null = null;
+      if (single.includes(f.type)) target = "media_url";
+      else if (multi.includes(f.type)) {
+        const slots: (keyof QuestionForm)[] = ["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"];
+        target = slots.find((k) => !f[k]) ?? "img_opt_a"; // eerste lege slot
+      }
+      if (!target) return; // geen afbeeldingsvraag → niets doen
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setCropTarget(target!);
+        setCrop(undefined); setScale(1); setCompletedCrop(undefined);
+        setCropSrc(ev.target?.result as string);
+      };
+      reader.readAsDataURL(imgFile);
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
 
   function onCropImgLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -539,6 +574,7 @@ function VraagForm() {
               <input type="file" accept="image/*" onChange={(e) => onImageFile(e, "media_url")} className="glass-input" style={{ padding: "8px" }} />
               <label style={{ ...L, marginTop: "4px" }}>Of plak een afbeelding-URL</label>
               <input type="url" value={form.media_url} onChange={(e) => set("media_url", normalizeImageUrl(e.target.value))} placeholder="https://..." className="glass-input" />
+              <span style={{ color: "var(--cyan)", fontSize: "0.78rem" }}>📋 Of plak een schermknip met <strong>Ctrl+V</strong> (Windows Knipprogramma)</span>
               {form.media_url && !cropSrc && (
                 <button type="button" onClick={() => cropFromUrl(form.media_url, "media_url")}
                   style={{ alignSelf: "flex-start", color: "var(--cyan)", background: "none", border: "1px solid rgba(13,180,171,0.4)", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontSize: "0.85rem", fontWeight: 600 }}>
@@ -679,6 +715,7 @@ function VraagForm() {
           {form.type === "image_answer" && (
             <div style={F}>
               <label style={L}>Afbeeldingen als antwoorden (vierkant)</label>
+              <span style={{ color: "var(--cyan)", fontSize: "0.76rem" }}>📋 Ctrl+V plakt een schermknip in het eerste lege vak</span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
                   imageSlot(key, `Afbeelding ${["A", "B", "C", "D"][i]}`, i < 2)
@@ -754,6 +791,7 @@ function VraagForm() {
             <>
               <div style={F}>
                 <label style={L}>Vier afbeeldingen (vierkant)</label>
+                <span style={{ color: "var(--cyan)", fontSize: "0.76rem" }}>📋 Ctrl+V plakt een schermknip in het eerste lege vak</span>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {(["img_opt_a", "img_opt_b", "img_opt_c", "img_opt_d"] as const).map((key, i) => (
                     imageSlot(key, `Afbeelding ${i + 1}`, true)
