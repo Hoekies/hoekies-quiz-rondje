@@ -39,10 +39,10 @@ interface QuestionForm {
   img_opt_d: string;
   // video / audio / image
   media_url: string;
-  guess_duration: 5 | 10;
+  guess_duration: 5 | 10 | 15 | 20;
   audio_start: number;
   video_start: number;
-  clip_duration: 5 | 10;
+  clip_duration: 5 | 10 | 15 | 20;
   answer_mode: "multiple_choice" | "true_false" | "open";
   video_source: "youtube" | "upload";
   video_muted: boolean;
@@ -224,10 +224,10 @@ function VraagForm() {
           img_opt_c: imgOpts[2] ?? "",
           img_opt_d: imgOpts[3] ?? "",
           media_url: d.media_url ?? "",
-          guess_duration: (d.guess_duration === 10 ? 10 : 5) as 5 | 10,
+          guess_duration: ([5, 10, 15, 20].includes(d.guess_duration) ? d.guess_duration : 5) as 5 | 10 | 15 | 20,
           audio_start: d.audio_start ?? 0,
           video_start: d.video_start ?? 0,
-          clip_duration: ((d.clip_duration ?? d.guess_duration) === 10 ? 10 : 5) as 5 | 10,
+          clip_duration: ((v) => [5, 10, 15, 20].includes(v) ? v : 5)(d.clip_duration ?? d.guess_duration) as 5 | 10 | 15 | 20,
           answer_mode: d.answer_mode === "true_false" ? "true_false" : d.answer_mode === "open" ? "open" : "multiple_choice",
           video_source: (d.type === "video" && d.media_url && !/youtube|youtu\.be/.test(d.media_url)) ? "upload" : "youtube",
           video_muted: !!d.video_muted,
@@ -609,7 +609,7 @@ function VraagForm() {
                 <div style={F}>
                   <label style={L}>Afspeelduur</label>
                   <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
-                    {([5, 10] as const).map((sec) => (
+                    {([5, 10, 15, 20] as const).map((sec) => (
                       <label key={sec} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                         <input type="radio" name="clip_duration" checked={form.clip_duration === sec} onChange={() => set("clip_duration", sec)} style={{ accentColor: "var(--cyan)" }} />
                         <span style={{ color: form.clip_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>{sec}s</span>
@@ -650,7 +650,7 @@ function VraagForm() {
                 <div style={F}>
                   <label style={L}>Afspeelduur</label>
                   <div style={{ display: "flex", gap: "12px", paddingTop: "8px" }}>
-                    {([5, 10] as const).map((sec) => (
+                    {([5, 10, 15, 20] as const).map((sec) => (
                       <label key={sec} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
                         <input type="radio" name="clip_duration_v" checked={form.clip_duration === sec} onChange={() => set("clip_duration", sec)} style={{ accentColor: "var(--cyan)" }} />
                         <span style={{ color: form.clip_duration === sec ? "var(--cyan)" : "var(--text)", fontWeight: 600, fontSize: "0.9rem" }}>{sec}s</span>

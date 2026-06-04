@@ -59,10 +59,10 @@ export interface Question {
   image_options?: string[];
   left_items?: string[];
   right_items?: string[];
-  guess_duration?: 5 | 10;
+  guess_duration?: 5 | 10 | 15 | 20;
   audio_start?: number;
   video_start?: number;
-  clip_duration?: 5 | 10;
+  clip_duration?: 5 | 10 | 15 | 20;
   answer_mode?: "multiple_choice" | "true_false" | "open";
   video_muted?: boolean;
   clues?: string[];
