@@ -13,6 +13,7 @@ import AdminLayout from "../AdminLayout";
 interface ThemeSettings {
   logo_url?: string;
   background_url?: string;
+  intro_audio_url?: string;
 }
 
 function centerAspectCrop(width: number, height: number): Crop {
@@ -22,7 +23,8 @@ function centerAspectCrop(width: number, height: number): Crop {
 export default function ThemaPagina() {
   const router = useRouter();
   const [theme, setTheme] = useState<ThemeSettings>({});
-  const [saving, setSaving] = useState<"logo" | "bg" | null>(null);
+  const [saving, setSaving] = useState<"logo" | "bg" | "intro" | null>(null);
+  const introFileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [logoCropSrc, setLogoCropSrc] = useState<string | null>(null);
@@ -119,6 +121,30 @@ export default function ThemaPagina() {
     setSaving(null);
   }
 
+  async function saveIntro(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSaving("intro"); setError("");
+    try {
+      const url = await uploadMedia(file, "video"); // audio = video-resource bij Cloudinary
+      await setDoc(doc(db, "settings", "theme"), { intro_audio_url: url }, { merge: true });
+      setTheme((t) => ({ ...t, intro_audio_url: url }));
+      setSuccess("Intro-muziek opgeslagen!"); setTimeout(() => setSuccess(""), 3000);
+    } catch (e) { setError("Upload mislukt: " + (e as Error).message); }
+    setSaving(null);
+    if (introFileRef.current) introFileRef.current.value = "";
+  }
+
+  async function resetIntro() {
+    setSaving("intro");
+    try {
+      await setDoc(doc(db, "settings", "theme"), { intro_audio_url: null }, { merge: true });
+      setTheme((t) => ({ ...t, intro_audio_url: undefined }));
+      setSuccess("Intro-muziek verwijderd"); setTimeout(() => setSuccess(""), 3000);
+    } catch (e) { setError("Fout: " + (e as Error).message); }
+    setSaving(null);
+  }
+
   const F = { display: "flex", flexDirection: "column" as const, gap: "10px" };
   const L = { color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" };
 
@@ -180,6 +206,26 @@ export default function ThemaPagina() {
               <input ref={bgFileRef} type="file" accept="image/*" onChange={saveBg} style={{ display: "none" }} />
               <button onClick={() => bgFileRef.current?.click()} disabled={saving === "bg"} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{saving === "bg" ? "Uploaden..." : "Achtergrond uploaden"}</button>
               <button onClick={resetBg} disabled={saving === "bg"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Herstel standaardachtergrond</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Intro-muziek */}
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", marginBottom: "16px" }}>Intro-muziek (lobby)</h2>
+          <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
+              <span style={L}>Huidig</span>
+              {theme.intro_audio_url
+                ? <audio controls src={theme.intro_audio_url} style={{ width: "180px" }} />
+                : <div style={{ width: "120px", height: "48px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Geen</span></div>
+              }
+            </div>
+            <div style={{ flex: 1, ...F }}>
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Speelt automatisch op de telefoon van de speler terwijl die in de <strong style={{ color: "var(--cyan)" }}>lobby</strong> wacht. Stopt zodra de quiz begint. Upload een MP3 (bv. je Suno-muziekje — download het eerst van Suno).</p>
+              <input ref={introFileRef} type="file" accept="audio/*" onChange={saveIntro} style={{ display: "none" }} />
+              <button onClick={() => introFileRef.current?.click()} disabled={saving === "intro"} className="btn-game" style={{ fontSize: "0.9rem", padding: "10px 16px" }}>{saving === "intro" ? "Uploaden..." : "Muziek uploaden"}</button>
+              {theme.intro_audio_url && <button onClick={resetIntro} disabled={saving === "intro"} style={{ color: "var(--muted)", background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}>Intro-muziek verwijderen</button>}
             </div>
           </div>
         </div>

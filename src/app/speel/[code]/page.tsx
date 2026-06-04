@@ -173,6 +173,8 @@ export default function SpeelPage() {
   const answersMapRef = useRef<Record<string, { answer: string; is_correct: boolean; points_awarded: number }>>({});
   const [themeLogo, setThemeLogo] = useState<string | null>(null);
   const [themeBg, setThemeBg] = useState<string | null>(null);
+  const [themeIntro, setThemeIntro] = useState<string | null>(null);
+  const introAudioRef = useRef<HTMLAudioElement | null>(null);
   const [avatar, setAvatar] = useState(() => AVATARS[Math.floor(Math.random() * AVATARS.length)]);
   const [soundOn, setSoundOn] = useState(true);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -185,9 +187,30 @@ export default function SpeelPage() {
         const d = snap.data();
         if (d.logo_url) setThemeLogo(d.logo_url);
         if (d.background_url) setThemeBg(d.background_url);
+        if (d.intro_audio_url) setThemeIntro(d.intro_audio_url);
       }
     });
   }, []);
+
+  // Intro-muziek in de lobby (start na de join-gesture, stopt zodra de quiz begint)
+  useEffect(() => {
+    if (!themeIntro || typeof Audio === "undefined") return;
+    if (!introAudioRef.current) {
+      const a = new Audio(themeIntro);
+      a.loop = true;
+      a.volume = 0.6;
+      introAudioRef.current = a;
+    }
+    const a = introAudioRef.current;
+    if (step === "lobby" && soundOn) {
+      a.play().catch(() => {});
+    } else {
+      a.pause();
+    }
+  }, [step, soundOn, themeIntro]);
+
+  // Stop de intro bij verlaten van de pagina
+  useEffect(() => () => { introAudioRef.current?.pause(); }, []);
 
   // Init geluid-voorkeur
   useEffect(() => { setSoundOn(soundEnabled()); }, []);
