@@ -44,9 +44,18 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType = "
   osc.stop(t0 + dur + 0.02);
 }
 
-export function tick() { tone(880, 0, 0.06, "square", 0.08); }
-export function correct() { tone(660, 0, 0.12, "triangle"); tone(990, 0.1, 0.18, "triangle"); }
-export function wrong() { tone(200, 0, 0.25, "sawtooth", 0.12); }
-export function fanfare() {
-  [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.3, "triangle", 0.16));
+// Geluidssamples (wav) uit /public/sounds — lui geladen en hergebruikt.
+const samples: Record<string, HTMLAudioElement> = {};
+function play(file: string, volume = 0.85) {
+  if (typeof Audio === "undefined" || !soundEnabled()) return;
+  let a = samples[file];
+  if (!a) { a = new Audio(file); a.preload = "auto"; samples[file] = a; }
+  a.volume = volume;
+  try { a.currentTime = 0; } catch {}
+  a.play().catch(() => {});
 }
+
+export function tick() { tone(880, 0, 0.06, "square", 0.08); }
+export function correct() { play("/sounds/goud.wav"); }      // goed antwoord
+export function wrong() { play("/sounds/fout.wav"); }        // fout antwoord
+export function fanfare() { play("/sounds/winnaar.wav", 0.95); } // winnaar / eindscherm
