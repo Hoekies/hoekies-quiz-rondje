@@ -1359,12 +1359,6 @@ export default function SpeelPage() {
               </div>
             ))}
           </div>
-
-          {/* Jouw score onderaan */}
-          <div className="glass-card" style={{ padding: "12px 24px", textAlign: "center", width: "100%", marginTop: "auto" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Jouw score{myRank > 0 ? ` — #${myRank}` : ""}</p>
-            <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem" }}>{myScore} punten</p>
-          </div>
         </div>
       </div>
     );
