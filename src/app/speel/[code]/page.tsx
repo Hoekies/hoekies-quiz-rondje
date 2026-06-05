@@ -909,7 +909,7 @@ export default function SpeelPage() {
 
           {/* image — vierkant */}
           {question.type === "image" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(78vw, 30vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
@@ -934,7 +934,7 @@ export default function SpeelPage() {
           )}
           {/* blur_reveal — vierkant */}
           {question.type === "blur_reveal" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(78vw, 30vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", filter: `blur(${blurLevel}px)`, transform: "scale(1.1)", transition: "filter 0.8s ease" }} />
             </div>
@@ -947,14 +947,14 @@ export default function SpeelPage() {
           )}
           {/* zoom_reveal — inzoomend, zoomt langzaam uit */}
           {question.type === "zoom_reveal" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", width: "min(78vw, 30vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${zoomScale})`, transition: "transform 0.15s linear" }} />
             </div>
           )}
           {/* tile_reveal — puzzel, tegels verdwijnen geleidelijk */}
           {question.type === "tile_reveal" && question.media_url && (
-            <div style={{ flexShrink: 0, alignSelf: "center", position: "relative", width: "min(90vw, 38vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
+            <div style={{ flexShrink: 0, alignSelf: "center", position: "relative", width: "min(78vw, 30vh)", aspectRatio: "1 / 1", borderRadius: "12px", overflow: "hidden", background: "rgba(0,0,0,0.2)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={question.media_url} alt="Afbeelding" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridTemplateRows: "repeat(4, 1fr)" }}>
@@ -984,14 +984,15 @@ export default function SpeelPage() {
             </div>
           )}
 
-          {/* Tekst antwoordknoppen */}
+          {/* Tekst antwoordknoppen — 2 naast elkaar */}
           {question.type !== "image_answer" && question.type !== "four_pics" && question.type !== "estimate" && question.type !== "multi_select" && !isOpenMode && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", minHeight: 0 }}>
+            <div style={{ flex: 1, display: "grid", gridTemplateColumns: options.length > 2 ? "1fr 1fr" : "1fr", gridAutoRows: "1fr", gap: "8px", minHeight: 0 }}>
               {options.map((opt: string, i: number) => (
                 <button key={i} onClick={() => handleAnswer(opt)} disabled={!!selectedAnswer || timeUp}
-                  className={`answer-block flex-1 ${BLOCK_CLASS[i] ?? ""}`}>
-                  <span style={{ fontSize: "1.1rem", fontWeight: 900, opacity: 0.7, width: "24px" }}>{LABEL[i]}</span>
-                  <span>{opt}</span>
+                  className={`answer-block ${BLOCK_CLASS[i] ?? ""}`}
+                  style={{ minHeight: 0, alignItems: "center" }}>
+                  <span style={{ fontSize: "1rem", fontWeight: 900, opacity: 0.7, width: "20px", flexShrink: 0 }}>{LABEL[i]}</span>
+                  <span style={{ fontSize: "clamp(0.85rem, 3.2vw, 1.05rem)", lineHeight: 1.15 }}>{opt}</span>
                 </button>
               ))}
             </div>
@@ -1294,9 +1295,9 @@ export default function SpeelPage() {
       : {};
     return (
       <div className="speler-shell" style={lbBgStyle}>
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px) clamp(16px, 3vh, 24px)" }}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "12px", overflowY: "auto", padding: "clamp(12px, 2vh, 20px) clamp(16px, 4vw, 20px) calc(env(safe-area-inset-bottom) + 28px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(16px, 4vh, 32px)" }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(120px, 30vw, 180px)", height: "clamp(120px, 30vw, 180px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(8px, 2vh, 16px)" }} />
           <h2 style={{ color: "#fff", fontWeight: 700, fontSize: "clamp(1.1rem, 5vw, 1.3rem)" }}>Tussenstand</h2>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
             {ranks.map((p, i) => (
@@ -1329,9 +1330,9 @@ export default function SpeelPage() {
     return (
       <div className="speler-shell" style={endBgStyle}>
         <Confetti active={true} duration={10000} />
-        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "14px", padding: "clamp(16px, 3vh, 24px) clamp(16px, 4vw, 20px)" }}>
+        <div className="speler-content" style={{ alignItems: "center", justifyContent: "flex-start", gap: "12px", overflowY: "auto", padding: "clamp(12px, 2vh, 20px) clamp(16px, 4vw, 20px) calc(env(safe-area-inset-bottom) + 28px)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(168px, 42vw, 240px)", height: "clamp(168px, 42vw, 240px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(16px, 4vh, 32px)" }} />
+          <img src={themeLogo ?? "/logo-vierkant.png"} alt="logo" style={{ width: "clamp(110px, 28vw, 170px)", height: "clamp(110px, 28vw, 170px)", objectFit: "contain", flexShrink: 0, marginTop: "clamp(8px, 2vh, 16px)" }} />
 
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: "clamp(1.3rem, 6vw, 1.8rem)", textAlign: "center" }}>Quiz voorbij!</h2>
 
