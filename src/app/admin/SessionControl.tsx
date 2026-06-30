@@ -458,7 +458,6 @@ export default function SessionControl({ code }: { code: string }) {
           {si.text.toUpperCase()}
         </div>
         <div style={{ flex: 1 }} />
-        <a href={`/qr/${code}`} target="_blank" style={lnk}>QR ↗</a>
         <a href={`/presentatie/${code}`} target="_blank" style={lnk}>Presentatie ↗</a>
         <a href={waUrl} target="_blank" rel="noopener noreferrer" title="Deel via WhatsApp" aria-label="Deel via WhatsApp"
           style={{ ...lnk, padding: "0", width: "38px", background: "linear-gradient(135deg,#25D366,#128C7E)", borderColor: "transparent", color: "#fff" }}>
