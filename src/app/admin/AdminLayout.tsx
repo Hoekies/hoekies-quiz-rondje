@@ -18,17 +18,22 @@ export default function AdminLayout({ children, title }: Props) {
   }
 
   const navItems = [
-    { href: "/admin", label: "Dashboard", icon: "🎮" },
-    { href: "/admin/quiz", label: "Vragen beheren", icon: "📝" },
-    { href: "/admin/thema", label: "Thema quiz", icon: "🎨" },
-    { href: "/admin/handleiding", label: "Hulp", icon: "📖" },
+    { href: "/admin",            label: "Dashboard",      icon: "⚡" },
+    { href: "/admin/quiz",       label: "Vragen",         icon: "📝" },
+    { href: "/admin/thema",      label: "Thema",          icon: "🎨" },
+    { href: "/admin/instellingen", label: "WhatsApp",     icon: "💬" },
+    { href: "/admin/handleiding",  label: "Hulp",         icon: "📖" },
   ];
 
   return (
     <div className="admin-shell">
       {/* Mobile topbar */}
       <div className="admin-mobile-topbar">
-        <img src="/logo.png" alt="logo" style={{ height: "36px", objectFit: "contain" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-vierkant.png" alt="logo" style={{ height: "32px", width: "32px", objectFit: "contain", borderRadius: "6px" }} />
+          <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "#fff" }}>Quiz Rondje</span>
+        </div>
         <button className="admin-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">
           <span /><span /><span />
         </button>
@@ -37,7 +42,7 @@ export default function AdminLayout({ children, title }: Props) {
       {/* Sidebar overlay op mobile */}
       {sidebarOpen && (
         <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 140 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 140 }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -45,9 +50,16 @@ export default function AdminLayout({ children, title }: Props) {
       {/* Sidebar */}
       <aside className={`admin-sidebar${sidebarOpen ? " admin-sidebar--open" : ""}`}>
         <div className="admin-sidebar-logo">
-          <img src="/logo-vierkant.png" alt="Hoekies Quiz" style={{ width: "80%", objectFit: "contain", display: "block" }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-vierkant.png" alt="Hoekies Quiz" />
+          <div className="admin-sidebar-logo-text">
+            <span className="admin-sidebar-logo-name">Hoekies</span>
+            <span className="admin-sidebar-logo-sub">Quiz Rondje</span>
+          </div>
         </div>
+
         <nav className="admin-nav">
+          <span className="admin-nav-section">Beheer</span>
           {navItems.map((item) => (
             <a
               key={item.href}
@@ -55,14 +67,16 @@ export default function AdminLayout({ children, title }: Props) {
               className={`admin-nav-link${pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href)) ? " actief" : ""}`}
               onClick={() => setSidebarOpen(false)}
             >
-              <span>{item.icon}</span>
+              <span className="nav-icon">{item.icon}</span>
               <span>{item.label}</span>
             </a>
           ))}
         </nav>
-        <div style={{ padding: "0 10px 20px" }}>
-          <button className="sidebar-actie-knop sidebar-actie-knop--gevaar sidebar-actie-knop--groot" onClick={handleSignOut}>
-            → Uitloggen
+
+        <div className="admin-sidebar-bottom">
+          <button className="admin-signout" onClick={handleSignOut}>
+            <span className="nav-icon">↩</span>
+            <span>Uitloggen</span>
           </button>
         </div>
       </aside>

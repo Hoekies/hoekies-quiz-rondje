@@ -99,97 +99,121 @@ export default function AdminDashboard() {
   const activeSession = sessions.find((s) => s.is_active && s.status !== "finished");
   const otherSessions = sessions.filter((s) => s.code !== activeSession?.code);
 
+  const Toggle = ({ session, onToggle }: { session: SessionDoc; onToggle: () => void }) => (
+    <button
+      onClick={onToggle}
+      disabled={!!toggling}
+      title={session.is_active ? "Zet inactief" : "Zet actief"}
+      style={{
+        display: "flex", alignItems: "center", gap: "8px",
+        padding: "7px 14px", borderRadius: "8px", border: "none",
+        background: session.is_active ? "rgba(13,180,171,0.15)" : "rgba(255,255,255,0.06)",
+        color: session.is_active ? "var(--cyan)" : "var(--muted)",
+        fontSize: "0.8rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer",
+        transition: "all 0.15s", fontFamily: "var(--font)", flexShrink: 0,
+      }}>
+      <div style={{
+        width: "30px", height: "17px", borderRadius: "99px",
+        background: session.is_active ? "var(--cyan)" : "rgba(255,255,255,0.18)",
+        position: "relative", transition: "background 0.2s", flexShrink: 0,
+      }}>
+        <div style={{
+          position: "absolute", top: "2.5px",
+          left: session.is_active ? "15px" : "2.5px",
+          width: "12px", height: "12px", borderRadius: "50%",
+          background: "#fff", transition: "left 0.2s",
+        }} />
+      </div>
+      {session.is_active ? "Actief" : "Inactief"}
+    </button>
+  );
+
   return (
     <AdminLayout title="Dashboard">
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "700px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "780px" }}>
 
-        {/* Actieve sessie — compacte header */}
+        {/* Actieve sessie */}
         {activeSession && (
-          <div className="card" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[activeSession.status] ?? "var(--muted)", flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.1em" }}>{activeSession.code}</span>
-              <span style={{ color: "var(--muted)", fontSize: "0.8rem", marginLeft: "10px" }}>
-                {statusLabel[activeSession.status] ?? activeSession.status}
-              </span>
+          <>
+            {/* Sessie-header: code + status + QR-thumbnail + toggle + verwijderen */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[activeSession.status] ?? "var(--muted)", flexShrink: 0, boxShadow: `0 0 6px ${statusColor[activeSession.status] ?? "var(--muted)"}` }} />
+                <span style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem", letterSpacing: "0.08em" }}>{activeSession.code}</span>
+                <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>{statusLabel[activeSession.status] ?? activeSession.status}</span>
+              </div>
+
+              {activeSession.is_active && headerQr && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={headerQr} alt="QR" style={{ width: "48px", height: "48px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", padding: "4px", flexShrink: 0 }} />
+              )}
+
+              <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                <Toggle session={activeSession} onToggle={() => handleToggleActive(activeSession)} />
+                <button onClick={() => handleDeleteSession(activeSession.code)} title="Sessie verwijderen"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.3)", background: "rgba(255,59,92,0.06)", color: "var(--red)", cursor: "pointer", fontSize: "1rem" }}>
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {activeSession.is_active && headerQr && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={headerQr} alt="QR" style={{ width: "56px", height: "56px", borderRadius: "8px", background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
-            )}
+            <div style={{ height: "1px", background: "rgba(255,255,255,0.07)" }} />
 
-            <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
-              <button onClick={() => handleToggleActive(activeSession)} disabled={!!toggling} title={activeSession.is_active ? "Zet inactief" : "Zet actief"}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: activeSession.is_active ? "rgba(13,180,171,0.15)" : "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: activeSession.is_active ? "var(--cyan)" : "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", transition: "background 0.2s, color 0.2s", whiteSpace: "nowrap" }}>
-                <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: activeSession.is_active ? "var(--cyan)" : "rgba(255,255,255,0.2)", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
-                  <div style={{ position: "absolute", top: "2px", left: activeSession.is_active ? "14px" : "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-                </div>
-                {activeSession.is_active ? "Actief" : "Inactief"}
-              </button>
-              <button onClick={() => handleDeleteSession(activeSession.code)} title="Verwijderen"
-                style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Live besturing van de actieve sessie — alles-in-één */}
-        {activeSession && (
-          <div style={{ paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            {/* Live besturing */}
             <SessionControl code={activeSession.code} />
-          </div>
+          </>
         )}
 
-        {/* Toggle fout melding */}
+        {/* Foutmelding toggle */}
         {toggleError && (
-          <div style={{ color: "var(--red)", background: "rgba(255,59,92,0.1)", border: "1px solid rgba(255,59,92,0.3)", borderRadius: "10px", padding: "10px 16px", fontSize: "0.85rem" }}>
-            ⚠ {toggleError}
-            <button onClick={() => setToggleError("")} style={{ marginLeft: "10px", background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
+          <div className="melding melding-fout">
+            <span>⚠</span>
+            <span style={{ flex: 1 }}>{toggleError}</span>
+            <button onClick={() => setToggleError("")} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1rem", lineHeight: 1 }}>✕</button>
           </div>
         )}
 
-        {/* Nieuwe sessie — alleen tonen als er nog geen sessie bestaat */}
+        {/* Nieuwe sessie aanmaken */}
         {sessions.length === 0 && (
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ flex: "0 0 auto", fontSize: "0.95rem", padding: "12px 20px" }}>
-              {creating ? "Aanmaken..." : "+ Nieuwe sessie"}
+          <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", padding: "40px 24px", textAlign: "center" }}>
+            <p style={{ fontSize: "2.5rem" }}>🎮</p>
+            <div>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Nog geen sessie</p>
+              <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "4px" }}>Maak een nieuwe sessie aan om de quiz te starten.</p>
+            </div>
+            <button onClick={handleCreateSession} disabled={creating} className="btn-game" style={{ fontSize: "0.95rem", padding: "12px 28px", width: "auto" }}>
+              {creating ? "Aanmaken…" : "+ Nieuwe sessie"}
             </button>
-            {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem", alignSelf: "center" }}>{createError}</p>}
+            {createError && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{createError}</p>}
           </div>
         )}
 
-        {/* Overige sessies — compacte rij om te activeren/starten (alleen als er geen actieve sessie is) */}
+        {/* Overige sessies (geen actieve) */}
         {!activeSession && otherSessions.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" }}>
-              Sessies ({otherSessions.length})
-            </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <p className="card-title">Sessies</p>
             {otherSessions.map((session) => (
-              <div key={session.code} className="card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px" }}>
-                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: statusColor[session.status] ?? "var(--muted)", flexShrink: 0 }} />
+              <div key={session.code} className="card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px" }}>
+                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: statusColor[session.status] ?? "var(--muted)", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ color: "var(--cyan)", fontWeight: 900, fontSize: "1rem", letterSpacing: "0.1em" }}>{session.code}</span>
-                  <span style={{ color: "var(--muted)", fontSize: "0.78rem", marginLeft: "10px" }}>
-                    {statusLabel[session.status] ?? session.status}
-                  </span>
+                  <span style={{ color: "#fff", fontWeight: 800, fontSize: "0.95rem", letterSpacing: "0.06em" }}>{session.code}</span>
+                  <span style={{ color: "var(--muted)", fontSize: "0.78rem", marginLeft: "10px" }}>{statusLabel[session.status] ?? session.status}</span>
                 </div>
-                <div style={{ display: "flex", flexShrink: 0, borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.14)" }}>
-                  <button onClick={() => handleToggleActive(session)} disabled={!!toggling} title="Activeren"
-                    style={{ display: "flex", alignItems: "center", gap: "6px", padding: "7px 12px", background: "rgba(255,255,255,0.05)", border: "none", borderRight: "1px solid rgba(255,255,255,0.14)", color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, cursor: toggling ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-                    <div style={{ width: "28px", height: "16px", borderRadius: "8px", background: "rgba(255,255,255,0.2)", position: "relative", flexShrink: 0 }}>
-                      <div style={{ position: "absolute", top: "2px", left: "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff" }} />
-                    </div>
-                    Activeren
-                  </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <Toggle session={session} onToggle={() => handleToggleActive(session)} />
                   <button onClick={() => handleDeleteSession(session.code)} title="Verwijderen"
-                    style={{ display: "flex", alignItems: "center", padding: "7px 11px", background: "rgba(255,255,255,0.05)", border: "none", color: "var(--red)", fontSize: "0.9rem", cursor: "pointer", opacity: 0.7 }}>
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", borderRadius: "8px", border: "1px solid rgba(255,59,92,0.3)", background: "rgba(255,59,92,0.06)", color: "var(--red)", cursor: "pointer", fontSize: "1rem" }}>
                     ✕
                   </button>
                 </div>
               </div>
             ))}
+            <div style={{ marginTop: "4px" }}>
+              <button onClick={handleCreateSession} disabled={creating}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700, fontFamily: "var(--font)" }}>
+                {creating ? "Aanmaken…" : "+ Nieuwe sessie"}
+              </button>
+            </div>
           </div>
         )}
 
