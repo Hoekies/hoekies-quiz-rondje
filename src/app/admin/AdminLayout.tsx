@@ -52,10 +52,6 @@ export default function AdminLayout({ children, title }: Props) {
         <div className="admin-sidebar-logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-vierkant.png" alt="Hoekies Quiz" />
-          <div className="admin-sidebar-logo-text">
-            <span className="admin-sidebar-logo-name">Hoekies</span>
-            <span className="admin-sidebar-logo-sub">Quiz Rondje</span>
-          </div>
         </div>
 
         <nav className="admin-nav">
