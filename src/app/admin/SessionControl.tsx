@@ -423,92 +423,110 @@ export default function SessionControl({ code }: { code: string }) {
   if (loading) return null;
   if (!session) return <p style={{ color: "var(--muted)" }}>Sessie niet gevonden.</p>;
 
-  const S = { display: "flex", flexDirection: "column" as const, gap: "18px", maxWidth: "760px", margin: "0 auto", width: "100%" };
-
-  // Gedeelde labelstijl voor paneel-koppen
-  const sectionLabel = { color: "var(--muted)", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.02em" };
-  // Of de secundaire beheerknoppen zichtbaar zijn
   const showBeheer = session.state !== "resuming";
   const showActieveBeheer = session.state !== "endscreen" && session.state !== "lobby" && session.state !== "resuming";
 
+  const stateInfo: Record<string, { text: string; color: string; dot: string }> = {
+    lobby:         { text: "Lobby",          color: "rgba(13,180,171,0.18)",  dot: "var(--cyan)"  },
+    ronde_intro:   { text: "Intro",          color: "rgba(13,180,171,0.18)",  dot: "var(--cyan)"  },
+    question_open: { text: "Vraag open",     color: "rgba(34,197,94,0.18)",   dot: "var(--green)" },
+    answer_reveal: { text: "Antwoorden",     color: "rgba(96,165,250,0.18)",  dot: "#60a5fa"      },
+    leaderboard:   { text: "Tussenstand",    color: "rgba(255,217,59,0.18)",  dot: "var(--gold)"  },
+    ronde_klaar:   { text: "Ronde klaar",    color: "rgba(34,197,94,0.18)",   dot: "var(--green)" },
+    finale:        { text: "Bonusvraag ×2",  color: "rgba(255,217,59,0.18)",  dot: "var(--gold)"  },
+    laatste_vraag: { text: "Laatste vraag",  color: "rgba(249,115,22,0.18)",  dot: "#f97316"      },
+    paused:        { text: "Pauze",          color: "rgba(249,115,22,0.18)",  dot: "#f97316"      },
+    resuming:      { text: "Hervatten…",     color: "rgba(13,180,171,0.18)",  dot: "var(--cyan)"  },
+    endscreen:     { text: "Quiz afgerond",  color: "rgba(255,217,59,0.18)",  dot: "var(--gold)"  },
+  };
+  const si = stateInfo[session.state] ?? { text: session.state, color: "rgba(255,255,255,0.1)", dot: "var(--muted)" };
+
+  const lnk: React.CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "8px 16px", height: "38px", borderRadius: "10px", fontSize: "0.82rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "var(--text)", cursor: "pointer", whiteSpace: "nowrap" };
+
+  const msg = waTemplate.replace(/\{code\}/g, code);
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+  const secLabel: React.CSSProperties = { color: "var(--muted)", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" };
+
   return (
-    <div style={S}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "760px", margin: "0 auto", width: "100%" }}>
 
-      {/* Knoppenrij */}
-      {(() => {
-        const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "9px 16px", minHeight: "40px", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 700, textDecoration: "none", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer" } as const;
-        const msg = waTemplate.replace(/\{code\}/g, code);
-        const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-        return (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <span style={{ ...btn, background: "rgba(13,180,171,0.12)", borderColor: "rgba(13,180,171,0.3)", color: "var(--cyan)", cursor: "default" }}>
-              {session.state.replace(/_/g, " ").toUpperCase()}
-            </span>
-            <span style={{ flex: 1 }} />
-            <a href={`/qr/${code}`} target="_blank" style={btn}>QR ↗</a>
-            <a href={`/presentatie/${code}`} target="_blank" style={btn}>Presentatie ↗</a>
-            <a href={waUrl} target="_blank" rel="noopener noreferrer" title="Deel via WhatsApp" aria-label="Deel via WhatsApp"
-              style={{ ...btn, padding: "9px", width: "40px", background: "linear-gradient(135deg, #25D366, #128C7E)", borderColor: "transparent", color: "#fff", boxShadow: "0 2px 10px rgba(37,211,102,0.35)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            </a>
-          </div>
-        );
-      })()}
+      {/* Status + navigatieknoppen */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "5px 14px", borderRadius: "99px", background: si.color, fontWeight: 700, fontSize: "0.78rem", letterSpacing: "0.04em", color: "#fff" }}>
+          <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: si.dot, flexShrink: 0 }} />
+          {si.text.toUpperCase()}
+        </div>
+        <div style={{ flex: 1 }} />
+        <a href={`/qr/${code}`} target="_blank" style={lnk}>QR ↗</a>
+        <a href={`/presentatie/${code}`} target="_blank" style={lnk}>Presentatie ↗</a>
+        <a href={waUrl} target="_blank" rel="noopener noreferrer" title="Deel via WhatsApp" aria-label="Deel via WhatsApp"
+          style={{ ...lnk, padding: "0", width: "38px", background: "linear-gradient(135deg,#25D366,#128C7E)", borderColor: "transparent", color: "#fff" }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      </div>
 
-      {/* Hoofd 2-koloms layout: links ronde-keuze / vraag, rechts spelers (stapelt op mobiel) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", alignItems: "start" }}>
+      {/* 2-koloms: vraag + spelers */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px", alignItems: "start" }}>
 
-        {/* LINKS — ronde-keuze (lobby/ronde_klaar) of huidige vraag */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* LINKS */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-          {/* Ronde-klaar melding */}
+          {/* Ronde klaar */}
           {session.state === "ronde_klaar" && (
-            <div className="card" style={{ textAlign: "center", padding: "20px", border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)" }}>
-              <p style={{ fontSize: "1.6rem" }}>✅</p>
-              <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>Ronde klaar! Kies de volgende ronde of beëindig het spel.</p>
-              <p style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: "4px" }}>Scores blijven staan en tellen op.</p>
+            <div className="card" style={{ textAlign: "center", padding: "24px 20px", border: "1px solid rgba(34,197,94,0.25)", background: "rgba(34,197,94,0.05)" }}>
+              <p style={{ fontSize: "2rem", marginBottom: "8px" }}>✅</p>
+              <p style={{ color: "#fff", fontWeight: 700 }}>Ronde klaar!</p>
+              <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginTop: "4px" }}>Kies de volgende ronde of beëindig het spel.</p>
             </div>
           )}
 
-          {/* Ronde-keuze (lobby of tussen rondes) */}
+          {/* Ronde-keuze */}
           {(session.state === "lobby" || session.state === "ronde_klaar") && rounds.length > 0 && (
-            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px 20px" }}>
-              <span style={sectionLabel}>Welke ronde?</span>
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "20px" }}>
+              <span style={secLabel}>Kies ronde</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {rounds.map((r) => {
-                  const isSelected = selectedRound === r;
+                  const isSel = selectedRound === r;
                   const isPlayed = (session.played_rounds ?? []).includes(r);
                   return (
                     <button key={r} onClick={() => selectRound(r)}
-                      style={{ padding: "8px 14px", minHeight: "40px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem",
-                        background: isSelected ? "var(--cyan)" : "rgba(255,255,255,0.06)",
-                        color: isSelected ? "#000" : (isPlayed ? "var(--muted)" : "var(--text)"),
-                        opacity: isPlayed && !isSelected ? 0.6 : 1 }}>
-                      {isPlayed ? "✓ " : ""}{roundLabel(r)} ({questions.filter((q) => q.round === r).length})
+                      style={{ padding: "7px 14px", borderRadius: "8px", border: `1px solid ${isSel ? "var(--cyan)" : "rgba(255,255,255,0.12)"}`, cursor: "pointer", fontWeight: 700, fontSize: "0.83rem",
+                        background: isSel ? "var(--cyan)" : "rgba(255,255,255,0.05)",
+                        color: isSel ? "#000" : (isPlayed ? "var(--muted)" : "var(--text)"),
+                        opacity: isPlayed && !isSel ? 0.55 : 1 }}>
+                      {isPlayed ? "✓ " : ""}{roundLabel(r)} <span style={{ opacity: 0.6, fontWeight: 500 }}>({questions.filter((q) => q.round === r).length})</span>
                     </button>
                   );
                 })}
               </div>
-              <span style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</span>
+              <p style={{ color: "var(--cyan)", fontSize: "0.8rem" }}>{questionOrder.length} vragen geselecteerd</p>
             </div>
           )}
 
           {/* Huidige vraag */}
           {currentQuestion && (
-            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={sectionLabel}>
-                  Vraag {currentIdx + 1} / {questionOrder.length}
-                </span>
+                <span style={secLabel}>Vraag {currentIdx + 1} / {questionOrder.length}</span>
                 <span className="status-pil status-pil--blauw">{currentQuestion.type}</span>
               </div>
-              <p style={{ color: "var(--ink)", fontWeight: 600, lineHeight: 1.4 }}>{currentQuestion.question_text}</p>
-              <p style={{ color: "var(--green)", fontWeight: 700, fontSize: "0.9rem" }}>✓ {currentQuestion.correct_answer}</p>
-              {session.state === "question_open" && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.06)", padding: "10px 14px", borderRadius: "8px", marginTop: "4px" }}>
-                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Antwoorden</span>
-                  <span style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.2rem", marginLeft: "auto" }}>{answerCount}</span>
-                  <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>/ {players.length}</span>
+              <p style={{ color: "#fff", fontWeight: 600, fontSize: "0.95rem", lineHeight: 1.45 }}>{currentQuestion.question_text}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", borderRadius: "8px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)" }}>
+                <span style={{ color: "var(--green)", fontWeight: 900, fontSize: "0.9rem" }}>✓</span>
+                <span style={{ color: "var(--green)", fontWeight: 600, fontSize: "0.88rem" }}>{currentQuestion.correct_answer}</span>
+              </div>
+
+              {/* Antwoord-voortgang */}
+              {session.state === "question_open" && players.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ ...secLabel }}>Antwoorden binnen</span>
+                    <span style={{ color: "#fff", fontWeight: 900, fontSize: "1rem" }}>{answerCount}<span style={{ color: "var(--muted)", fontWeight: 500, fontSize: "0.78rem" }}> / {players.length}</span></span>
+                  </div>
+                  <div style={{ height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: "3px", background: "var(--cyan)", width: `${players.length > 0 ? Math.round((answerCount / players.length) * 100) : 0}%`, transition: "width 0.3s ease" }} />
+                  </div>
                 </div>
               )}
             </div>
@@ -516,103 +534,93 @@ export default function SessionControl({ code }: { code: string }) {
         </div>
 
         {/* RECHTS — spelers */}
-        <div className="card" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <p style={{ ...sectionLabel, marginBottom: "4px" }}>
-            Spelers ({players.length})
-          </p>
+        <div className="card" style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "20px" }}>
+          <p style={{ ...secLabel, marginBottom: "6px" }}>Spelers <span style={{ color: "#fff" }}>({players.length})</span></p>
           {players.length === 0 ? (
-            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Nog geen spelers...</p>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Nog geen spelers…</p>
           ) : players.slice(0, 10).map((p, i) => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem" }}>
-              <span style={{ color: "var(--muted)", width: "18px", fontSize: "0.75rem" }}>{i + 1}</span>
-              <span style={{ color: "var(--text)", flex: 1 }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
-              <span style={{ color: "var(--cyan)", fontWeight: 700 }}>{p.score}</span>
+            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "5px 0", borderBottom: i < Math.min(players.length, 10) - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+              <span style={{ color: "var(--muted)", width: "18px", fontSize: "0.72rem", textAlign: "right", flexShrink: 0 }}>{i + 1}</span>
+              <span style={{ color: "var(--text)", flex: 1, fontSize: "0.88rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.avatar ? `${p.avatar} ` : ""}{p.name}</span>
+              <span style={{ color: "var(--cyan)", fontWeight: 700, fontSize: "0.88rem", flexShrink: 0 }}>{p.score}</span>
             </div>
           ))}
-          {players.length > 10 && <p style={{ color: "var(--muted)", fontSize: "0.75rem" }}>+{players.length - 10} meer</p>}
+          {players.length > 10 && <p style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: "4px" }}>+{players.length - 10} meer</p>}
         </div>
       </div>
 
-      {error && <p style={{ color: "var(--red)", fontSize: "0.85rem" }}>{error}</p>}
+      {error && (
+        <div style={{ color: "var(--red)", background: "rgba(255,59,92,0.08)", border: "1px solid rgba(255,59,92,0.25)", borderRadius: "10px", padding: "10px 16px", fontSize: "0.85rem" }}>
+          ⚠ {error}
+        </div>
+      )}
 
       {/* Primaire actie */}
       {session.state === "endscreen" ? (
-        <div className="card" style={{ textAlign: "center", padding: "20px" }}>
-          <p style={{ color: "var(--ink)", fontWeight: 900, fontSize: "1.5rem" }}>Quiz afgerond! 🏆</p>
-          <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginTop: "6px" }}>De eindstand staat bij de spelers. Sluit de sessie zelf via de toggle (inactief) of verwijderen — of herstart voor een nieuwe ronde.</p>
+        <div className="card" style={{ textAlign: "center", padding: "24px 20px", border: "1px solid rgba(255,217,59,0.2)", background: "rgba(255,217,59,0.05)" }}>
+          <p style={{ fontSize: "2rem", marginBottom: "8px" }}>🏆</p>
+          <p style={{ color: "#fff", fontWeight: 900, fontSize: "1.3rem" }}>Quiz afgerond!</p>
+          <p style={{ color: "var(--muted)", fontSize: "0.83rem", marginTop: "6px" }}>Sluit de sessie via de toggle of verwijderen — of herstart voor een nieuwe ronde.</p>
         </div>
       ) : session.state === "resuming" ? (
-        <button disabled className="btn-game" style={{ fontSize: "1.15rem", opacity: 0.7, width: "100%" }}>
-          ⏱ Aftellen tot start...
-        </button>
+        <button disabled className="btn-game" style={{ fontSize: "1.1rem", opacity: 0.6 }}>⏱ Aftellen tot start…</button>
       ) : (
-        <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.15rem", width: "100%" }}>
-          {actionLoading ? "..." : (actionLabel[session.state] ?? "Volgende")}
+        <button onClick={handleAction} disabled={actionLoading} className="btn-game" style={{ fontSize: "1.1rem" }}>
+          {actionLoading ? "…" : (actionLabel[session.state] ?? "Volgende")}
         </button>
       )}
 
-      {/* Sessiebeheer — gegroepeerde secundaire / utility-acties */}
-      {showBeheer && (() => {
-        const beheerBtn = {
-          display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center",
-          gap: "2px", minHeight: "56px", padding: "8px 12px", borderRadius: "10px", cursor: "pointer",
-          fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.2, textAlign: "center" as const, whiteSpace: "nowrap" as const,
-        };
-        const sub = { fontSize: "0.68rem", fontWeight: 600, opacity: 0.75 };
-        return (
-        <div className="card" style={{ padding: "16px 20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px" }}>
+      {/* Sessiebeheer */}
+      {showBeheer && (
+        <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <span style={secLabel}>Sessiebeheer</span>
 
-            {/* Pauze-knop — actief tijdens antwoord/leaderboard, niet tijdens een open vraag */}
-            {showActieveBeheer && (
-              <button onClick={handlePause} disabled={actionLoading || !canPause}
-                style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)",
-                  color: "var(--text)", opacity: canPause ? 1 : 0.45,
-                  cursor: canPause ? "pointer" : "not-allowed" }}>
-                🍺 Pauzeer
+          {/* Actie-knoppen rij */}
+          {(showActieveBeheer || true) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {showActieveBeheer && (
+                <button onClick={handlePause} disabled={actionLoading || !canPause}
+                  style={{ flex: "1 1 auto", minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2px", padding: "12px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: canPause ? "var(--text)" : "var(--muted)", cursor: canPause ? "pointer" : "not-allowed", opacity: canPause ? 1 : 0.45, fontFamily: "var(--font)" }}>
+                  <span style={{ fontSize: "1.1rem" }}>🍺</span>
+                  <span style={{ fontWeight: 700, fontSize: "0.82rem" }}>Pauzeer</span>
+                </button>
+              )}
+              {showActieveBeheer && (
+                <button onClick={handleToggleForceEnd}
+                  style={{ flex: "1 1 auto", minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2px", padding: "12px 16px", borderRadius: "10px", border: `1px solid ${session.force_end ? "rgba(249,115,22,0.5)" : "rgba(255,255,255,0.14)"}`, background: session.force_end ? "rgba(249,115,22,0.1)" : "rgba(255,255,255,0.05)", color: session.force_end ? "#f97316" : "var(--text)", cursor: "pointer", fontFamily: "var(--font)" }}>
+                  <span style={{ fontSize: "1.1rem" }}>⏸</span>
+                  <span style={{ fontWeight: 700, fontSize: "0.82rem" }}>Stop na vraag</span>
+                  {session.force_end && <span style={{ fontSize: "0.68rem", opacity: 0.8 }}>✓ aan</span>}
+                </button>
+              )}
+              <button onClick={handleRestart} disabled={actionLoading}
+                style={{ flex: "1 1 auto", minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2px", padding: "12px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "var(--text)", cursor: "pointer", fontFamily: "var(--font)" }}>
+                <span style={{ fontSize: "1.1rem" }}>🔄</span>
+                <span style={{ fontWeight: 700, fontSize: "0.82rem" }}>Herstarten</span>
+                <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>scores behouden</span>
               </button>
-            )}
+              {session.state !== "endscreen" && (
+                <button onClick={handleReset} disabled={actionLoading}
+                  style={{ flex: "1 1 auto", minWidth: "120px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2px", padding: "12px 16px", borderRadius: "10px", border: "1px solid rgba(255,59,92,0.3)", background: "rgba(255,59,92,0.06)", color: "var(--red)", cursor: "pointer", fontFamily: "var(--font)" }}>
+                  <span style={{ fontSize: "1.1rem" }}>🗑</span>
+                  <span style={{ fontWeight: 700, fontSize: "0.82rem" }}>Resetten</span>
+                  <span style={{ fontSize: "0.68rem", opacity: 0.75 }}>scores wissen</span>
+                </button>
+              )}
+            </div>
+          )}
 
-            {/* Stop na deze vraag — beschikbaar tijdens actieve sessie */}
-            {showActieveBeheer && (
-              <button onClick={handleToggleForceEnd}
-                style={{ ...beheerBtn, border: `1px solid ${session.force_end ? "#ff6b35" : "rgba(255,255,255,0.2)"}`,
-                  background: session.force_end ? "rgba(255,107,53,0.15)" : "rgba(255,255,255,0.03)",
-                  color: session.force_end ? "#ff6b35" : "var(--text)" }}>
-                <span>⏸ Stop na deze vraag</span>
-                {session.force_end && <span style={sub}>✓ ingeschakeld</span>}
-              </button>
-            )}
-
-            {/* Herstarten */}
-            <button onClick={handleRestart} disabled={actionLoading}
-              style={{ ...beheerBtn, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.03)", color: "var(--text)" }}>
-              <span>🔄 Herstarten</span>
-              <span style={sub}>scores behouden</span>
+          {/* Beëindig spel — apart, minder schreeuwerig */}
+          {showActieveBeheer && (
+            <button
+              onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers. De sessie blijft open — je sluit hem zelf via de toggle of verwijderen.")) updateDoc(doc(db, "sessions", code), { state: "endscreen", status: "active", force_end: false }).catch((e) => { console.error(e); setError("Fout bij beëindigen — probeer opnieuw"); }); }}
+              disabled={actionLoading}
+              style={{ width: "100%", padding: "13px 20px", borderRadius: "10px", border: "1px solid rgba(255,59,92,0.4)", background: "rgba(255,59,92,0.08)", color: "var(--red)", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", fontFamily: "var(--font)" }}>
+              🏁 Beëindig spel — toon eindstand
             </button>
-
-            {/* Resetten */}
-            {session.state !== "endscreen" && (
-              <button onClick={handleReset} disabled={actionLoading}
-                style={{ ...beheerBtn, border: "1px solid rgba(255,59,92,0.35)", background: "rgba(255,59,92,0.06)", color: "var(--red)" }}>
-                <span>🗑 Resetten</span>
-                <span style={sub}>scores wissen</span>
-              </button>
-            )}
-
-            {/* Beëindig spel — volle breedte, prominent */}
-            {showActieveBeheer && (
-              <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers. De sessie blijft open — je sluit hem zelf via de toggle of verwijderen.")) updateDoc(doc(db, "sessions", code), { state: "endscreen", status: "active", force_end: false }).catch((e) => { console.error(e); setError("Fout bij beëindigen — probeer opnieuw"); }); }}
-                disabled={actionLoading}
-                style={{ ...beheerBtn, gridColumn: "1 / -1", minHeight: "48px", fontSize: "0.95rem",
-                  border: "2px solid var(--red)", background: "rgba(255,59,92,0.14)", color: "var(--red)" }}>
-                🏁 Beëindig spel — toon eindstand
-              </button>
-            )}
-          </div>
+          )}
         </div>
-        );
-      })()}
+      )}
     </div>
   );
 }
