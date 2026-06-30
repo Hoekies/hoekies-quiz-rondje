@@ -12,6 +12,7 @@ const csp = [
   "font-src 'self'",
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
+  "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "manifest-src 'self'",

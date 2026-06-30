@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       matchCorrect = Object.keys(correctMapping).every(
         (k) => String(userMapping[k]) === String(correctMapping[k])
       );
-    } catch { matchCorrect = false; }
+    } catch (e) { console.error("match JSON parse fout:", e); matchCorrect = false; }
     if (matchCorrect) {
       const ratio = Math.max(0, 1 - response_time_ms / (question.time_limit_seconds * 1000));
       points = Math.floor(question.base_points / 10) + Math.floor(50 * ratio);
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       const given = (JSON.parse(answer) as string[]).map((s) => String(s).trim()).sort();
       const corr = (JSON.parse(question.correct_answer) as string[]).map((s) => String(s).trim()).sort();
       multiCorrect = given.length === corr.length && given.every((v, i) => v === corr[i]);
-    } catch { multiCorrect = false; }
+    } catch (e) { console.error("multi_select JSON parse fout:", e); multiCorrect = false; }
     if (multiCorrect) {
       const ratio = Math.max(0, 1 - response_time_ms / (question.time_limit_seconds * 1000));
       points = Math.floor(question.base_points / 10) + Math.floor(50 * ratio);

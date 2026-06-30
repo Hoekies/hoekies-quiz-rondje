@@ -24,7 +24,7 @@ interface SessionDoc {
   current_question_id: string | null;
   question_index: number;
   question_order?: string[];
-  started_at: unknown;
+  started_at: { seconds: number } | null | undefined;
   resume_at?: { seconds: number } | null;
   resume_state?: SessionState;
   question_opened_at?: { seconds: number } | null;
@@ -141,7 +141,7 @@ export default function SessionControl({ code }: { code: string }) {
     if (session?.state !== "resuming") return;
     const back = session.resume_state ?? "question_open";
     const t = setTimeout(() => {
-      updateDoc(doc(db, "sessions", code), { state: back, status: "active" }).catch(console.error);
+      updateDoc(doc(db, "sessions", code), { state: back, status: "active" }).catch((e) => { console.error(e); setError("Fout bij hervatten — probeer opnieuw"); });
     }, 10500);
     return () => clearTimeout(t);
   }, [session?.state, code]);
@@ -185,7 +185,7 @@ export default function SessionControl({ code }: { code: string }) {
     if (players.length === 0 || answerCount < players.length) return;
     if (autoClosedRef.current === session.current_question_id) return;
     autoClosedRef.current = session.current_question_id;
-    updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
+    updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(console.error);
   }, [answerCount, players.length, session?.state, session?.current_question_id, code]);
 
   // Auto-sluit op tijd: question_opened_at + time_limit verstreken → answer_reveal (geldt ook voor bonusvragen)
@@ -196,7 +196,7 @@ export default function SessionControl({ code }: { code: string }) {
       const elapsed = (Date.now() - session.question_opened_at!.seconds * 1000) / 1000;
       if (elapsed >= limit && autoClosedRef.current !== session.current_question_id) {
         autoClosedRef.current = session.current_question_id!;
-        updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(() => {});
+        updateDoc(doc(db, "sessions", code), { state: "answer_reveal", status: "active" }).catch(console.error);
       }
     };
     const iv = setInterval(closeIfOverdue, 500);
@@ -216,7 +216,7 @@ export default function SessionControl({ code }: { code: string }) {
       distribution: counts,
       distribution_qid: session.current_question_id,
       distribution_total: answersValuesRef.current.length,
-    }).catch(() => {});
+    }).catch(console.error);
   }, [session?.state, session?.current_question_id, session?.distribution_qid, code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function patchSession(
@@ -390,7 +390,12 @@ export default function SessionControl({ code }: { code: string }) {
 
   async function handleToggleForceEnd() {
     if (!session) return;
-    await updateDoc(doc(db, "sessions", code), { force_end: !session.force_end });
+    try {
+      await updateDoc(doc(db, "sessions", code), { force_end: !session.force_end });
+    } catch (err) {
+      console.error(err);
+      setError("Fout bij updaten — controleer of je ingelogd bent als admin");
+    }
   }
 
   const nextLabel = session?.force_end
@@ -597,7 +602,7 @@ export default function SessionControl({ code }: { code: string }) {
 
             {/* Beëindig spel — volle breedte, prominent */}
             {showActieveBeheer && (
-              <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers. De sessie blijft open — je sluit hem zelf via de toggle of verwijderen.")) updateDoc(doc(db, "sessions", code), { state: "endscreen", status: "active", force_end: false }).catch(() => {}); }}
+              <button onClick={() => { if (window.confirm("Spel beëindigen? De eindstand verschijnt bij alle spelers. De sessie blijft open — je sluit hem zelf via de toggle of verwijderen.")) updateDoc(doc(db, "sessions", code), { state: "endscreen", status: "active", force_end: false }).catch((e) => { console.error(e); setError("Fout bij beëindigen — probeer opnieuw"); }); }}
                 disabled={actionLoading}
                 style={{ ...beheerBtn, gridColumn: "1 / -1", minHeight: "48px", fontSize: "0.95rem",
                   border: "2px solid var(--red)", background: "rgba(255,59,92,0.14)", color: "var(--red)" }}>

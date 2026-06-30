@@ -28,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl" className={`${spaceGrotesk.variable} h-full`}>
       <body className="min-h-full">
+        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'))}` }} />
         {children}
         <footer style={{
           position: "fixed", bottom: "6px", left: 0, right: 0,

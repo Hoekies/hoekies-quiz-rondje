@@ -44,7 +44,7 @@ function Confetti({ active, duration = 10000 }: { active: boolean; duration?: nu
       rotV: (Math.random() - 0.5) * 0.15,
     }));
     const start = Date.now();
-    let raf: number;
+    let raf = 0;
     function draw() {
       if (Date.now() - start > duration) { canvas.remove(); return; }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -204,7 +204,7 @@ export default function SpeelPage() {
     }
     const a = introAudioRef.current;
     if (step === "lobby" && soundOn) {
-      a.play().catch(() => {});
+      a.play().catch(console.warn);
     } else {
       a.pause();
     }
@@ -635,7 +635,7 @@ export default function SpeelPage() {
     if (!audio) return;
     const startSec = question.audio_start ?? 0;
     const durMs = (question.clip_duration ?? question.guess_duration ?? 5) * 1000;
-    const play = () => { audio.currentTime = startSec; audio.play().catch(() => {}); };
+    const play = () => { audio.currentTime = startSec; audio.play().catch(console.warn); };
     if (audio.readyState >= 1) play(); else audio.addEventListener("loadedmetadata", play, { once: true });
     const t = setTimeout(() => { audio.pause(); setAudioPlayed(true); }, durMs);
     return () => { clearTimeout(t); audio.pause(); };
@@ -651,7 +651,7 @@ export default function SpeelPage() {
     if (!video) return;
     const startSec = question.video_start ?? 0;
     const durMs = (question.clip_duration ?? 5) * 1000;
-    const play = () => { video.currentTime = startSec; video.play().catch(() => {}); };
+    const play = () => { video.currentTime = startSec; video.play().catch(console.warn); };
     if (video.readyState >= 1) play(); else video.addEventListener("loadedmetadata", play, { once: true });
     const t = setTimeout(() => { video.pause(); }, durMs);
     return () => { clearTimeout(t); video.pause(); };
