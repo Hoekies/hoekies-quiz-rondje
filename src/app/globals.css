@@ -215,10 +215,10 @@ select.glass-input option {
   justify-content: center;
 }
 .admin-sidebar-logo img {
-  width: 64px;
-  height: 64px;
+  width: 128px;
+  height: 128px;
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 .admin-sidebar-logo-text {
   display: flex;
